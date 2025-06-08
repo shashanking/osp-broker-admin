@@ -1,0 +1,32 @@
+import 'package:flutter/material.dart';
+
+
+class AppColors {
+  // Primary colors
+  static const Color primary = Color(0xFFFFD700); // Gold color from the screenshot
+  static const Color accent = Color(0xFFFFC107); // Slightly darker gold for accents
+  
+  // Background colors
+  static const Color backgroundDark = Color(0xFF121212);
+  static const Color surfaceDark = Color(0xFF1E1E1E);
+  static const Color surfaceLight = Color(0xFF2D2D2D);
+  
+  // Text colors
+  static const Color textPrimary = Colors.white;
+  static const Color textSecondary = Color(0xFFB0B0B0);
+  static const Color textDisabled = Color(0xFF6D6D6D);
+  
+  // Status colors
+  static const Color success = Color(0xFF4CAF50);
+  static const Color error = Color(0xFFE53935);
+  static const Color warning = Color(0xFFFFA000);
+  static const Color info = Color(0xFF2196F3);
+  
+  // Sidebar colors
+  static const Color sidebarBackground = Color(0xFF1A1A1A);
+  static const Color sidebarSelected = Color(0x33FFD700); // Gold with 20% opacity
+  static const Color sidebarHover = Color(0x1AFFFFFF); // White with 10% opacity
+  
+  // Divider colors
+  static const Color divider = Color(0x1FFFFFFF);
+}
