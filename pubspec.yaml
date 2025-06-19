@@ -77,6 +77,8 @@ flutter:
     - assets/
     - assets/images/
     - assets/icons/
+    - assets/icons/forum/
+    - assets/icons/membership/
     - assets/videos/
   
   # Fonts are loaded via google_fonts package

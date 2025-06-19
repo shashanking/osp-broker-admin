@@ -3,37 +3,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart'; // Added for Hive.initFlutter
+import 'package:osp_broker_admin/core/constants/app_colors.dart';
 import 'package:osp_broker_admin/core/infrastructure/providers.dart';
 
 Future<void> main() async {
-  print('main(): Starting app initialization');
   WidgetsFlutterBinding.ensureInitialized();
 
   ProviderContainer? container;
-  
+
   try {
-    print('main(): Initializing Hive...');
     await Hive.initFlutter();
-    print('main(): Hive initialized');
 
     // Create a ProviderContainer to manage provider lifecycles during initialization
-    print('main(): Creating ProviderContainer');
     container = ProviderContainer();
 
     // Ensure the auth box is open and ready before BaseApiService tries to use it
-    print('main(): Opening auth box...');
-    final authBox = await container.read(authBoxProvider.future);
-    print('main(): Auth box opened: ${authBox.isOpen}');
 
-    // Initialize BaseApiService
-    print('main(): Initializing BaseApiService...');
-    final apiService = container.read(baseApiServiceProvider);
-    print('main(): BaseApiService initialized. Has token: ${apiService.authToken != null}');
+    await container.read(authBoxProvider.future);
 
     // Eagerly initialize AuthNotifier to trigger _checkAuthStatus
-    print('main(): Initializing AuthNotifier...');
     container.read(authNotifierProvider.notifier);
-    print('main(): AuthNotifier initialized');
 
     runApp(
       UncontrolledProviderScope(
@@ -54,7 +43,7 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
-    
+
     return ScreenUtilInit(
       designSize: const Size(375, 812), // iPhone 13 dimensions
       minTextAdapt: true,
@@ -76,7 +65,7 @@ class MyApp extends ConsumerWidget {
             appBarTheme: AppBarTheme(
               elevation: 0,
               centerTitle: true,
-              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+              backgroundColor: AppColors.backgroundLight,
               iconTheme: const IconThemeData(color: Colors.black87),
               titleTextStyle: GoogleFonts.montserrat(
                 color: Colors.black87,
@@ -84,7 +73,7 @@ class MyApp extends ConsumerWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
-            cardTheme: CardTheme(
+            cardTheme: CardThemeData(
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -98,7 +87,7 @@ class MyApp extends ConsumerWidget {
           darkTheme: ThemeData(
             colorScheme: ColorScheme.fromSeed(
               seedColor: const Color(0xFF0A6BFF),
-              brightness: Brightness.dark,
+              brightness: Brightness.light,
             ),
             useMaterial3: true,
             textTheme: GoogleFonts.montserratTextTheme(
@@ -110,7 +99,7 @@ class MyApp extends ConsumerWidget {
             appBarTheme: AppBarTheme(
               elevation: 0,
               centerTitle: true,
-              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+              backgroundColor: AppColors.backgroundLight,
               iconTheme: const IconThemeData(color: Colors.white70),
               titleTextStyle: GoogleFonts.montserrat(
                 color: Colors.white,
@@ -118,7 +107,7 @@ class MyApp extends ConsumerWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
-            cardTheme: CardTheme(
+            cardTheme: CardThemeData(
               elevation: 1,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -129,7 +118,7 @@ class MyApp extends ConsumerWidget {
               ),
             ),
           ),
-          themeMode: ThemeMode.system,
+          themeMode: ThemeMode.light,
           routerConfig: router,
         );
       },

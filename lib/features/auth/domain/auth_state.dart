@@ -17,7 +17,6 @@ class AuthState with _$AuthState {
   }) = _AuthStateAuthenticated;
   const factory AuthState.unauthenticated() = _AuthStateUnauthenticated;
   const factory AuthState.error(String message) = _AuthStateError;
-
   factory AuthState.fromJson(Map<String, dynamic> json) => _$AuthStateFromJson(json);
 }
 
@@ -43,8 +42,8 @@ class User {
   final String email;
   final String fullName;
   final String role;
-
-  User({
+ 
+ User({
     required this.id,
     required this.email,
     required this.fullName,

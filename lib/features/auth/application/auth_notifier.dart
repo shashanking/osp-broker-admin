@@ -87,7 +87,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String email,
     required String password,
   }) async {
-    print('AuthNotifier: login() called');
     state = const AuthState.loading();
     
     try {
@@ -112,16 +111,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
       await _apiService.setAuthTokens(
         token: responseData['accessToken'],
         refreshToken: responseData['refreshToken'],
+        userId: user['id'],
       );
 
-      print('AuthNotifier: Token validated, setting authenticated state');
       state = AuthState.authenticated(
         token: responseData['accessToken'],
         user: user,
       );
       state.emit();
-      print('AuthNotifier: State set to authenticated');
-      print('AuthNotifier state: $state');
     } catch (e) {
       state = AuthState.error(e.toString());
       state.emit();

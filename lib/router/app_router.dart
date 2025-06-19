@@ -7,8 +7,9 @@ import 'package:osp_broker_admin/core/utils/go_router_refresh_stream.dart';
 import 'package:osp_broker_admin/features/auth/application/auth_notifier.dart';
 import 'package:osp_broker_admin/features/auth/domain/auth_state.dart';
 import 'package:osp_broker_admin/features/auth/presentation/login_page.dart';
+import 'package:osp_broker_admin/core/widgets/layout/dashboard_layout.dart';
 import 'package:osp_broker_admin/features/dashboard/presentation/dashboard_page.dart';
-import 'package:osp_broker_admin/features/dashboard/presentation/layout/dashboard_layout.dart';
+import 'package:osp_broker_admin/features/forums/presentation/pages/forums_page.dart';
 import 'package:osp_broker_admin/features/settings/presentation/settings_page.dart';
 import 'package:osp_broker_admin/features/splash/presentation/splash_page.dart';
 import 'package:osp_broker_admin/features/users/presentation/users_page.dart';
@@ -17,6 +18,7 @@ enum AppRoute {
   splash('/splash'),
   login('/login'),
   dashboard('/dashboard'),
+  forums('/forums'),
   users('/users'),
   settings('/settings');
 
@@ -28,6 +30,7 @@ class RoutePaths {
   static const String splash = '/splash';
   static const String login = '/login';
   static const String dashboard = '/dashboard';
+  static const String forums = '/forums';
   static const String users = '/users';
   static const String settings = '/settings';
 }
@@ -35,13 +38,13 @@ class RoutePaths {
 final routerProvider = Provider<GoRouter>((ref) {
   // Create a stream controller for auth state changes
   final authStreamController = StreamController<AuthState>.broadcast();
-  
+
   // Listen to auth state changes and add them to our stream
   ref.listen<AuthState>(
     authNotifierProvider,
     (_, next) => authStreamController.add(next),
   );
-  
+
   final router = GoRouter(
     initialLocation: AppRoute.splash.path,
     debugLogDiagnostics: true,
@@ -64,7 +67,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           child: const LoginPage(),
         ),
       ),
-      
+
       // Dashboard shell with nested routes
       ShellRoute(
         pageBuilder: (context, state, child) {
@@ -90,6 +93,15 @@ final routerProvider = Provider<GoRouter>((ref) {
               child: DashboardPage(),
             ),
           ),
+
+          // Forums section
+          GoRoute(
+            path: AppRoute.forums.path,
+            name: AppRoute.forums.name,
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: ForumsPage(),
+            ),
+          ),
           
           // Users section
           GoRoute(
@@ -99,7 +111,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               child: UsersPage(),
             ),
           ),
-          
+
           // Settings section
           GoRoute(
             path: AppRoute.settings.path,
@@ -118,12 +130,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       final authState = ref.read(authNotifierProvider);
       final isSplash = state.matchedLocation == AppRoute.splash.path;
       final isLogin = state.matchedLocation == AppRoute.login.path;
-      final isAuthenticatedRoute = state.matchedLocation.startsWith('/dashboard') ||
-                                 state.matchedLocation.startsWith('/users') ||
-                                 state.matchedLocation.startsWith('/settings');
-      
-      debugPrint('Router: Current route: ${state.matchedLocation}, Auth state: $authState');
-      
+      final isAuthenticatedRoute =
+          state.matchedLocation.startsWith('/dashboard') ||
+              state.matchedLocation.startsWith('/users') ||
+              state.matchedLocation.startsWith('/settings');
+
+      debugPrint(
+          'Router: Current route: ${state.matchedLocation}, Auth state: $authState');
+
       return authState.when(
         // If we're on splash and authenticated, go to dashboard
         authenticated: (token, user) {
@@ -149,6 +163,6 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref.onDispose(() {
     authStreamController.close();
   });
-  
+
   return router;
 });

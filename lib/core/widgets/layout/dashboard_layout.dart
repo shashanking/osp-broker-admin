@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:osp_broker_admin/core/constants/app_colors.dart';
 
-import '../../../../core/constants/app_colors.dart';
+export 'top_bar.dart';
 
 class DashboardLayout extends StatelessWidget {
   final String currentRoute;
@@ -19,32 +20,34 @@ class DashboardLayout extends StatelessWidget {
     this.actions,
   });
 
-  String _getPageTitle(String route) {
-    final routeTitles = {
-      '/dashboard': 'Dashboard',
-      '/forums': 'Forums',
-      '/auctions': 'Auctions',
-      '/directories': 'Business Directories',
-      '/shop': 'Shop',
-      '/users': 'Users',
-      '/plans': 'Membership Plans',
-      '/games': 'Games',
-      '/reports': 'Reports & Analytics',
-      '/settings': 'Settings',
-    };
-    return routeTitles[route] ?? route;
-  }
-
   @override
+  /// Builds the main dashboard layout.
+  ///
+  /// This widget is used to display the main content of the application,
+  /// including the navigation rail and the main content area.
+  ///
+  /// The [currentRoute] parameter is used to determine which navigation item
+  /// should be highlighted as the current route.
+  ///
+  /// The [title] parameter is used to display the title of the current route in
+  /// the top bar.
+  ///
+  /// The [child] parameter is used to display the main content of the current
+  /// route.
+  ///
+  /// The [actions] parameter is used to display a list of actions in the top
+  /// bar.
+  ///
+  /// The [onLogout] parameter is used to log the user out of the application.
+  ///
   Widget build(BuildContext context) {
-    final pageTitle = _getPageTitle(title);
     return Scaffold(
-      backgroundColor: AppColors.backgroundDark,
+      backgroundColor: AppColors.background,
       body: Row(
         children: [
           // Left Navigation Rail
           Container(
-            width: 240,
+            width: 280,
             color: AppColors.sidebarBackground,
             child: Column(
               children: [
@@ -53,7 +56,7 @@ class DashboardLayout extends StatelessWidget {
                 Image.asset(
                   'assets/images/osp-logo.png',
                   height: 40,
-                  errorBuilder: (context, error, stackTrace) => 
+                  errorBuilder: (context, error, stackTrace) =>
                       const FlutterLogo(size: 40),
                 ),
                 const SizedBox(height: 32),
@@ -133,18 +136,31 @@ class DashboardLayout extends StatelessWidget {
                   onTap: () => context.go('/settings'),
                 ),
                 const Spacer(),
-                _buildNavItem(
-                  context,
-                  icon: Icons.logout,
-                  label: 'Logout',
-                  isSelected: false,
-                  onTap: () {
-                    onLogout().then((_) {
+                Container(
+                  margin: const EdgeInsets.only(
+                    top: 4,
+                    bottom: 4,
+                    left: 16,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Color(0xFFCC1919),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(50),
+                      bottomLeft: Radius.circular(50),
+                    ),
+                  ),
+                  child: _buildNavItem(
+                    context,
+                    icon: Icons.logout,
+                    label: 'Logout',
+                    isSelected: false,
+                    onTap: () async {
+                      await onLogout();
                       if (context.mounted) {
                         context.go('/login');
                       }
-                    });
-                  },
+                    },
+                  ),
                 ),
                 const SizedBox(height: 24),
               ],
@@ -152,47 +168,7 @@ class DashboardLayout extends StatelessWidget {
           ),
           // Main Content
           Expanded(
-            child: Column(
-              children: [
-                // App Bar
-                Container(
-                  height: 64,
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceDark,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        pageTitle,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                      if (actions != null) Row(children: actions!),
-                    ],
-                  ),
-                ),
-                // Main Content
-                Expanded(
-                  child: Container(
-                    color: AppColors.backgroundDark,
-                    padding: const EdgeInsets.all(24),
-                    child: child,
-                  ),
-                ),
-              ],
-            ),
+            child: child,
           ),
         ],
       ),
@@ -209,25 +185,36 @@ class DashboardLayout extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+        margin: const EdgeInsets.only(
+          top: 4,
+          bottom: 4,
+          left: 16,
+        ),
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.sidebarSelected : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(50),
+            bottomLeft: Radius.circular(50),
+          ),
         ),
         child: Row(
           children: [
             Icon(
               icon,
-              color: isSelected ? AppColors.primary : AppColors.textSecondary,
+              color:
+                  isSelected ? AppColors.background : AppColors.sidebarSelected,
               size: 20,
             ),
             const SizedBox(width: 12),
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? AppColors.primary : AppColors.textSecondary,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                color: isSelected
+                    ? AppColors.background
+                    : AppColors.sidebarSelected,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                fontSize: 14,
               ),
             ),
           ],

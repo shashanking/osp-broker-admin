@@ -37,7 +37,7 @@ class _SplashPageState extends ConsumerState<SplashPage> {
 
   void _checkAuthState() {
     if (!mounted) return;
-    
+
     final authState = ref.read(authNotifierProvider);
     authState.maybeWhen(
       authenticated: (token, user) => _navigateToDashboard(),
@@ -52,7 +52,7 @@ class _SplashPageState extends ConsumerState<SplashPage> {
 
   void _navigateToDashboard() {
     if (!mounted) return;
-    
+
     final context = this.context;
     final currentPath = GoRouterState.of(context).uri.path;
     if (currentPath != '/dashboard') {
@@ -63,10 +63,10 @@ class _SplashPageState extends ConsumerState<SplashPage> {
       });
     }
   }
-  
+
   void _navigateToLogin() {
     if (!mounted) return;
-    
+
     final context = this.context;
     final currentPath = GoRouterState.of(context).uri.path;
     if (currentPath != '/login') {

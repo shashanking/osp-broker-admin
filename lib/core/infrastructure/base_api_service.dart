@@ -33,16 +33,15 @@ class BaseApiService {
   Future<void> setAuthTokens({
     required String token,
     String? refreshToken,
+    String? userId,
   }) async {
-    print('BaseApiService: Setting auth tokens');
     _authToken = token;
     try {
       await _authBox.put('token', token);
-      print('BaseApiService: Auth token saved successfully');
+      await _authBox.put('userId', userId);
       
       if (refreshToken != null) {
         await _authBox.put('refreshToken', refreshToken);
-        print('BaseApiService: Refresh token saved successfully');
       }
     } catch (e) {
       print('BaseApiService: Error saving tokens: $e');
@@ -51,7 +50,6 @@ class BaseApiService {
   }
 
   Future<void> clearAuthTokens() async {
-    print('BaseApiService: Clearing auth tokens');
     _authToken = null;
     await _authBox.delete('token');
     await _authBox.delete('refreshToken');
