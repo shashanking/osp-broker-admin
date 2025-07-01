@@ -8,7 +8,7 @@ class AppColors {
       Color(0xFFFFC107); // Slightly darker gold for accents
 
   // Background colors
-  static const Color background = Color(0xFF333333);
+  static const Color background = Color(0xFFF9F6EF);
   static const Color backgroundDark = Color(0xFF121212);
   static const Color surface = Color(0xFF1E1E1E);
   static const Color surfaceDark = Color(0xFF1E1E1E);

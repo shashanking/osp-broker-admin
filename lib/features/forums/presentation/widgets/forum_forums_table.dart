@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../domain/forum_models.dart';
+
 class ForumForumsTable extends StatelessWidget {
-  final List<Map<String, dynamic>> forums;
+  final List<Forum> forums;
   const ForumForumsTable({Key? key, required this.forums}) : super(key: key);
 
   @override
@@ -37,9 +39,9 @@ class ForumForumsTable extends StatelessWidget {
               children: const [
                 Expanded(flex: 3, child: Text('Forum Name', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54))),
                 Expanded(flex: 5, child: Text('Description', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54))),
-                Expanded(child: Text('Threads', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54), textAlign: TextAlign.left)),
-                Expanded(child: Text('Posts', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54), textAlign: TextAlign.left)),
-                Expanded(child: Text('Status', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54), textAlign: TextAlign.left)),
+                Expanded(child: Text('Author', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54), textAlign: TextAlign.left)),
+                Expanded(child: Text('Topics', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54), textAlign: TextAlign.left)),
+                Expanded(child: Text('Created', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54), textAlign: TextAlign.left)),
               ],
             ),
           ),
@@ -52,7 +54,7 @@ class ForumForumsTable extends StatelessWidget {
 }
 
 class _ForumRow extends StatelessWidget {
-  final Map<String, dynamic> forum;
+  final Forum forum;
   const _ForumRow({required this.forum});
 
   @override
@@ -64,14 +66,14 @@ class _ForumRow extends StatelessWidget {
           Expanded(
             flex: 3,
             child: Text(
-              forum['name'] as String,
+              forum.title,
               style: const TextStyle(fontWeight: FontWeight.w500),
             ),
           ),
           Expanded(
             flex: 5,
             child: Text(
-              forum['description'] as String,
+              forum.description,
               style: const TextStyle(color: Colors.black87),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -79,24 +81,20 @@ class _ForumRow extends StatelessWidget {
           ),
           Expanded(
             child: Text(
-              forum['threads'].toString(),
+              forum.author,
               textAlign: TextAlign.left,
             ),
           ),
           Expanded(
             child: Text(
-              forum['posts'].toString(),
+              (forum.count['topics'] ?? 0).toString(),
               textAlign: TextAlign.left,
             ),
           ),
           Expanded(
             child: Text(
-              forum['status'] as String,
-              style: TextStyle(
-                color: forum['status'] == 'Private' ? Colors.red : Colors.green,
-                fontWeight: FontWeight.w500,
-                fontSize: 12,
-              ),
+              forum.createdAt.toIso8601String().substring(0, 10),
+              style: const TextStyle(fontSize: 12),
               textAlign: TextAlign.left,
             ),
           ),

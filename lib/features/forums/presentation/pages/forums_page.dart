@@ -7,6 +7,8 @@ import '../widgets/forum_tabs.dart';
 import '../widgets/forum_categories_table.dart';
 import '../widgets/forum_forums_table.dart';
 import '../widgets/forum_threads_table.dart';
+import '../../application/forum_admin_notifier.dart';
+import '../widgets/forum_topics_table.dart';
 
 class ForumsPage extends ConsumerStatefulWidget {
   const ForumsPage({super.key});
@@ -19,57 +21,36 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
   int _selectedTab = 0;
 
   @override
-  Widget build(BuildContext context) {
-    final categories = [
-      {
-        'name': 'Startups & Pitches',
-        'threads': '3,495',
-        'status': 'Public',
-        'isPrivate': false,
-      },
-      {
-        'name': 'Private Roundtable',
-        'threads': '2,535',
-        'status': 'Private',
-        'isPrivate': true,
-      },
-      {
-        'name': 'Developer Talk',
-        'threads': '1,892',
-        'status': 'Public',
-        'isPrivate': false,
-      },
-      {
-        'name': 'Product Feedback',
-        'threads': '1,745',
-        'status': 'Public',
-        'isPrivate': false,
-      },
-    ];
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await ref.read(forumAdminNotifierProvider.notifier).loadForums();
+      ref.read(forumAdminNotifierProvider.notifier).loadCategories();
+      // Fetch topics for the first forum if available
+      final forums = ref.read(forumAdminNotifierProvider).forums;
+      if (forums.isNotEmpty) {
+        ref
+            .read(forumAdminNotifierProvider.notifier)
+            .loadTopics(forumId: forums.first.id);
+      }
+    });
+  }
 
-    final forums = [
-      {
-        'name': 'Startup Forum',
-        'description': 'Discuss startups, business models, and pitches.',
-        'threads': 120,
-        'posts': 540,
-        'status': 'Active',
-      },
-      {
-        'name': 'Tech Forum',
-        'description': 'APIs, engineering, and product development.',
-        'threads': 98,
-        'posts': 410,
-        'status': 'Active',
-      },
-      {
-        'name': 'Investors Lounge',
-        'description': 'Private investor discussions.',
-        'threads': 34,
-        'posts': 120,
-        'status': 'Private',
-      },
-    ];
+  @override
+  Widget build(BuildContext context) {
+    final forumState = ref.watch(forumAdminNotifierProvider);
+    final categories = forumState.categories;
+    final isLoadingCategories = forumState.isLoading && _selectedTab == 0;
+    final errorCategories = forumState.error;
+
+    // Load categories on first build
+
+    final forums = forumState.forums;
+    final isLoading = forumState.isLoading;
+    final error = forumState.error;
+
+    // Load forums on first build
+    // Call in initState instead of here
 
     final threads = [
       {
@@ -165,23 +146,43 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
                         children: [
                           ForumTabs(
                             selectedTab: _selectedTab,
-                            onTabSelected: (idx) => setState(() => _selectedTab = idx),
+                            onTabSelected: (idx) =>
+                                setState(() => _selectedTab = idx),
                             badges: [
                               '', // No badge for categories
                               forums.length.toString(),
                               threads.length.toString(),
+                              forumState.topics.length.toString(),
                             ],
                           ),
                           // (You can add search/sort/filter bar here if needed)
                         ],
                       ),
                       const SizedBox(height: 24),
-                      if (_selectedTab == 0)
-                        ForumCategoriesTable(categories: categories)
-                      else if (_selectedTab == 1)
-                        ForumForumsTable(forums: forums)
-                      else
-                        ForumThreadsTable(threads: threads),
+                      _selectedTab == 0
+                          ? ForumCategoriesTable(categories: categories)
+                          : _selectedTab == 1
+                              ? isLoading
+                                  ? const Center(
+                                      child: CircularProgressIndicator())
+                                  : error != null
+                                      ? Center(child: Text('Error: ' + error))
+                                      : ForumForumsTable(forums: forums)
+                              : _selectedTab == 2
+                                  ? isLoading
+                                      ? const Center(
+                                          child: CircularProgressIndicator())
+                                      : error != null
+                                          ? Center(
+                                              child: Text('Error: ' + error))
+                                          : ForumTopicsTable(topics: forumState.topics, forums: forums)
+                                  : isLoading
+                                      ? const Center(
+                                          child: CircularProgressIndicator())
+                                      : error != null
+                                          ? Center(
+                                              child: Text('Error: ' + error))
+                                          : Container()
                     ],
                   ),
                 ],

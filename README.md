@@ -146,6 +146,25 @@ Ensure proper initialization order in `main.dart`:
    - [ ] Offline data persistence
    - [ ] Multi-language support
 
+## 📑 Forum Feature: UI Modularization (June 2025)
+
+### Overview
+- The forum admin UI has been fully modularized for maintainability and scalability.
+- Large monolithic forum page split into smaller widgets/files:
+  - `forum_tabs.dart`: Custom pill-shaped tab bar with badge counts.
+  - `forum_categories_table.dart`: Forum categories table and row widgets.
+  - `forum_forums_table.dart`: Forums list table and row widgets.
+  - `forum_threads_table.dart`: Threads list table and row widgets.
+- Main page (`forums_page.dart`) now only manages state and high-level composition.
+
+### Key Points
+- All UI/UX matches Figma designs; no visual changes during refactor.
+- State management for tab switching is handled in the main page.
+- Placeholder/mock data arrays are local to the build method for easy migration to real data later.
+- All old inline table/tab code and unused methods have been removed.
+- Each widget file is <400 lines for readability and future maintenance.
+
+
 ## 📚 Documentation
 
 - [Flutter Documentation](https://docs.flutter.dev/)

@@ -21,6 +21,7 @@ class DashboardLayout extends StatelessWidget {
   });
 
   @override
+
   /// Builds the main dashboard layout.
   ///
   /// This widget is used to display the main content of the application,

@@ -12,7 +12,8 @@ import 'package:osp_broker_admin/features/dashboard/presentation/dashboard_page.
 import 'package:osp_broker_admin/features/forums/presentation/pages/forums_page.dart';
 import 'package:osp_broker_admin/features/settings/presentation/settings_page.dart';
 import 'package:osp_broker_admin/features/splash/presentation/splash_page.dart';
-import 'package:osp_broker_admin/features/users/presentation/users_page.dart';
+import 'package:osp_broker_admin/features/membership/presentation/pages/membership_page.dart';
+import 'package:osp_broker_admin/features/users/presentation/pages/users_page.dart';
 
 enum AppRoute {
   splash('/splash'),
@@ -102,13 +103,22 @@ final routerProvider = Provider<GoRouter>((ref) {
               child: ForumsPage(),
             ),
           ),
-          
+
           // Users section
           GoRoute(
             path: AppRoute.users.path,
             name: AppRoute.users.name,
-            pageBuilder: (context, state) => const NoTransitionPage(
+            pageBuilder: (context, state) => NoTransitionPage(
               child: UsersPage(),
+            ),
+          ),
+
+          // Membership Plans section
+          GoRoute(
+            path: '/plans',
+            name: 'plans',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: MembershipPage(),
             ),
           ),
 

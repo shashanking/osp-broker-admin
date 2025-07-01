@@ -84,6 +84,22 @@ class BaseApiService {
     }
   }
 
+  Future<Response> delete(
+    String endpoint, {
+    bool requireAuth = true,
+  }) async {
+    try {
+      final options = _getOptions(requireAuth: requireAuth);
+      return await _dio.delete(
+        '${ApiUrls.baseUrl}$endpoint',
+        options: options,
+      );
+    } on DioException catch (e) {
+      _handleDioError(e);
+      rethrow;
+    }
+  }
+
   Future<Response> post(
     String endpoint, {
     dynamic data,

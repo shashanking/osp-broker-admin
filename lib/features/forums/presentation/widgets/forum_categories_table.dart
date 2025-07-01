@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../domain/forum_models.dart';
 
 class ForumCategoriesTable extends StatelessWidget {
-  final List<Map<String, dynamic>> categories;
+  final List<Category> categories;
   const ForumCategoriesTable({Key? key, required this.categories}) : super(key: key);
 
   @override
@@ -52,7 +53,7 @@ class ForumCategoriesTable extends StatelessWidget {
 }
 
 class _CategoryRow extends StatelessWidget {
-  final Map<String, dynamic> category;
+  final Category category;
   const _CategoryRow({required this.category});
 
   @override
@@ -64,44 +65,39 @@ class _CategoryRow extends StatelessWidget {
           Expanded(
             flex: 4,
             child: Text(
-              category['name'] as String,
+              category.name,
               style: const TextStyle(fontWeight: FontWeight.w500),
             ),
           ),
-          const Expanded(child: Icon(Icons.category_outlined, size: 20)),
+          Expanded(
+            child: Icon(Icons.category_outlined, size: 20),
+          ),
           Expanded(
             child: Text(
-              category['threads'] as String,
+              // Show number of threads if available in category.count['threads']
+              (category.count != null && category.count?['threads'] != null)
+                  ? category.count!['threads']?.toString()??'0'
+                  : '-',
               textAlign: TextAlign.left,
             ),
           ),
           Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: (category['isPrivate'] as bool) ? Colors.red[50] : Colors.green[50],
-                borderRadius: BorderRadius.circular(12),
+            child: Text(
+              category.isActive ? 'Active' : 'Inactive',
+              style: TextStyle(
+                color: category.isActive ? Colors.green : Colors.red,
+                fontWeight: FontWeight.w500,
+                fontSize: 12,
               ),
-              child: Text(
-                category['status'] as String,
-                textAlign: TextAlign.left,
-                style: TextStyle(
-                  color: (category['isPrivate'] as bool) ? Colors.red : Colors.green,
-                  fontWeight: FontWeight.w500,
-                  fontSize: 12,
-                ),
-              ),
+              textAlign: TextAlign.left,
             ),
           ),
           Expanded(
             child: Row(
               children: [
-                TextButton(
-                  onPressed: () {},
-                  child: const Text('Manage'),
-                ),
                 IconButton(
-                  icon: const Icon(Icons.delete_outline, color: Colors.red),
+                  icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
+                  
                   onPressed: () {},
                 ),
               ],
