@@ -22,6 +22,11 @@ class UserRepository {
     return data.map((e) => UserModel.fromJson(e)).toList();
   }
 
+  Future<List<UserModel>> fetchModerators() async {
+    final users = await fetchAllUsers();
+    return users.where((user) => user.role.toLowerCase() == 'moderator').toList();
+  }
+
   Future<void> assignModerator(String userId) async {
     await apiService.post('/admin/assignModerator/$userId', requireAuth: true);
   }

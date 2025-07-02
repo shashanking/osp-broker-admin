@@ -218,7 +218,7 @@ class _UserMembershipsTableState extends ConsumerState<UserMembershipsTable> {
           dataRowMinHeight: 64,
           dataRowMaxHeight: 64,
           columns: [
-            const DataColumn(label: Text('')), // Checkbox column
+            const DataColumn(label: Text('')),
             const DataColumn(label: Text('User')),
             const DataColumn(label: Text('Email')),
             const DataColumn(label: Text('Phone')),

@@ -11,11 +11,11 @@ class Category with _$Category {
     required String description,
     required String moderatorId,
     required String icon,
-    @Default(<String>[]) List<String> membershipAccess,
+    @Default(<String>[]) @JsonKey(name: 'membership_access') List<String> membershipAccess,
     required DateTime createdAt,
     required DateTime updatedAt,
     @Default(true) bool isActive,
-    @JsonKey(name: '_count') Map<String, dynamic>? count,
+    Map<String, dynamic>? count,
   }) = _Category;
 
   factory Category.fromJson(Map<String, dynamic> json) => _$CategoryFromJson(json);

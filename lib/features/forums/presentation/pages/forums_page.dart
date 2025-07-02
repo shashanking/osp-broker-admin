@@ -8,6 +8,7 @@ import '../widgets/forum_categories_table.dart';
 import '../widgets/forum_forums_table.dart';
 import '../../application/forum_admin_notifier.dart';
 import '../widgets/forum_topics_table.dart';
+import '../widgets/add_category_dialog.dart';
 
 class ForumsPage extends ConsumerStatefulWidget {
   const ForumsPage({super.key});
@@ -23,14 +24,20 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await ref.read(forumAdminNotifierProvider.notifier).loadForums();
-      ref.read(forumAdminNotifierProvider.notifier).loadCategories();
+      final notifier = ref.read(forumAdminNotifierProvider.notifier);
+      
+      // Load all required data in parallel
+      await Future.wait([
+        notifier.loadForums(),
+        notifier.loadCategories(),
+        notifier.loadModerators(),
+        notifier.loadMembershipPlans(),
+      ]);
+      
       // Fetch topics for the first forum if available
       final forums = ref.read(forumAdminNotifierProvider).forums;
       if (forums.isNotEmpty) {
-        ref
-            .read(forumAdminNotifierProvider.notifier)
-            .loadTopics(forumId: forums.first.id);
+        await notifier.loadTopics(forumId: forums.first.id);
       }
     });
   }
@@ -155,7 +162,7 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
                       ),
                       const SizedBox(height: 24),
                       _selectedTab == 0
-                          ? ForumCategoriesTable(categories: categories)
+                          ? ForumCategoriesTable(categories: categories, membershipPlans: forumState.membershipPlans)
                           : _selectedTab == 1
                               ? isLoading
                                   ? const Center(
@@ -168,15 +175,15 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
                                       ? const Center(
                                           child: CircularProgressIndicator())
                                       : error != null
-                                          ? Center(
-                                              child: Text('Error: $error'))
-                                          : ForumTopicsTable(topics: forumState.topics, forums: forums)
+                                          ? Center(child: Text('Error: $error'))
+                                          : ForumTopicsTable(
+                                              topics: forumState.topics,
+                                              forums: forums)
                                   : isLoading
                                       ? const Center(
                                           child: CircularProgressIndicator())
                                       : error != null
-                                          ? Center(
-                                              child: Text('Error: $error'))
+                                          ? Center(child: Text('Error: $error'))
                                           : Container()
                     ],
                   ),
@@ -201,7 +208,19 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
         _buildActionCard(
           assetName: 'add-category.png',
           title: 'Add Category',
-          onTap: () {},
+          onTap: () async {
+            final result = await showDialog<bool>(
+              context: context,
+              builder: (context) => const AddCategoryDialog(),
+            );
+
+            if (result == true) {
+              // Refresh categories after adding a new one
+              if (mounted) {
+                ref.read(forumAdminNotifierProvider.notifier).loadCategories();
+              }
+            }
+          },
           iconColor: Colors.white,
           titleColor: Colors.white,
           gradient: const LinearGradient(

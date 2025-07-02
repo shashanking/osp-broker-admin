@@ -72,6 +72,16 @@ class UserNotifier extends StateNotifier<UserState> {
     }
   }
 
+  Future<void> loadUsers() async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final users = await repository.fetchAllUsers();
+      state = state.copyWith(users: users, isLoading: false);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
   Future<void> fetchUsers() async {
     try {
       // Only show loading state if we don't have any data yet
@@ -93,6 +103,16 @@ class UserNotifier extends StateNotifier<UserState> {
         error: 'Failed to fetch users: $e',
         isLoading: false,
       );
+    }
+  }
+
+  Future<List<UserModel>> fetchModerators() async {
+    try {
+      final moderators = await repository.fetchModerators();
+      return moderators;
+    } catch (e) {
+      state = state.copyWith(error: 'Failed to fetch moderators: $e');
+      return [];
     }
   }
 
