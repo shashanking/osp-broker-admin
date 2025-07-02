@@ -9,6 +9,8 @@ class TopBar extends StatelessWidget {
   final VoidCallback? onNotificationTap;
   final VoidCallback? onProfileTap;
   final VoidCallback? onCreateAuctionTap;
+  final bool showBackButton;
+  final VoidCallback? onBackPressed;
 
   const TopBar({
     super.key,
@@ -19,6 +21,8 @@ class TopBar extends StatelessWidget {
     this.onNotificationTap,
     this.onProfileTap,
     this.onCreateAuctionTap,
+    this.showBackButton = false,
+    this.onBackPressed,
   });
 
   @override
@@ -31,6 +35,17 @@ class TopBar extends StatelessWidget {
       ),
       child: Row(
         children: [
+          if (showBackButton) ...[
+            CircleAvatar(
+              radius: 20,
+              backgroundColor: AppColors.warning,
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                onPressed: onBackPressed,
+              ),
+            ),
+            const SizedBox(width: 16),
+          ],
           // Greeting and User Info
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/membership_notifier.dart';
 
 class AddMembershipDialog extends ConsumerStatefulWidget {
-  const AddMembershipDialog({Key? key}) : super(key: key);
+  const AddMembershipDialog({super.key});
 
   @override
   _AddMembershipDialogState createState() => _AddMembershipDialogState();

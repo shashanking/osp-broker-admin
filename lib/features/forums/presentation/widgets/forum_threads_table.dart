@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class ForumThreadsTable extends StatelessWidget {
   final List<Map<String, dynamic>> threads;
-  const ForumThreadsTable({Key? key, required this.threads}) : super(key: key);
+  const ForumThreadsTable({super.key, required this.threads});
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +50,7 @@ class ForumThreadsTable extends StatelessWidget {
           ),
           const Divider(height: 0),
           // Table rows
-          ...threads.map((thread) => _ForumThreadRow(thread: thread)).toList(),
+          ...threads.map((thread) => _ForumThreadRow(thread: thread)),
         ],
       ),
     );

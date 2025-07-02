@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 class MembershipManagementHeader extends StatelessWidget {
+  const MembershipManagementHeader({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Row(

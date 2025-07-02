@@ -4,7 +4,7 @@ class ForumTabs extends StatelessWidget {
   final int selectedTab;
   final void Function(int) onTabSelected;
   final List<String> badges;
-  const ForumTabs({Key? key, required this.selectedTab, required this.onTabSelected, required this.badges}) : super(key: key);
+  const ForumTabs({super.key, required this.selectedTab, required this.onTabSelected, required this.badges});
 
   @override
   Widget build(BuildContext context) {

@@ -3,7 +3,7 @@ import '../../domain/forum_models.dart';
 
 class ForumCategoriesTable extends StatelessWidget {
   final List<Category> categories;
-  const ForumCategoriesTable({Key? key, required this.categories}) : super(key: key);
+  const ForumCategoriesTable({super.key, required this.categories});
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +45,7 @@ class ForumCategoriesTable extends StatelessWidget {
             ),
           ),
           const Divider(height: 32),
-          ...categories.map((category) => _CategoryRow(category: category)).toList(),
+          ...categories.map((category) => _CategoryRow(category: category)),
         ],
       ),
     );

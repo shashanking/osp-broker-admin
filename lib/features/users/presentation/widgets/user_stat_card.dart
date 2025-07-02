@@ -10,7 +10,7 @@ class UserStatCard extends StatelessWidget {
   final bool dense;
 
   const UserStatCard({
-    Key? key,
+    super.key,
     required this.color,
     required this.icon,
     required this.title,
@@ -18,7 +18,7 @@ class UserStatCard extends StatelessWidget {
     this.actionLabel,
     this.onAction,
     this.dense = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

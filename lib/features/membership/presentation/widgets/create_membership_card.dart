@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../widgets/add_membership_dialog.dart';
 
 class CreateMembershipCard extends ConsumerWidget {
-  const CreateMembershipCard({Key? key}) : super(key: key);
+  const CreateMembershipCard({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

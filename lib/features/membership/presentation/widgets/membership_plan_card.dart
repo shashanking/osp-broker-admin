@@ -23,10 +23,10 @@ class MembershipPlanCard extends ConsumerWidget {
   }
 
   const MembershipPlanCard({
-    Key? key,
+    super.key,
     required this.plan,
     this.color = AppColors.primary,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -74,7 +74,6 @@ class MembershipPlanCard extends ConsumerWidget {
                     ),
                     ElevatedButton(
                       onPressed: () {},
-                      child: Text('View Plan'.toUpperCase()),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: cardColor,
                         foregroundColor: Colors.white,
@@ -85,6 +84,7 @@ class MembershipPlanCard extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
+                      child: Text('View Plan'.toUpperCase()),
                     ),
                   ],
                 ),
@@ -201,11 +201,11 @@ class MembershipPlanCard extends ConsumerWidget {
                                           .deleteMembership(plan.id);
                                       Navigator.of(context).pop();
                                     },
-                                    child: const Text('Delete'),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.red,
                                       foregroundColor: Colors.white,
                                     ),
+                                    child: const Text('Delete'),
                                   ),
                                 ],
                               ),

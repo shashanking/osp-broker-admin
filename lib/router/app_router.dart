@@ -14,6 +14,7 @@ import 'package:osp_broker_admin/features/settings/presentation/settings_page.da
 import 'package:osp_broker_admin/features/splash/presentation/splash_page.dart';
 import 'package:osp_broker_admin/features/membership/presentation/pages/membership_page.dart';
 import 'package:osp_broker_admin/features/users/presentation/pages/users_page.dart';
+import 'package:osp_broker_admin/features/users/presentation/pages/memberships_page.dart';
 
 enum AppRoute {
   splash('/splash'),
@@ -21,6 +22,7 @@ enum AppRoute {
   dashboard('/dashboard'),
   forums('/forums'),
   users('/users'),
+  memberships('/memberships'),
   settings('/settings');
 
   final String path;
@@ -33,6 +35,7 @@ class RoutePaths {
   static const String dashboard = '/dashboard';
   static const String forums = '/forums';
   static const String users = '/users';
+  static const String memberships = '/memberships';
   static const String settings = '/settings';
 }
 
@@ -109,7 +112,16 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: AppRoute.users.path,
             name: AppRoute.users.name,
             pageBuilder: (context, state) => NoTransitionPage(
-              child: UsersPage(),
+              child: const UsersPage(),
+            ),
+          ),
+          
+          // Memberships section
+          GoRoute(
+            path: AppRoute.memberships.path,
+            name: AppRoute.memberships.name,
+            pageBuilder: (context, state) => NoTransitionPage(
+              child: const MembershipsPage(),
             ),
           ),
 

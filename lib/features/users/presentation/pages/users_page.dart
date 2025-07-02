@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 import 'package:osp_broker_admin/core/widgets/layout/top_bar.dart';
 import 'dart:async';
 import '../widgets/user_stat_card.dart';
@@ -9,7 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/user_notifier.dart';
 
 class UsersPage extends ConsumerStatefulWidget {
-  UsersPage({Key? key}) : super(key: key);
+  const UsersPage({super.key});
 
   @override
   ConsumerState<UsersPage> createState() => _UsersPageState();
@@ -20,14 +21,21 @@ class _UsersPageState extends ConsumerState<UsersPage> {
   Timer? _debounce;
   String _searchQuery = '';
   String _selectedRole = 'All';
-  final List<String> _roles = ['All', 'USER', 'MODERATOR', 'REPRESENTATIVE', 'ADMIN'];
+  final List<String> _roles = [
+    'All',
+    'USER',
+    'MODERATOR',
+    'REPRESENTATIVE',
+    'ADMIN'
+  ];
 
   @override
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
     // Fetch users when the page loads
-    Future.microtask(() => ref.read(userNotifierProvider.notifier).fetchUsers());
+    Future.microtask(
+        () => ref.read(userNotifierProvider.notifier).fetchUsers());
   }
 
   @override
@@ -68,10 +76,17 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                     final userState = ref.watch(userNotifierProvider);
                     final users = userState.users;
                     final totalUsers = users.length;
-                    final totalModerators = users.where((u) => u.role.toUpperCase() == 'MODERATOR').length;
-                    final totalRepresentatives = users.where((u) => u.role.toUpperCase() == 'REPRESENTATIVE').length;
+                    final totalModerators = users
+                        .where((u) => u.role.toUpperCase() == 'MODERATOR')
+                        .length;
+                    final totalRepresentatives = users
+                        .where((u) => u.role.toUpperCase() == 'REPRESENTATIVE')
+                        .length;
                     final now = DateTime.now();
-                    final newUsers = users.where((u) => u.createdAt.isAfter(now.subtract(const Duration(days: 7)))).length;
+                    final newUsers = users
+                        .where((u) => u.createdAt
+                            .isAfter(now.subtract(const Duration(days: 7))))
+                        .length;
                     return Row(
                       children: [
                         Expanded(
@@ -81,9 +96,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                             title: 'Add User',
                             value: '',
                             actionLabel: 'Add',
-                            onAction: () {
-                              
-                            },
+                            onAction: () {},
                             dense: true,
                           ),
                         ),
@@ -141,7 +154,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
         Row(
           children: [
             Container(
-              width: 0.5.sw,
+              width: 0.45.sw,
               height: 70,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
               child: SingleChildScrollView(
@@ -167,31 +180,56 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                 ),
               ),
             ),
-            // Search bar
-            Container(
-              width: 0.3.sw,
-              height: 70,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Search by name, email, or phone...',
-                  prefixIcon: const Icon(Icons.search),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  contentPadding:
-                      const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
-                  suffixIcon: _searchQuery.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear, size: 20),
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() => _searchQuery = '');
-                          },
-                        )
-                      : null,
+            // Search bar and actions
+            Row(
+              children: [
+                Container(
+                  width: 0.2.sw,
+                  height: 70,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Search by name, email, or phone...',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      contentPadding: const EdgeInsets.symmetric(
+                          vertical: 0, horizontal: 16),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear, size: 20),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() => _searchQuery = '');
+                              },
+                            )
+                          : null,
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 8),
+                Container(
+                  height: 40,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      context.go('/memberships');
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.indigo,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                    ),
+                    icon: const Icon(Icons.card_membership, size: 16),
+                    label: const Text('View Memberships'),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

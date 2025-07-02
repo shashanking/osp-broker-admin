@@ -8,13 +8,13 @@ class MembershipSummaryCard extends StatelessWidget {
   final Color color;
 
   const MembershipSummaryCard({
-    Key? key,
+    super.key,
     required this.title,
     required this.value,
     required this.icon,
     required this.change,
     required this.color,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -6,7 +6,6 @@ import 'package:osp_broker_admin/core/widgets/layout/top_bar.dart';
 import '../widgets/forum_tabs.dart';
 import '../widgets/forum_categories_table.dart';
 import '../widgets/forum_forums_table.dart';
-import '../widgets/forum_threads_table.dart';
 import '../../application/forum_admin_notifier.dart';
 import '../widgets/forum_topics_table.dart';
 
@@ -40,10 +39,6 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
   Widget build(BuildContext context) {
     final forumState = ref.watch(forumAdminNotifierProvider);
     final categories = forumState.categories;
-    final isLoadingCategories = forumState.isLoading && _selectedTab == 0;
-    final errorCategories = forumState.error;
-
-    // Load categories on first build
 
     final forums = forumState.forums;
     final isLoading = forumState.isLoading;
@@ -166,7 +161,7 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
                                   ? const Center(
                                       child: CircularProgressIndicator())
                                   : error != null
-                                      ? Center(child: Text('Error: ' + error))
+                                      ? Center(child: Text('Error: $error'))
                                       : ForumForumsTable(forums: forums)
                               : _selectedTab == 2
                                   ? isLoading
@@ -174,14 +169,14 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
                                           child: CircularProgressIndicator())
                                       : error != null
                                           ? Center(
-                                              child: Text('Error: ' + error))
+                                              child: Text('Error: $error'))
                                           : ForumTopicsTable(topics: forumState.topics, forums: forums)
                                   : isLoading
                                       ? const Center(
                                           child: CircularProgressIndicator())
                                       : error != null
                                           ? Center(
-                                              child: Text('Error: ' + error))
+                                              child: Text('Error: $error'))
                                           : Container()
                     ],
                   ),
@@ -411,7 +406,7 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
             ),
             child: Center(
               child: Image.asset(
-                'assets/icons/forum/' + iconAsset,
+                'assets/icons/forum/$iconAsset',
                 width: 28,
                 height: 28,
                 fit: BoxFit.contain,

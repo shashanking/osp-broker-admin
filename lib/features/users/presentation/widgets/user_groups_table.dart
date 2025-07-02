@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class UserGroupsTable extends StatelessWidget {
-  const UserGroupsTable({Key? key}) : super(key: key);
+  const UserGroupsTable({super.key});
 
   @override
   Widget build(BuildContext context) {

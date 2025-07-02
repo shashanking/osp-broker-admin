@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../domain/forum_models.dart';
 
-import '../../domain/forum_models.dart';
 
 class ForumTopicsTable extends StatelessWidget {
   final List<Topic> topics;
   final List<Forum> forums;
-  const ForumTopicsTable({Key? key, required this.topics, required this.forums})
-      : super(key: key);
+  const ForumTopicsTable({super.key, required this.topics, required this.forums});
 
   @override
   Widget build(BuildContext context) {
@@ -83,7 +81,7 @@ class ForumTopicsTable extends StatelessWidget {
           const Divider(height: 32),
           ...topics
               .map((topic) => _TopicRow(topic: topic, forums: forums))
-              .toList(),
+              ,
         ],
       ),
     );

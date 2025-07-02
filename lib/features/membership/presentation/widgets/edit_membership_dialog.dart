@@ -5,7 +5,7 @@ import 'package:osp_broker_admin/features/membership/data/models/membership_plan
 
 class EditMembershipDialog extends ConsumerStatefulWidget {
   final MembershipPlanModel plan;
-  const EditMembershipDialog({Key? key, required this.plan}) : super(key: key);
+  const EditMembershipDialog({super.key, required this.plan});
 
   @override
   _EditMembershipDialogState createState() => _EditMembershipDialogState();
