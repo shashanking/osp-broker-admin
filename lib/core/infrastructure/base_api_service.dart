@@ -118,11 +118,53 @@ class BaseApiService {
     }
   }
 
+  Future<Response> put(
+    String endpoint, {
+    dynamic data,
+    bool requireAuth = true,
+  }) async {
+    try {
+      final options = _getOptions(requireAuth: requireAuth);
+      return await _dio.put(
+        '${ApiUrls.baseUrl}$endpoint',
+        data: data,
+        options: options,
+      );
+    } on DioException catch (e) {
+      _handleDioError(e);
+      rethrow;
+    }
+  }
+
   // Error handling
   void _handleDioError(DioException e) {
-    if (e.response?.statusCode == 401) {
+    final response = e.response;
+    final statusCode = response?.statusCode;
+    
+    if (statusCode == 401) {
       // Handle token expiration
       clearAuthTokens();
+    }
+    
+    // Log detailed error information
+    print('''
+    === API Error ===
+    URL: ${e.requestOptions.uri}
+    Method: ${e.requestOptions.method}
+    Status Code: $statusCode
+    Error: ${e.message}
+    Response: ${response?.data}
+    Headers: ${e.requestOptions.headers}
+    =================
+    ''');
+    
+    // Rethrow with more detailed message
+    if (statusCode == 500) {
+      throw Exception('Server error (500): ${response?.data?['message'] ?? 'Internal server error occurred'}');
+    } else if (response?.data is Map && response?.data['message'] != null) {
+      throw Exception(response?.data['message']);
+    } else {
+      throw Exception('Request failed with status $statusCode: ${e.message}');
     }
   }
 }

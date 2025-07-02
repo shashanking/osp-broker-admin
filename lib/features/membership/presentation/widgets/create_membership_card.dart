@@ -1,18 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../widgets/add_membership_dialog.dart';
 
-class CreateMembershipCard extends StatelessWidget {
-  final VoidCallback? onTap;
-  const CreateMembershipCard({Key? key, this.onTap}) : super(key: key);
+class CreateMembershipCard extends ConsumerWidget {
+  const CreateMembershipCard({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       elevation: 2,
       margin: const EdgeInsets.only(right: 16),
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
-        onTap: onTap,
+        onTap: () => showDialog(
+          context: context,
+          builder: (context) => const AddMembershipDialog(),
+        ),
         child: Padding(
           padding: const EdgeInsets.all(20.0),
           child: Row(
