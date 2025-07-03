@@ -33,8 +33,8 @@ class Forum with _$Forum {
     required int comments,
     required DateTime createdAt,
     required DateTime updatedAt,
-    required List<dynamic> topics,
-    @JsonKey(name: '_count') required Map<String, dynamic> count,
+    @Default(<Topic>[]) List<dynamic> topics,
+    @JsonKey(name: '_count') @Default({}) Map<String, dynamic> count,
   }) = _Forum;
 
   factory Forum.fromJson(Map<String, dynamic> json) => _$ForumFromJson(json);

@@ -72,4 +72,52 @@ class ForumRepository {
       requireAuth: true,
     );
   }
+
+  // Forum CRUD
+  Future<Forum> createForum({
+    required String title,
+    required String description,
+    required String author,
+    required String categoryId,
+    required String userId,
+  }) async {
+    final response = await _apiService.post(
+      '/forum',
+      requireAuth: true,
+      data: {
+        'title': title,
+        'description': description,
+        'author': author,
+        'categoryId': categoryId,
+        'userId': userId,
+      },
+    );
+    return Forum.fromJson(response.data['data']['forum']);
+  }
+
+  Future<Forum> updateForum({
+    required String forumId,
+    required String title,
+    required String description,
+  }) async {
+    final response = await _apiService.put(
+      '/forum/$forumId',
+      requireAuth: true,
+      data: {
+        'title': title,
+        'description': description,
+      },
+    );
+    return Forum.fromJson(response.data['data']['forum']);
+  }
+
+  Future<void> deleteForum({required String forumId}) async {
+    final response = await _apiService.delete(
+      '/forum/$forumId',
+      requireAuth: true,
+    );
+    if (response.data is Map && response.data['message'] == 'unauthorized access') {
+      throw Exception('unauthorized access');
+    }
+  }
 }

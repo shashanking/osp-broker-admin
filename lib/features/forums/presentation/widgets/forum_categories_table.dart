@@ -9,7 +9,8 @@ import 'package:osp_broker_admin/features/membership/data/models/membership_plan
 class ForumCategoriesTable extends StatelessWidget {
   final List<Category> categories;
   final List<MembershipPlanModel> membershipPlans;
-  const ForumCategoriesTable({super.key, required this.categories, required this.membershipPlans});
+  const ForumCategoriesTable(
+      {super.key, required this.categories, required this.membershipPlans});
 
   @override
   Widget build(BuildContext context) {
@@ -47,13 +48,71 @@ class ForumCategoriesTable extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Expanded(flex: 1, child: Text('Icon', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF222B45), fontSize: 16, letterSpacing: 0.2))),
-                Expanded(flex: 2, child: Text('Category Name', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF222B45), fontSize: 16, letterSpacing: 0.2))),
-                Expanded(flex: 3, child: Text('Description', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF222B45), fontSize: 16, letterSpacing: 0.2))),
-                Expanded(flex: 2, child: Text('Moderator', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF222B45), fontSize: 16, letterSpacing: 0.2))),
-                Expanded(flex: 2, child: Text('Membership Plans', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF222B45), fontSize: 16, letterSpacing: 0.2))),
-                Expanded(flex: 2, child: Text('Created At', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF222B45), fontSize: 16, letterSpacing: 0.2))),
-                SizedBox(width: 72, child: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF222B45), fontSize: 16, letterSpacing: 0.2), textAlign: TextAlign.center)),
+                Expanded(
+                    flex: 1,
+                    child: Text('Icon',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF222B45),
+                            fontSize: 16,
+                            letterSpacing: 0.2))),
+                Expanded(
+                    flex: 2,
+                    child: Text('Category Name',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF222B45),
+                            fontSize: 16,
+                            letterSpacing: 0.2))),
+                Expanded(
+                    flex: 3,
+                    child: Text('Description',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF222B45),
+                            fontSize: 16,
+                            letterSpacing: 0.2))),
+                Expanded(
+                    flex: 2,
+                    child: Text('Moderator',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF222B45),
+                            fontSize: 16,
+                            letterSpacing: 0.2))),
+                Expanded(
+                    flex: 2,
+                    child: Text('Plans',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF222B45),
+                            fontSize: 16,
+                            letterSpacing: 0.2))),
+                Expanded(
+                    flex: 1,
+                    child: Text('Forums',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF222B45),
+                            fontSize: 16,
+                            letterSpacing: 0.2))),
+                Expanded(
+                    flex: 2,
+                    child: Text('Created At',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF222B45),
+                            fontSize: 16,
+                            letterSpacing: 0.2))),
+                SizedBox(
+                    width: 72,
+                    child: Text('Actions',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF222B45),
+                            fontSize: 16,
+                            letterSpacing: 0.2),
+                        textAlign: TextAlign.center)),
               ],
             ),
           ),
@@ -66,10 +125,12 @@ class ForumCategoriesTable extends StatelessWidget {
                 _CategoryRow(
                   category: category,
                   membershipPlans: membershipPlans,
-                  rowColor: idx % 2 == 0 ? const Color(0xFFF7F9FC) : Colors.white,
+                  rowColor:
+                      idx % 2 == 0 ? const Color(0xFFF7F9FC) : Colors.white,
                 ),
                 if (idx != categories.length - 1)
-                  const Divider(height: 0, thickness: 1, color: Color(0xFFE9EDF5)),
+                  const Divider(
+                      height: 0, thickness: 1, color: Color(0xFFE9EDF5)),
               ],
             );
           }).toList(),
@@ -79,12 +140,12 @@ class ForumCategoriesTable extends StatelessWidget {
   }
 }
 
-
 class _CategoryRow extends ConsumerWidget {
   final Category category;
   final List<MembershipPlanModel> membershipPlans;
   final Color? rowColor;
-  const _CategoryRow({required this.category, required this.membershipPlans, this.rowColor});
+  const _CategoryRow(
+      {required this.category, required this.membershipPlans, this.rowColor});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -94,27 +155,31 @@ class _CategoryRow extends ConsumerWidget {
     String moderatorName = category.moderatorId;
     if (moderators.isNotEmpty) {
       final foundList = moderators.where((m) => m.id == category.moderatorId);
-      if (foundList.isNotEmpty && foundList.first.fullName.isNotEmpty) moderatorName = foundList.first.fullName;
+      if (foundList.isNotEmpty && foundList.first.fullName.isNotEmpty)
+        moderatorName = foundList.first.fullName;
     }
 
     String membershipNames = '';
     if (membershipPlans.isNotEmpty && category.membershipAccess.isNotEmpty) {
-      membershipNames = category.membershipAccess
-        .map((id) {
-          final planList = membershipPlans.where((p) => p.id == id);
-          return planList.isNotEmpty ? planList.first.name : id;
-        })
-        .join(', ');
+      membershipNames = category.membershipAccess.map((id) {
+        final planList = membershipPlans.where((p) => p.id == id);
+        return planList.isNotEmpty ? planList.first.name : id;
+      }).join(', ');
     } else if (category.membershipAccess.isEmpty) {
       membershipNames = 'Public';
     }
 
     String createdAtStr = '';
     try {
-      createdAtStr = '${category.createdAt.day.toString().padLeft(2, '0')}-${category.createdAt.month.toString().padLeft(2, '0')}-${category.createdAt.year}';
+      createdAtStr =
+          '${category.createdAt.day.toString().padLeft(2, '0')}-${category.createdAt.month.toString().padLeft(2, '0')}-${category.createdAt.year}';
     } catch (_) {
       createdAtStr = '';
     }
+
+    // Count forums in this category
+    final forums = ref.watch(forumAdminNotifierProvider).forums;
+    final forumCount = forums.where((f) => f.categoryId == category.id).length;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -132,7 +197,8 @@ class _CategoryRow extends ConsumerWidget {
                       backgroundColor: Colors.white,
                       child: Container(
                         decoration: BoxDecoration(
-                          border: Border.all(color: const Color(0xFFD7E1F3), width: 2),
+                          border: Border.all(
+                              color: const Color(0xFFD7E1F3), width: 2),
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
@@ -147,7 +213,8 @@ class _CategoryRow extends ConsumerWidget {
                   : const CircleAvatar(
                       backgroundColor: Color(0xFFEDF1FA),
                       radius: 22,
-                      child: Icon(Icons.category, color: Color(0xFFB0B8C1), size: 22),
+                      child: Icon(Icons.category,
+                          color: Color(0xFFB0B8C1), size: 22),
                     ),
             ),
           ),
@@ -189,6 +256,16 @@ class _CategoryRow extends ConsumerWidget {
               style: const TextStyle(color: Colors.black87),
             ),
           ),
+          // Forums count
+          Expanded(
+            flex: 1,
+            child: Text(
+              forumCount.toString(),
+              style: const TextStyle(
+                  fontWeight: FontWeight.bold, color: Colors.blueGrey),
+              textAlign: TextAlign.center,
+            ),
+          ),
           // Created At
           Expanded(
             flex: 2,
@@ -210,18 +287,21 @@ class _CategoryRow extends ConsumerWidget {
                   child: InkWell(
                     borderRadius: BorderRadius.circular(20),
                     onTap: () async {
-  final result = await showDialog<bool>(
-    context: context,
-    builder: (ctx) => AddCategoryDialog(category: category),
-  );
-  if (result == true) {
-    // Force reload to guarantee table reflects update
-    await ref.read(forumAdminNotifierProvider.notifier).loadCategories();
-  }
-},
+                      final result = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AddCategoryDialog(category: category),
+                      );
+                      if (result == true) {
+                        // Force reload to guarantee table reflects update
+                        await ref
+                            .read(forumAdminNotifierProvider.notifier)
+                            .loadCategories();
+                      }
+                    },
                     child: Padding(
                       padding: const EdgeInsets.all(4.0),
-                      child: Icon(Icons.edit, color: Colors.blue[600], size: 22),
+                      child:
+                          Icon(Icons.edit, color: Colors.blue[600], size: 22),
                     ),
                     hoverColor: Colors.blue.withOpacity(0.08),
                   ),
@@ -235,7 +315,8 @@ class _CategoryRow extends ConsumerWidget {
                         context: context,
                         builder: (ctx) => AlertDialog(
                           title: const Text('Delete Category'),
-                          content: Text('Are you sure you want to delete "${category.name}"? This action cannot be undone.'),
+                          content: Text(
+                              'Are you sure you want to delete "${category.name}"? This action cannot be undone.'),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.of(ctx).pop(false),
@@ -243,7 +324,8 @@ class _CategoryRow extends ConsumerWidget {
                             ),
                             TextButton(
                               onPressed: () => Navigator.of(ctx).pop(true),
-                              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                              child: const Text('Delete',
+                                  style: TextStyle(color: Colors.red)),
                             ),
                           ],
                         ),
@@ -251,17 +333,22 @@ class _CategoryRow extends ConsumerWidget {
                       if (confirmed == true) {
                         try {
                           // ignore: use_build_context_synchronously
-                          await ref.read(forumAdminNotifierProvider.notifier).deleteCategory(category.id);
+                          await ref
+                              .read(forumAdminNotifierProvider.notifier)
+                              .deleteCategory(category.id);
                         } catch (_) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Failed to delete category. Please try again.')),
+                            const SnackBar(
+                                content: Text(
+                                    'Failed to delete category. Please try again.')),
                           );
                         }
                       }
                     },
                     child: Padding(
                       padding: const EdgeInsets.all(4.0),
-                      child: Icon(Icons.delete_outline, color: Colors.red[600], size: 22),
+                      child: Icon(Icons.delete_outline,
+                          color: Colors.red[600], size: 22),
                     ),
                     hoverColor: Colors.red.withOpacity(0.08),
                   ),
@@ -274,4 +361,3 @@ class _CategoryRow extends ConsumerWidget {
     );
   }
 }
-

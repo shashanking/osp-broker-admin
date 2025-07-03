@@ -29,6 +29,8 @@ class BaseApiService {
   }
   bool get isAuthenticated => _authToken != null;
 
+  String? get userId => _authBox.get('userId') as String?;
+
   // Token management
   Future<void> setAuthTokens({
     required String token,

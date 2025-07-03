@@ -20,7 +20,7 @@ class ForumTabs extends StatelessWidget {
           const SizedBox(width: 8),
           _buildPillTab('Forums List', 1),
           const SizedBox(width: 8),
-          _buildPillTab('Threads List', 2),
+          _buildPillTab('Topics List', 2),
         ],
       ),
     );

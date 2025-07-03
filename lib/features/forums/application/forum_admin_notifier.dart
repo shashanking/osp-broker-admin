@@ -113,7 +113,32 @@ class ForumAdminNotifier extends StateNotifier<ForumAdminState> {
     }
   }
 
-
+  Future<Forum> createForum({
+    required String title,
+    required String description,
+    required String author,
+    required String categoryId,
+    required String userId,
+  }) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final newForum = await _repository.createForum(
+        title: title,
+        description: description,
+        author: author,
+        categoryId: categoryId,
+        userId: userId,
+      );
+      state = state.copyWith(
+        forums: [...state.forums, newForum],
+        isLoading: false,
+      );
+      return newForum;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      rethrow;
+    }
+  }
 
   // Forums
   Future<void> loadForums() async {
@@ -147,6 +172,30 @@ class ForumAdminNotifier extends StateNotifier<ForumAdminState> {
     }
   }
 
+  Future<Forum> updateForum({
+    required String forumId,
+    required String title,
+    required String description,
+  }) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final updatedForum = await _repository.updateForum(
+        forumId: forumId,
+        title: title,
+        description: description,
+      );
+      // Update the forum in state.forums
+      final updatedForums = state.forums.map((f) =>
+        f.id == forumId ? updatedForum : f
+      ).toList();
+      state = state.copyWith(forums: updatedForums, isLoading: false);
+      return updatedForum;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      rethrow;
+    }
+  }
+
   Future<void> deleteCategory(String id) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
@@ -158,6 +207,19 @@ class ForumAdminNotifier extends StateNotifier<ForumAdminState> {
   }
 
   // Add similar CRUD for Forum and Topic as needed
+
+  Future<void> deleteForum(String forumId) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      await _repository.deleteForum(forumId: forumId);
+      // Remove from state
+      final updatedForums = state.forums.where((f) => f.id != forumId).toList();
+      state = state.copyWith(forums: updatedForums, isLoading: false);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      rethrow;
+    }
+  }
 }
 
 final forumAdminNotifierProvider =

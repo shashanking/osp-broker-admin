@@ -9,6 +9,7 @@ import '../widgets/forum_forums_table.dart';
 import '../../application/forum_admin_notifier.dart';
 import '../widgets/forum_topics_table.dart';
 import '../widgets/add_category_dialog.dart';
+import '../widgets/add_forum_dialog.dart';
 
 class ForumsPage extends ConsumerStatefulWidget {
   const ForumsPage({super.key});
@@ -25,7 +26,7 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final notifier = ref.read(forumAdminNotifierProvider.notifier);
-      
+
       // Load all required data in parallel
       await Future.wait([
         notifier.loadForums(),
@@ -33,7 +34,7 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
         notifier.loadModerators(),
         notifier.loadMembershipPlans(),
       ]);
-      
+
       // Fetch topics for the first forum if available
       final forums = ref.read(forumAdminNotifierProvider).forums;
       if (forums.isNotEmpty) {
@@ -53,53 +54,6 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
 
     // Load forums on first build
     // Call in initState instead of here
-
-    final threads = [
-      {
-        'selected': false,
-        'title': 'VCs or Bootstrapping in 2025?',
-        'author': '@yachtexpert',
-        'likes': 56,
-        'comments': 32,
-        'date': '23-04-25',
-        'category': 'Startups & Pitches',
-        'status': 'Public',
-        'isPrivate': false,
-      },
-      {
-        'selected': false,
-        'title': 'API rate limiting issue',
-        'author': '@devmike',
-        'likes': 43,
-        'comments': 12,
-        'date': '23-04-25',
-        'category': 'Developer Talk',
-        'status': 'Private',
-        'isPrivate': true,
-      },
-      {
-        'selected': false,
-        'title': 'Hidden investor list leak?',
-        'author': '@anon77',
-        'likes': 21,
-        'comments': 10,
-        'date': '22-04-25',
-        'category': 'Private Roundtable',
-        'status': 'Public',
-        'isPrivate': false,
-      },
-      {
-        'selected': false,
-        'title': 'Feature request: dark mode',
-        'author': '@designx',
-        'likes': 32,
-        'comments': 14,
-        'date': '22-04-25',
-        'category': 'Product Feedback',
-        'status': 'Private',
-        'isPrivate': true,
-      },
-    ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -153,7 +107,6 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
                             badges: [
                               '', // No badge for categories
                               forums.length.toString(),
-                              threads.length.toString(),
                               forumState.topics.length.toString(),
                             ],
                           ),
@@ -162,14 +115,18 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
                       ),
                       const SizedBox(height: 24),
                       _selectedTab == 0
-                          ? ForumCategoriesTable(categories: categories, membershipPlans: forumState.membershipPlans)
+                          ? ForumCategoriesTable(
+                              categories: categories,
+                              membershipPlans: forumState.membershipPlans)
                           : _selectedTab == 1
                               ? isLoading
                                   ? const Center(
                                       child: CircularProgressIndicator())
                                   : error != null
                                       ? Center(child: Text('Error: $error'))
-                                      : ForumForumsTable(forums: forums)
+                                      : ForumForumsTable(
+                                          forums: forums,
+                                          categories: categories)
                               : _selectedTab == 2
                                   ? isLoading
                                       ? const Center(
@@ -211,42 +168,35 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
           onTap: () async {
             final result = await showDialog<bool>(
               context: context,
-              builder: (context) => const AddCategoryDialog(),
+              builder: (ctx) => const AddCategoryDialog(),
             );
-
             if (result == true) {
-              // Refresh categories after adding a new one
-              if (mounted) {
-                ref.read(forumAdminNotifierProvider.notifier).loadCategories();
-              }
+              await ref
+                  .read(forumAdminNotifierProvider.notifier)
+                  .loadCategories();
             }
           },
-          iconColor: Colors.white,
+          iconColor: Colors.blue,
           titleColor: Colors.white,
           gradient: const LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
             colors: [Color(0xFF24439B), Color(0xFF15A5CD)],
           ),
         ),
         _buildActionCard(
-          assetName: 'add-announcement.png',
-          title: 'Create Announcement',
-          onTap: () {},
-          iconColor: const Color(0xFF24439B),
-          titleColor: Colors.black,
-          gradient: const LinearGradient(
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-            colors: [Color(0xFFE6EDFF), Color(0xFFFFFFFF)],
-            stops: [0.0, 0.9988],
-          ),
-        ),
-        _buildActionCard(
-          assetName: 'add-event.png',
-          title: 'Create an Event',
-          onTap: () {},
-          iconColor: const Color(0xFFD49823),
+          assetName: 'add-poll.png',
+          title: 'Create Forum',
+          onTap: () async {
+            final result = await showDialog<bool>(
+              context: context,
+              builder: (ctx) => const AddForumDialog(),
+            );
+            if (result == true) {
+              await ref.read(forumAdminNotifierProvider.notifier).loadForums();
+            }
+          },
+          iconColor: Colors.green,
           titleColor: Colors.black,
           gradient: const LinearGradient(
             begin: Alignment.centerLeft,
