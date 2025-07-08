@@ -12,7 +12,7 @@ class Activity {
   final ActivityType type;
   final String? userId;
   final String? userName;
-
+ 
   Activity({
     required this.id,
     required this.description,

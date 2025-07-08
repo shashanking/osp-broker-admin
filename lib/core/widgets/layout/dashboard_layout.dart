@@ -91,8 +91,8 @@ class DashboardLayout extends StatelessWidget {
                   context,
                   icon: Icons.business,
                   label: 'Business Directories',
-                  isSelected: currentRoute == '/directories',
-                  onTap: () => context.go('/directories'),
+                  isSelected: currentRoute.startsWith('/business-directories'),
+                  onTap: () => context.go('/business-directories'),
                 ),
                 _buildNavItem(
                   context,

@@ -111,7 +111,7 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
                             ],
                           ),
                           // (You can add search/sort/filter bar here if needed)
-                        ],
+                        ],  
                       ),
                       const SizedBox(height: 24),
                       _selectedTab == 0

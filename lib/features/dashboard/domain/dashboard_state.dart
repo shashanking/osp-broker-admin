@@ -7,7 +7,7 @@ part 'dashboard_state.freezed.dart';
 @freezed
 class DashboardState with _$DashboardState {
   const factory DashboardState({
-    @Default(false) bool isLoading,
+    @Default(false) bool isLoading, 
     @Default([]) List<DashboardStat> stats,
     @Default([]) List<Activity> activities,
   }) = _DashboardState;

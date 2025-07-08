@@ -15,6 +15,7 @@ import 'package:osp_broker_admin/features/splash/presentation/splash_page.dart';
 import 'package:osp_broker_admin/features/membership/presentation/pages/membership_page.dart';
 import 'package:osp_broker_admin/features/users/presentation/pages/users_page.dart';
 import 'package:osp_broker_admin/features/users/presentation/pages/memberships_page.dart';
+import 'package:osp_broker_admin/features/business_directories/presentation/pages/business_directories.dart';
 
 enum AppRoute {
   splash('/splash'),
@@ -23,6 +24,7 @@ enum AppRoute {
   forums('/forums'),
   users('/users'),
   memberships('/memberships'),
+  businessDirectories('/business-directories'),
   settings('/settings');
 
   final String path;
@@ -36,6 +38,7 @@ class RoutePaths {
   static const String forums = '/forums';
   static const String users = '/users';
   static const String memberships = '/memberships';
+  static const String businessDirectories = '/business-directories';
   static const String settings = '/settings';
 }
 
@@ -134,6 +137,9 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ),
 
+          // Business Directories section
+          goRouteBusinessDirectories,
+
           // Settings section
           GoRoute(
             path: AppRoute.settings.path,
@@ -155,6 +161,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isAuthenticatedRoute =
           state.matchedLocation.startsWith('/dashboard') ||
               state.matchedLocation.startsWith('/users') ||
+              state.matchedLocation.startsWith('/business-directories') ||
               state.matchedLocation.startsWith('/settings');
 
       debugPrint(
