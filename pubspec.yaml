@@ -53,6 +53,7 @@ dependencies:
   validators: ^3.0.0
   animated_text_kit: ^4.2.3
   intl: ^0.20.2
+  flutter_svg: ^2.0.10+1
 
 dev_dependencies:
   flutter_test:
