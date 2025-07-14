@@ -56,3 +56,43 @@ class Topic with _$Topic {
 
   factory Topic.fromJson(Map<String, dynamic> json) => _$TopicFromJson(json);
 }
+
+@freezed
+class Announcement with _$Announcement {
+  const factory Announcement({
+    required String id,
+    required String title,
+    required String description,
+    required String createdAt,
+    required String updatedAt,
+  }) = _Announcement;
+
+  factory Announcement.fromJson(Map<String, dynamic> json) => _$AnnouncementFromJson(json);
+}
+
+@freezed
+class Event with _$Event {
+  const factory Event({
+    required String id,
+    required String title,
+    required String description,
+    required String date,
+    required String createdAt,
+    required String updatedAt,
+  }) = _Event;
+
+  factory Event.fromJson(Map<String, dynamic> json) => _$EventFromJson(json);
+}
+
+@freezed
+class Poll with _$Poll {
+  const factory Poll({
+    required String id,
+    required String question,
+    required List<String> options,
+    required String createdAt,
+    required String updatedAt,
+  }) = _Poll;
+
+  factory Poll.fromJson(Map<String, dynamic> json) => _$PollFromJson(json);
+}

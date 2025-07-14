@@ -1,6 +1,6 @@
-import 'package:dio/dio.dart';
 import 'package:osp_broker_admin/core/infrastructure/base_api_service.dart';
 import '../../domain/forum_models.dart';
+import '../../domain/poll_analytics_model.dart';
 
 class ForumRepository {
   final BaseApiService _apiService;
@@ -30,6 +30,76 @@ class ForumRepository {
         .map((json) => Topic.fromJson(json))
         .toList();
     return topics;
+  }
+
+  // Announcements
+  Future<List<Announcement>> fetchAllAnnouncements() async {
+    final response = await _apiService.get('/announcement');
+    return (response.data['data'] as List)
+        .map((json) => Announcement.fromJson(json))
+        .toList();
+  }
+
+  Future<Announcement> createAnnouncement({
+    required String title,
+    required String description,
+  }) async {
+    final response = await _apiService.post(
+      '/announcement',
+      requireAuth: true,
+      data: {
+        'title': title,
+        'description': description,
+      },
+    );
+    return Announcement.fromJson(response.data['data']);
+  }
+
+  Future<void> deleteAnnouncement(String id) async {
+    await _apiService.delete(
+      '/announcement/$id',
+      requireAuth: true,
+    );
+  }
+
+  // Events
+  Future<List<Event>> fetchAllEvents() async {
+    final response = await _apiService.get('/event');
+    return (response.data['data'] as List)
+        .map((json) => Event.fromJson(json))
+        .toList();
+  }
+
+  Future<Event> createEvent({
+    required String title,
+    required String description,
+    required String date,
+  }) async {
+    final response = await _apiService.post(
+      '/event',
+      requireAuth: true,
+      data: {
+        'title': title,
+        'description': description,
+        'date': date,
+      },
+    );
+    return Event.fromJson(response.data['data']['event']);
+  }
+
+  Future<void> deleteEvent(String eventId) async {
+    await _apiService.delete(
+      '/event/$eventId',
+      requireAuth: true,
+    );
+  }
+
+  // Polls
+  Future<List<Poll>> fetchAllPolls() async {
+    final response = await _apiService.get('/poll');
+    return (response.data['data'] as List)
+        .map((json) => Poll.fromJson(json))
+        .toList();
   }
 
   // Category CRUD
@@ -116,8 +186,36 @@ class ForumRepository {
       '/forum/$forumId',
       requireAuth: true,
     );
-    if (response.data is Map && response.data['message'] == 'unauthorized access') {
+    if (response.data is Map &&
+        response.data['message'] == 'unauthorized access') {
       throw Exception('unauthorized access');
     }
+  }
+
+  Future<Poll> createPoll({
+    required String question,
+    required List<String> options,
+  }) async {
+    final response = await _apiService.post(
+      '/poll',
+      requireAuth: true,
+      data: {
+        'question': question,
+        'options': options,
+      },
+    );
+    return Poll.fromJson(response.data['data']['poll']);
+  }
+
+  Future<void> deletePoll(String pollId) async {
+    await _apiService.delete('/poll/$pollId', requireAuth: true);
+  }
+
+  Future<PollAnalytics> fetchPollAnalytics(String pollId) async {
+    final response = await _apiService.get(
+      '/poll/analytics/$pollId',
+      requireAuth: true,
+    );
+    return PollAnalytics.fromJson(response.data['data']);
   }
 }

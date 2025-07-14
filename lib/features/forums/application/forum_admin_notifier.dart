@@ -7,6 +7,7 @@ import 'package:osp_broker_admin/features/membership/application/membership_noti
 import 'package:osp_broker_admin/features/membership/data/models/membership_plan_model.dart';
 import 'package:osp_broker_admin/features/users/application/user_notifier.dart';
 import 'package:osp_broker_admin/features/users/data/models/user_model.dart';
+import 'package:osp_broker_admin/features/forums/domain/poll_analytics_model.dart';
 
 part 'forum_admin_notifier.freezed.dart';
 
@@ -20,6 +21,9 @@ class ForumAdminState with _$ForumAdminState {
     @Default(<Category>[]) List<Category> categories,
     @Default(<Forum>[]) List<Forum> forums,
     @Default(<Topic>[]) List<Topic> topics,
+    @Default(<Announcement>[]) List<Announcement> announcements,
+    @Default(<Event>[]) List<Event> events,
+    @Default(<Poll>[]) List<Poll> polls,
     @Default(<UserModel>[]) List<UserModel> moderators,
     @Default(<MembershipPlanModel>[]) List<MembershipPlanModel> membershipPlans,
     Category? selectedCategory,
@@ -29,7 +33,23 @@ class ForumAdminState with _$ForumAdminState {
   
   const ForumAdminState._();
   
-  factory ForumAdminState.initial() => const ForumAdminState();
+  factory ForumAdminState.initial() => const ForumAdminState(
+        isLoading: false,
+        isLoadingModerators: false,
+        isLoadingMembershipPlans: false,
+        error: null,
+        categories: [],
+        forums: [],
+        topics: [],
+        announcements: [],
+        events: [],
+        polls: [],
+        moderators: [],
+        membershipPlans: [],
+        selectedCategory: null,
+        selectedForum: null,
+        selectedTopic: null,
+      );
 }
 
 class ForumAdminNotifier extends StateNotifier<ForumAdminState> {
@@ -217,6 +237,218 @@ class ForumAdminNotifier extends StateNotifier<ForumAdminState> {
       state = state.copyWith(forums: updatedForums, isLoading: false);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
+      rethrow;
+    }
+  }
+
+  // fetch all announcements
+  Future<void> fetchAllAnnouncements() async {
+    try {
+      state = state.copyWith(isLoading: true);
+      final announcements = await _repository.fetchAllAnnouncements();
+      state = state.copyWith(
+        announcements: announcements,
+        isLoading: false,
+        error: null,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        error: e.toString(),
+        isLoading: false,
+      );
+      rethrow;
+    }
+  }
+
+  // Add a new announcement
+  Future<void> addAnnouncement({
+    required String title,
+    required String description,
+  }) async {
+    try {
+      state = state.copyWith(isLoading: true);
+      final announcement = await _repository.createAnnouncement(
+        title: title,
+        description: description,
+      );
+      
+      // Update the announcements list
+      state = state.copyWith(
+        announcements: [...state.announcements, announcement],
+        isLoading: false,
+        error: null,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        error: e.toString(),
+        isLoading: false,
+      );
+      rethrow;
+    }
+  }
+
+  // Create a new poll
+  Future<Poll> createPoll({
+    required String question,
+    required List<String> options,
+  }) async {
+    try {
+      state = state.copyWith(isLoading: true);
+      final poll = await _repository.createPoll(
+        question: question,
+        options: options,
+      );
+      
+      // Update the polls list
+      state = state.copyWith(
+        polls: [...state.polls, poll],
+        isLoading: false,
+      );
+      
+      return poll;
+    } catch (e) {
+      state = state.copyWith(
+        error: e.toString(),
+        isLoading: false,
+      );
+      rethrow;
+    }
+  }
+
+  Future<void> deletePoll(String pollId) async {
+    try {
+      state = state.copyWith(isLoading: true);
+      await _repository.deletePoll(pollId);
+      // Remove poll from state
+      final updatedPolls = state.polls.where((p) => p.id != pollId).toList();
+      state = state.copyWith(
+        polls: updatedPolls,
+        isLoading: false,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      rethrow;
+    }
+  }
+
+  Future<PollAnalytics> getPollAnalytics(String pollId) async {
+    try {
+      state = state.copyWith(isLoading: true);
+      final analytics = await _repository.fetchPollAnalytics(pollId);
+      state = state.copyWith(isLoading: false);
+      return analytics;
+    } catch (e) {
+      state = state.copyWith(
+        error: e.toString(),
+        isLoading: false,
+      );
+      rethrow;
+    }
+  }
+
+  // Delete an announcement
+  Future<void> deleteAnnouncement(String id) async {
+    try {
+      state = state.copyWith(isLoading: true);
+      await _repository.deleteAnnouncement(id);
+      
+      // Update the announcements list by removing the deleted announcement
+      state = state.copyWith(
+        announcements: state.announcements.where((a) => a.id != id).toList(),
+        isLoading: false,
+        error: null,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        error: e.toString(),
+        isLoading: false,
+      );
+      rethrow;
+    }
+  }
+
+  // fetch all events
+  Future<void> fetchAllEvents() async {
+    try {
+      state = state.copyWith(isLoading: true);
+      final events = await _repository.fetchAllEvents();
+      state = state.copyWith(
+        events: events,
+        isLoading: false,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        error: e.toString(),
+        isLoading: false,
+      );
+      rethrow;
+    }
+  }
+
+  // Create a new event
+  Future<Event> createEvent({
+    required String title,
+    required String description,
+    required String date,
+  }) async {
+    try {
+      state = state.copyWith(isLoading: true);
+      final event = await _repository.createEvent(
+        title: title,
+        description: description,
+        date: date,
+      );
+      
+      // Update the events list
+      state = state.copyWith(
+        events: [...state.events, event],
+        isLoading: false,
+      );
+      
+      return event;
+    } catch (e) {
+      state = state.copyWith(
+        error: e.toString(),
+        isLoading: false,
+      );
+      rethrow;
+    }
+  }
+
+  // Delete an event
+  Future<void> deleteEvent(String eventId) async {
+    try {
+      state = state.copyWith(isLoading: true);
+      await _repository.deleteEvent(eventId);
+      // Remove event from state
+      final updatedEvents = state.events.where((e) => e.id != eventId).toList();
+      state = state.copyWith(
+        events: updatedEvents,
+        isLoading: false,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        error: e.toString(),
+        isLoading: false,
+      );
+      rethrow;
+    }
+  }
+
+  // fetch all polls
+  Future<void> fetchAllPolls() async {
+    try {
+      state = state.copyWith(isLoading: true);
+      final polls = await _repository.fetchAllPolls();
+      state = state.copyWith(
+        polls: polls,
+        isLoading: false,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        error: e.toString(),
+        isLoading: false,
+      );
       rethrow;
     }
   }

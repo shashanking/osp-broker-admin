@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:osp_broker_admin/core/constants/app_colors.dart';
 import 'package:osp_broker_admin/core/widgets/layout/top_bar.dart';
+import 'package:osp_broker_admin/features/forums/presentation/widgets/hover_action_cards.dart';
 import '../widgets/forum_tabs.dart';
 import '../widgets/forum_categories_table.dart';
 import '../widgets/forum_forums_table.dart';
@@ -10,6 +11,9 @@ import '../../application/forum_admin_notifier.dart';
 import '../widgets/forum_topics_table.dart';
 import '../widgets/add_category_dialog.dart';
 import '../widgets/add_forum_dialog.dart';
+import '../widgets/announcements_dialog.dart';
+import '../widgets/polls_dialog.dart';
+import '../widgets/events_dialog.dart';
 
 class ForumsPage extends ConsumerStatefulWidget {
   const ForumsPage({super.key});
@@ -91,8 +95,8 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
                   const SizedBox(height: 24),
 
                   // Stats Cards
-                  _buildStatsCards(),
-                  const SizedBox(height: 32),
+                  // _buildStatsCards(),
+                  // const SizedBox(height: 32),
 
                   // Tabs and Search Bar
                   Column(
@@ -111,7 +115,7 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
                             ],
                           ),
                           // (You can add search/sort/filter bar here if needed)
-                        ],  
+                        ],
                       ),
                       const SizedBox(height: 24),
                       _selectedTab == 0
@@ -154,15 +158,71 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
   }
 
   Widget _buildActionCards() {
+    // Define gradients for each card
+    final gradients = [
+      {
+        'light': const LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [Color(0xFFFEF3DE), Color(0xFFFFFFFF)],
+          stops: [0.0, 0.9988],
+        ),
+        'dark': const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF24439B), Color(0xFF15A5CD)],
+        ),
+      },
+      {
+        'light': const LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [Color(0xFFF0F1FF), Color(0xFFFFFFFF)],
+          stops: [0.0, 0.9988],
+        ),
+        'dark': const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF24439B), Color(0xFF15A5CD)],
+        ),
+      },
+      {
+        'light': const LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [Color(0xFFD9F1F8), Color(0xFFFFFFFF)],
+          stops: [0.0, 0.9988],
+        ),
+        'dark': const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF25B4DC), Color(0xFF1876B9)],
+        ),
+      },
+      {
+        'light': const LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [Color(0xFFF6EFFF), Color(0xFFFFFFFF)],
+          stops: [0.0, 0.9988],
+        ),
+        'dark': const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF8F5FE8), Color(0xFF6C3AE6)],
+        ),
+      },
+    ];
+
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       crossAxisCount: 4,
       mainAxisSpacing: 16,
       crossAxisSpacing: 16,
-      childAspectRatio: 2,
+      childAspectRatio: 2.8,
       children: [
-        _buildActionCard(
+        HoverActionCard(
           assetName: 'add-category.png',
           title: 'Add Category',
           onTap: () async {
@@ -177,14 +237,11 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
             }
           },
           iconColor: Colors.blue,
-          titleColor: Colors.white,
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF24439B), Color(0xFF15A5CD)],
-          ),
+          titleColor: Colors.black,
+          lightGradient: gradients[0]['light'] as Gradient,
+          darkGradient: gradients[0]['dark'] as Gradient,
         ),
-        _buildActionCard(
+        HoverActionCard(
           assetName: 'add-poll.png',
           title: 'Create Forum',
           onTap: () async {
@@ -196,97 +253,67 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
               await ref.read(forumAdminNotifierProvider.notifier).loadForums();
             }
           },
-          iconColor: Colors.green,
-          titleColor: Colors.black,
-          gradient: const LinearGradient(
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-            colors: [Color(0xFFFEF3DE), Color(0xFFFFFFFF)],
-            stops: [0.0, 0.9988],
-          ),
-        ),
-        _buildActionCard(
-          assetName: 'add-poll.png',
-          title: 'Create a Poll',
-          onTap: () {},
           iconColor: const Color(0xFF25B4DC),
           titleColor: Colors.black,
-          gradient: const LinearGradient(
+          lightGradient: gradients[2]['light'] as Gradient,
+          darkGradient: gradients[2]['dark'] as Gradient,
+        ),
+        HoverActionCard(
+          assetName: 'add-poll.png',
+          title: 'Announcements',
+          onTap: () async {
+            final notifier = ref.read(forumAdminNotifierProvider.notifier);
+            await notifier.fetchAllAnnouncements();
+            if (mounted) {
+              await showDialog(
+                context: context,
+                builder: (ctx) => const AnnouncementsListDialog(),
+              );
+            }
+          },
+          iconColor: Colors.orange,
+          titleColor: Colors.black,
+          lightGradient: gradients[1]['light'] as Gradient,
+          darkGradient: gradients[1]['dark'] as Gradient,
+        ),
+        HoverActionCard(
+          assetName: 'add-poll.png',
+          title: 'Polls',
+          onTap: () async {
+            await showDialog(
+              context: context,
+              builder: (context) => const PollsListDialog(),
+            );
+          },
+          iconColor: const Color(0xFF25B4DC),
+          titleColor: Colors.black,
+          lightGradient: gradients[3]['light'] as Gradient,
+          darkGradient: gradients[3]['dark'] as Gradient,
+        ),
+        HoverActionCard(
+          assetName: 'add-poll.png',
+          title: 'Events',
+          onTap: () async {
+            await showDialog(
+              context: context,
+              builder: (context) => const EventsListDialog(),
+            );
+          },
+          iconColor: Colors.purple,
+          titleColor: Colors.black,
+          lightGradient: LinearGradient(
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
-            colors: [Color(0xFFD9F1F8), Color(0xFFFFFFFF)],
-            stops: [0.0, 0.9988],
+            colors: [Colors.purple.shade100, Colors.white],
+            stops: const [0.0, 0.9988],
+          ),
+          darkGradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Colors.purple, Colors.purple.shade800],
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildActionCard({
-    required String assetName,
-    required String title,
-    required Color titleColor,
-    required VoidCallback onTap,
-    required Color iconColor,
-    Gradient? gradient,
-    Color? bgColor,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        gradient: gradient,
-        color: gradient == null ? bgColor : null,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                Container(
-                  width: 76,
-                  height: 76,
-                  decoration: BoxDecoration(
-                    color: iconColor,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Image.asset(
-                      'assets/icons/forum/$assetName',
-                      width: 32,
-                      height: 32,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    title,
-                    textAlign: TextAlign.left,
-                    style: TextStyle(
-                      overflow: TextOverflow.visible,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: titleColor,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 
