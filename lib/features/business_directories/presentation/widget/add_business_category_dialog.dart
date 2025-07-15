@@ -1,39 +1,71 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:osp_broker_admin/features/business_directories/domain/business_directories_model.dart';
+import '../../application/business_directories_notifier.dart';
 
-class AddCategoryDialog extends StatefulWidget {
+class AddBusinessCategoryDialog extends ConsumerStatefulWidget {
   final Function(String name, String iconName) onSave;
   final BusinessCategory? category;
-
-  const AddCategoryDialog({
-    Key? key,
-    required this.onSave,
-    this.category,
-  }) : super(key: key);
+  const AddBusinessCategoryDialog({Key? key, this.category, required this.onSave}) : super(key: key);
 
   @override
-  _AddCategoryDialogState createState() => _AddCategoryDialogState();
+  ConsumerState<AddBusinessCategoryDialog> createState() => _AddBusinessCategoryDialogState();
 }
 
-class _AddCategoryDialogState extends State<AddCategoryDialog> {
+class _AddBusinessCategoryDialogState extends ConsumerState<AddBusinessCategoryDialog> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _descriptionController = TextEditingController();
   String _selectedIcon = 'restaurant';
   bool _isPublic = true;
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
     if (widget.category != null) {
       _nameController.text = widget.category!.name;
-      // Set other fields if editing
+      _descriptionController.text = widget.category!.description;
+      // If you have icon/isPublic fields, set them here too
     }
   }
 
   @override
   void dispose() {
     _nameController.dispose();
+    _descriptionController.dispose();
     super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _isLoading = true);
+    final notifier = ref.read(businessDirectoriesNotifierProvider.notifier);
+    try {
+      if (widget.category != null) {
+        // Update existing
+        await notifier.updateBusinessCategory(
+          id: widget.category!.id,
+          name: _nameController.text.trim(),
+          description: _descriptionController.text.trim(),
+        );
+      } else {
+        // Create new
+        await notifier.createBusinessCategory(
+          name: _nameController.text.trim(),
+          description: _descriptionController.text.trim(),
+        );
+      }
+      if (mounted) Navigator.of(context).pop(true);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to ${widget.category != null ? 'update' : 'create'} category: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -95,6 +127,18 @@ class _AddCategoryDialogState extends State<AddCategoryDialog> {
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter a category name';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              _buildTextField(
+                label: 'Description',
+                hint: 'Enter Description',
+                controller: _descriptionController,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter a description';
                   }
                   return null;
                 },
@@ -223,35 +267,33 @@ class _AddCategoryDialogState extends State<AddCategoryDialog> {
               
               const SizedBox(height: 34),
               
-              // Create Button
+              // Create/Update Button
               SizedBox(
                 width: double.infinity,
                 height: 48,
                 child: ElevatedButton(
-                  onPressed: () {
-                    if (_formKey.currentState?.validate() ?? false) {
-                      widget.onSave(
-                        _nameController.text.trim(),
-                        _selectedIcon,
-                      );
-                      Navigator.of(context).pop();
-                    }
-                  },
+                  onPressed: _isLoading ? null : _submit,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF24439B),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(50),
                     ),
                   ),
-                  child: const Text(
-                    'Create Category',
-                    style: TextStyle(
-                      fontFamily: 'Basement Grotesque',
-                      fontWeight: FontWeight.w800,
-                      fontSize: 16,
-                      color: Colors.white,
-                    ),
-                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : Text(
+                          widget.category == null ? 'Create Category' : 'Update Category',
+                          style: const TextStyle(
+                            fontFamily: 'Basement Grotesque',
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16,
+                            color: Colors.white,
+                          ),
+                        ),
                 ),
               ),
             ],

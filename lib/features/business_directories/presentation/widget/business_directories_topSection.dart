@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/business_directories_notifier.dart';
 import '../../data/repositories/business_directories_repository.dart';
 import 'package:osp_broker_admin/core/infrastructure/base_api_service.dart';
-import 'add_category_dialog.dart';
+import 'add_business_category_dialog.dart';
 
 class BusinessDirectoriesTopSection extends ConsumerStatefulWidget {
   const BusinessDirectoriesTopSection({Key? key}) : super(key: key);
@@ -52,7 +52,7 @@ class _BusinessDirectoriesTopSectionState
 
       if (mounted) {
         setState(() {
-          _totalBusinesses = response.data.businesses.length;
+          _totalBusinesses = response.businesses.length;
           _isLoading = false;
         });
       }
@@ -83,7 +83,7 @@ class _BusinessDirectoriesTopSectionState
   Future<void> _showAddCategoryDialog() async {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (context) => AddCategoryDialog(
+      builder: (context) => AddBusinessCategoryDialog(
         onSave: (name, iconName) async {
           // This will be called when the user saves the category
           debugPrint('Saving category: $name with icon: $iconName');
@@ -111,13 +111,13 @@ class _BusinessDirectoriesTopSectionState
       ),
     );
 
-    if (result != null && mounted) {
+    if (result == true && mounted) {
       // Refresh data after adding a category
       await _loadData();
-      
+      // Show confirmation message in parent widget
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Category added successfully!'),
+          content: Text('Category created successfully!'),
           backgroundColor: Colors.green,
         ),
       );
@@ -154,43 +154,43 @@ class _BusinessDirectoriesTopSectionState
                 ),
               ),
               
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEBE6DC),
-                  borderRadius: BorderRadius.circular(76),
-                ),
-                child: Row(
-                  children: [
-                    _buildTimePeriodButton('1 day', isSelected: false),
-                    _buildTimePeriodButton('7 days', isSelected: true),
-                    _buildTimePeriodButton('30 days', isSelected: false),
-                    _buildTimePeriodButton('Yearly', isSelected: false),
-                  ],
-                ),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  // Handle export CSV
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF24439B),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(32),
-                  ),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                ),
-                child: const Text(
-                  'Export CSV',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Montserrat',
-                  ),
-                ),
-              ),
+              // Container(
+              //   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+              //   decoration: BoxDecoration(
+              //     color: const Color(0xFFEBE6DC),
+              //     borderRadius: BorderRadius.circular(76),
+              //   ),
+              //   child: Row(
+              //     children: [
+              //       _buildTimePeriodButton('1 day', isSelected: false),
+              //       _buildTimePeriodButton('7 days', isSelected: true),
+              //       _buildTimePeriodButton('30 days', isSelected: false),
+              //       _buildTimePeriodButton('Yearly', isSelected: false),
+              //     ],
+              //   ),
+              // ),
+              // ElevatedButton(
+              //   onPressed: () {
+              //     // Handle export CSV
+              //   },
+              //   style: ElevatedButton.styleFrom(
+              //     backgroundColor: const Color(0xFF24439B),
+              //     shape: RoundedRectangleBorder(
+              //       borderRadius: BorderRadius.circular(32),
+              //     ),
+              //     padding:
+              //         const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              //   ),
+              //   child: const Text(
+              //     'Export CSV',
+              //     style: TextStyle(
+              //       color: Colors.white,
+              //       fontSize: 14,
+              //       fontWeight: FontWeight.w500,
+              //       fontFamily: 'Montserrat',
+              //     ),
+              //   ),
+              // ),
             ],
           ),
           const SizedBox(height: 20),

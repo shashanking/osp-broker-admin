@@ -5,7 +5,7 @@ import 'package:osp_broker_admin/core/widgets/layout/top_bar.dart';
 import 'package:osp_broker_admin/features/auth/application/auth_notifier.dart';
 import 'package:osp_broker_admin/features/business_directories/application/business_directories_notifier.dart';
 import 'package:osp_broker_admin/features/business_directories/presentation/widget/business_directories_topSection.dart';
-import 'package:osp_broker_admin/features/business_directories/presentation/widget/business_directories_tableSection.dart';
+import 'package:osp_broker_admin/features/business_directories/presentation/widget/business_directories_header.dart';
 
 // GoRoute configuration for navigation
 final GoRoute goRouteBusinessDirectories = GoRoute(

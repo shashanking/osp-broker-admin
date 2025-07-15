@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'business_category_tableSection.dart';
+import 'business_list_tableSection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:osp_broker_admin/features/business_directories/application/business_directories_notifier.dart';
 import 'package:osp_broker_admin/features/business_directories/domain/business_directories_model.dart';
@@ -276,23 +278,23 @@ class _BusinessDirectoriesTableSectionState
                     children: [
                       _buildTabButton('Business Category', isBusinessCategory),
                       _buildTabButton('Business List', !isBusinessCategory),
-                      Container(
-                        margin: const EdgeInsets.only(left: 8),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF333333),
-                          borderRadius: BorderRadius.circular(32),
-                        ),
-                        child: Text(
-                          categories.length.toString(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
+                      // Container(
+                      //   margin: const EdgeInsets.only(left: 8),
+                      //   padding: const EdgeInsets.symmetric(
+                      //       horizontal: 10, vertical: 4),
+                      //   decoration: BoxDecoration(
+                      //     color: const Color(0xFF333333),
+                      //     borderRadius: BorderRadius.circular(32),
+                      //   ),
+                      //   child: Text(
+                      //     categories.length.toString(),
+                      //     style: const TextStyle(
+                      //       color: Colors.white,
+                      //       fontWeight: FontWeight.w600,
+                      //       fontSize: 16,
+                      //     ),
+                      //   ),
+                      // ),
                     ],
                   ),
                 ),
@@ -427,257 +429,10 @@ class _BusinessDirectoriesTableSectionState
               ),
             )
           else
-            // Table
             Expanded(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Container(
-                  width: 1250,
-                  padding: const EdgeInsets.only(bottom: 16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Header Row
-                      Container(
-                        width: 1400,
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 16.0, horizontal: 16.0),
-                        child: Row(
-                          children: [
-                            // Category Name with Checkbox
-                            Container(
-                              width: 300,
-                              child: Row(
-                                children: [
-                                  Checkbox(
-                                    value: _selectedCategories.length ==
-                                            categories.length &&
-                                        categories.isNotEmpty,
-                                    onChanged: (bool? value) {
-                                      setState(() {
-                                        if (value == true) {
-                                          _selectedCategories.clear();
-                                          _selectedCategories.addAll(
-                                            categories.map((category) => {
-                                                  'id': category.id,
-                                                  'name': category.name,
-                                                }),
-                                          );
-                                        } else {
-                                          _selectedCategories.clear();
-                                        }
-                                      });
-                                    },
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(34),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  const Text(
-                                    'Category Name',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      color: Color(0xFF333333),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            // Icon
-                            Container(
-                              width: 200,
-                              alignment: Alignment.center,
-                              child: const Text(
-                                'Icon',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF333333),
-                                ),
-                              ),
-                            ),
-                            
-                            // Business Count
-                            Container(
-                              width: 200,
-                              alignment: Alignment.center,
-                              child: const Text(
-                                'Business',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF333333),
-                                ),
-                              ),
-                            ),
-                            
-                            // Status
-                            Container(
-                              width: 200,
-                              alignment: Alignment.center,
-                              child: const Text(
-                                'Status',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF333333),
-                                ),
-                              ),
-                            ),
-                            
-                            // Actions
-                            Container(
-                              width: 200,
-                              alignment: Alignment.center,
-                              child: const Text(
-                                'Actions',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF333333),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Data Rows
-                      ...categories.map((category) {
-                        final isSelected = _selectedCategories
-                            .any((item) => item['id'] == category.id);
-                        final icon = _categoryIcons[category.name] ??
-                            Icons.category_outlined;
-                        final color = _categoryColors[category.name] ??
-                            const Color(0xFF6C63FF);
-
-                        return Container(
-                          width: 1400,
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 8.0, horizontal: 16.0),
-                          child: Row(
-                            children: [
-                              // Category Name with Checkbox
-                              Container(
-                                width: 300,
-                                child: Row(
-                                  children: [
-                                    Checkbox(
-                                      value: isSelected,
-                                      onChanged: (bool? value) {
-                                        setState(() {
-                                          if (value == true) {
-                                            _selectedCategories.add({
-                                              'id': category.id,
-                                              'name': category.name,
-                                            });
-                                          } else {
-                                            _selectedCategories.removeWhere(
-                                              (item) => item['id'] == category.id,
-                                            );
-                                          }
-                                        });
-                                      },
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(34),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      category.name,
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        color: Color(0xFF333333),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-
-                              // Icon
-                              Container(
-                                width: 200,
-                                alignment: Alignment.center,
-                                child: Container(
-                                  width: 36,
-                                  height: 36,
-                                  decoration: BoxDecoration(
-                                    color: color,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    icon,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
-                                ),
-                              ),
-
-                              // Business Count
-                              Container(
-                                width: 200,
-                                alignment: Alignment.center,
-                                child: Text(
-                                  '${category.business.length} ${category.business.length == 1 ? 'Business' : 'Businesses'}',
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    color: Color(0xFF333333),
-                                  ),
-                                ),
-                              ),
-
-                              // Status
-                              Container(
-                                width: 200,
-                                alignment: Alignment.center,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFE8F5E9),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: const Text(
-                                    'Active',
-                                    style: TextStyle(
-                                      color: Color(0xFF2E7D32),
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                              ),
-
-                              // Actions
-                              Container(
-                                width: 200,
-                                alignment: Alignment.center,
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.edit_outlined,
-                                          size: 20, color: Color(0xFF2196F3)),
-                                      onPressed: () {
-                                        // Edit category
-                                      },
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.delete_outline,
-                                          size: 20, color: Color(0xFFF44336)),
-                                      onPressed: () {
-                                        // Delete category
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                    ],
-                  ),
-                ),
-              ),
+              child: isBusinessCategory
+                  ? const BusinessCategoryTableSection()
+                  : const BusinessListTableSection(),
             ),
         ],
       ),

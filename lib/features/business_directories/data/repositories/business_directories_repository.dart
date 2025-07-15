@@ -2,7 +2,8 @@ import 'dart:developer';
 
 import 'package:dio/dio.dart';
 import 'package:osp_broker_admin/core/infrastructure/base_api_service.dart';
-import 'package:osp_broker_admin/features/business_directories/domain/business_directories_model.dart';
+import 'package:osp_broker_admin/features/business_directories/domain/business_directories_model.dart' hide BusinessListResponse;
+import 'package:osp_broker_admin/features/business_directories/domain/business_list_model.dart';
 
 class BusinessDirectoriesRepository {
   final BaseApiService _apiService;
@@ -42,7 +43,7 @@ class BusinessDirectoriesRepository {
           'description': description,
         },
       );
-      return BusinessCategory.fromJson(response.data['data']);
+      return BusinessCategory.fromJson(response.data['data']['category']);
     } on DioException catch (e) {
       throw Exception('Failed to create business category: ${e.message}');
     }
@@ -62,7 +63,7 @@ class BusinessDirectoriesRepository {
           'description': description,
         },
       );
-      return BusinessCategory.fromJson(response.data['data']);
+      return BusinessCategory.fromJson(response.data['data']['category']);
     } on DioException catch (e) {
       throw Exception('Failed to update business category: ${e.message}');
     }

@@ -3,6 +3,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:osp_broker_admin/core/infrastructure/base_api_service.dart';
 
 import '../data/repositories/business_directories_repository.dart';
+import '../domain/business_list_model.dart';
 import '../domain/business_directories_model.dart';
 
 part 'business_directories_notifier.freezed.dart';
@@ -159,12 +160,12 @@ class BusinessDirectoriesNotifier extends StateNotifier<BusinessDirectoriesState
   }
 
   /// Fetches all businesses
-  Future<List<Business>> fetchAllBusinesses() async {
+  Future<List<BusinessModel>> fetchAllBusinesses() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
       final response = await _repository.fetchAllBusinesses();
       state = state.copyWith(isLoading: false);
-      return response.data.businesses;
+      return response.businesses;
     } catch (e) {
       state = state.copyWith(
         error: e.toString(),

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:osp_broker_admin/features/business_directories/domain/business_directories_model.dart';
+import '../../domain/business_list_model.dart';
+import '../../application/business_directories_notifier.dart';
 
 class BusinessListTableSection extends ConsumerStatefulWidget {
   const BusinessListTableSection({super.key});
@@ -9,46 +12,49 @@ class BusinessListTableSection extends ConsumerStatefulWidget {
       _BusinessListTableSectionState();
 }
 
-class _BusinessListTableSectionState
-    extends ConsumerState<BusinessListTableSection> {
-  // Sample data - replace with your actual data
-  final List<Map<String, dynamic>> _businesses = [
-    {
-      'name': 'Community name',
-      'handle': '@foodie',
-      'schools': '12,305',
-      'joinDate': '12.12.2022',
-      'status': 'Approved',
-      'statusColor': const Color(0xFF80C02A).withOpacity(0.2),
-    },
-    {
-      'name': 'Community name',
-      'handle': '@legalgeek',
-      'schools': '12,305',
-      'joinDate': '12.12.2022',
-      'status': 'Approved',
-      'statusColor': const Color(0xFF80C02A).withOpacity(0.2),
-    },
-    {
-      'name': 'Community name',
-      'handle': '@legalgeek',
-      'schools': '12,305',
-      'joinDate': '12.12.2022',
-      'status': 'Pending',
-      'statusColor': const Color(0xFFD59823).withOpacity(0.2),
-    },
-    {
-      'name': 'Community name',
-      'handle': '@legalgeek',
-      'schools': '12,305',
-      'joinDate': '12.12.2022',
-      'status': 'Rejected',
-      'statusColor': const Color(0xFFCC1919).withOpacity(0.2),
-    },
-  ];
+class _BusinessListTableSectionState extends ConsumerState<BusinessListTableSection> {
+  List<BusinessCategory> _categories = []; // Store categories for lookup
+  bool _isLoading = false;
+  String? _error;
+  List<BusinessModel> _businesses = [];
+  
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchBusinesses();
+    });
+  }
+
+  Future<void> _fetchBusinesses() async {
+    // Also fetch categories from provider state
+    final categoryState = ref.read(businessDirectoriesNotifierProvider);
+    _categories = categoryState.categories;
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final result = await ref.read(businessDirectoriesNotifierProvider.notifier).fetchAllBusinesses();
+      setState(() {
+        _businesses = result;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    // Build a map from category ID to name for fast lookup
+    final Map<String, String> categoryIdToName = {
+      for (final c in _categories) c.id: c.name
+    };
     return Container(
       width: 1526,
       height: 668,
@@ -67,190 +73,30 @@ class _BusinessListTableSectionState
       child: Column(
         children: [
           // Header with tabs and search
-          _buildHeader(),
-          
           // Table header
           _buildTableHeader(),
-          
           // Table content
           Expanded(
-            child: ListView.builder(
-              itemCount: _businesses.length,
-              itemBuilder: (context, index) {
-                return _buildTableRow(_businesses[index]);
-              },
-            ),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _error != null
+                    ? Center(child: Text('Error: $_error'))
+                    : _businesses.isEmpty
+                        ? const Center(child: Text('No businesses found'))
+                        : ListView.builder(
+                            itemCount: _businesses.length,
+                            itemBuilder: (context, index) {
+                              return _buildTableRow(_businesses[index], categoryIdToName);
+                            },
+                          ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Tabs
-          Container(
-            width: 327,
-            height: 36,
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF4F2ED),
-              borderRadius: BorderRadius.circular(50),
-            ),
-            child: Row(
-              children: [
-                // Business Category Tab
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF24439B),
-                      borderRadius: BorderRadius.circular(35),
-                    ),
-                    child: const Center(
-                      child: Text(
-                        'Business List',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                // Business Category Tab (Inactive)
-                const Expanded(
-                  child: Center(
-                    child: Text(
-                      'Business Category',
-                      style: TextStyle(
-                        color: Color(0xFF333333),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          
-          // Search and filter
-          Row(
-            children: [
-              // Search bar
-              Container(
-                width: 390,
-                height: 36,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF9F6EF),
-                  borderRadius: BorderRadius.circular(35),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.search, size: 16, color: Color(0xFF333333)),
-                    SizedBox(width: 12),
-                    Text(
-                      'Search for Business Lists....',
-                      style: TextStyle(
-                        color: Color(0xFF333333),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              
-              const SizedBox(width: 24),
-              
-              // Sort and filter buttons
-              Row(
-                children: [
-                  // Sort button
-                  Container(
-                    height: 30,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: const Color(0xFF333333)),
-                      borderRadius: const BorderRadius.horizontal(
-                        left: Radius.circular(42),
-                        right: Radius.circular(0),
-                      ),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.sort, size: 14, color: Color(0xFF333333)),
-                        SizedBox(width: 8),
-                        Text(
-                          'Sort',
-                          style: TextStyle(
-                            color: Color(0xFF333333),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  
-                  // Filter button
-                  Container(
-                    height: 30,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF333333),
-                      borderRadius: BorderRadius.horizontal(
-                        left: Radius.circular(0),
-                        right: Radius.circular(42),
-                      ),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.filter_alt_outlined, 
-                            size: 14, color: Colors.white),
-                        SizedBox(width: 8),
-                        Text(
-                          'Filter',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              
-              const SizedBox(width: 12),
-              
-              // Delete button
-              Container(
-                width: 30,
-                height: 30,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFC02A2A),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.delete_outline, 
-                    size: 16, color: Colors.white),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+  
+  
   
   Widget _buildTableHeader() {
     return Container(
@@ -278,10 +124,10 @@ class _BusinessListTableSectionState
           _buildHeaderCell('Business Name', 390),
           
           // Handle
-          _buildHeaderCell('Handle', 210),
+          _buildHeaderCell('Owner Name', 210),
           
           // Number of Schools
-          _buildHeaderCell('Number of Schools', 200),
+          _buildHeaderCell('Category', 200),
           
           // Join Date
           _buildHeaderCell('Join Date', 150),
@@ -325,7 +171,14 @@ class _BusinessListTableSectionState
     );
   }
   
-  Widget _buildTableRow(Map<String, dynamic> business) {
+  Widget _buildTableRow(BusinessModel business, Map<String, String> categoryIdToName) {
+    // Lookup category name from map; fallback to ID if not found
+    final categoryName = categoryIdToName[business.businessCategoryId] ?? business.businessCategoryId;
+    // You can adjust these mappings as needed
+    final status = business.authorizedUser ? 'Approved' : 'Pending';
+    final statusColor = business.authorizedUser
+        ? const Color(0xFF80C02A).withOpacity(0.2)
+        : const Color(0xFFD59823).withOpacity(0.2);
     return Container(
       height: 60,
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -345,29 +198,24 @@ class _BusinessListTableSectionState
               side: const BorderSide(color: Color(0xFFBCBCBC)),
             ),
           ),
-          
           // Business Name
-          _buildCell(business['name'], 390, FontWeight.w400),
-          
-          // Handle
-          _buildCell(business['handle'], 210, FontWeight.w400),
-          
-          // Number of Schools
-          _buildCell(business['schools'], 200, FontWeight.w700),
-          
-          // Join Date
-          _buildCell(business['joinDate'], 150, FontWeight.w400),
-          
+          _buildCell(business.businessName, 390, FontWeight.w400),
+          // Owner Name
+          _buildCell(business.accountOwnerUsername, 210, FontWeight.w400),
+          // Category (show name instead of ID)
+          _buildCell(categoryName, 200, FontWeight.w700),
+          // Join Date (not present in model, show foundedYear)
+          _buildCell(business.foundedYear, 150, FontWeight.w400),
           // Status
           Container(
             width: 150,
             padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
             decoration: BoxDecoration(
-              color: business['statusColor'] ?? Colors.grey[200],
+              color: statusColor,
               borderRadius: BorderRadius.circular(29),
             ),
             child: Text(
-              business['status'],
+              status,
               style: const TextStyle(
                 color: Color(0xFF4D4D4D),
                 fontSize: 16,
@@ -375,7 +223,6 @@ class _BusinessListTableSectionState
               ),
             ),
           ),
-          
           // Actions
           Expanded(
             child: Row(
@@ -399,9 +246,7 @@ class _BusinessListTableSectionState
                     ),
                   ),
                 ),
-                
                 const SizedBox(width: 12),
-                
                 // Delete button
                 Container(
                   width: 30,
@@ -410,8 +255,7 @@ class _BusinessListTableSectionState
                     color: Color(0xFFC02A2A),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.delete_outline, 
-                      size: 16, color: Colors.white),
+                  child: const Icon(Icons.delete_outline, size: 16, color: Colors.white),
                 ),
               ],
             ),
