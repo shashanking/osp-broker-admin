@@ -152,7 +152,7 @@ class _CategoryRow extends ConsumerWidget {
     // Get moderators from Riverpod provider
     final moderators = ref.watch(forumAdminNotifierProvider).moderators;
 
-    String moderatorName = category.moderatorId;
+    String moderatorName = category.moderatorId ?? '';
     if (moderators.isNotEmpty) {
       final foundList = moderators.where((m) => m.id == category.moderatorId);
       if (foundList.isNotEmpty && foundList.first.fullName.isNotEmpty)

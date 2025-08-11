@@ -65,7 +65,7 @@ class _AddCategoryDialogState extends ConsumerState<AddCategoryDialog> {
             'name': _nameController.text.trim(),
             'description': _descriptionController.text.trim(),
             'moderatorId': _selectedModeratorId!,
-            'icon': widget.category!.icon ?? '',
+            'icon': widget.category!.icon,
             'membership_access': _selectedMembershipPlanIds.toList(),
           },
         );

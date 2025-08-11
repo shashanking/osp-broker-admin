@@ -9,7 +9,7 @@ class Category with _$Category {
     required String id,
     required String name,
     required String description,
-    required String moderatorId,
+    String? moderatorId,
     required String icon,
     @Default(<String>[]) @JsonKey(name: 'membership_access') List<String> membershipAccess,
     required DateTime createdAt,

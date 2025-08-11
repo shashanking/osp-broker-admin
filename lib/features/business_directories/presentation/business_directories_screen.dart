@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:osp_broker_admin/features/business_directories/application/business_directories_notifier.dart';
+import 'package:osp_broker_admin/features/business_directories/application/business_directories_state.dart';
 
 class BusinessDirectoriesScreen extends ConsumerStatefulWidget {
   const BusinessDirectoriesScreen({Key? key}) : super(key: key);
 
   @override
-  ConsumerState<BusinessDirectoriesScreen> createState() => _BusinessDirectoriesScreenState();
+  ConsumerState<BusinessDirectoriesScreen> createState() =>
+      _BusinessDirectoriesScreenState();
 }
 
-class _BusinessDirectoriesScreenState extends ConsumerState<BusinessDirectoriesScreen> {
+class _BusinessDirectoriesScreenState
+    extends ConsumerState<BusinessDirectoriesScreen> {
   @override
   void initState() {
     super.initState();
@@ -20,13 +23,15 @@ class _BusinessDirectoriesScreenState extends ConsumerState<BusinessDirectoriesS
   }
 
   Future<void> _loadData() async {
-    await ref.read(businessDirectoriesNotifierProvider.notifier).loadBusinessCategories();
+    await ref
+        .read(businessDirectoriesNotifierProvider.notifier)
+        .loadBusinessCategories();
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(businessDirectoriesNotifierProvider);
-    
+
     return DefaultTabController(
       length: 2,
       child: Scaffold(
@@ -93,18 +98,25 @@ class _BusinessDirectoriesScreenState extends ConsumerState<BusinessDirectoriesS
               scrollDirection: Axis.horizontal,
               child: DataTable(
                 columns: const [
-                  DataColumn(label: Text('ID', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Name', style: TextStyle(fontWeight: FontWeight.bold))),
                   DataColumn(
-                    label: Text('Businesses', style: TextStyle(fontWeight: FontWeight.bold)),
+                      label: Text('ID',
+                          style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(
+                      label: Text('Name',
+                          style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(
+                    label: Text('Businesses',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
                     numeric: true,
                   ),
-                  DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(
+                      label: Text('Actions',
+                          style: TextStyle(fontWeight: FontWeight.bold))),
                 ],
                 rows: categories.map((category) {
                   return DataRow(
                     cells: [
-                      DataCell(Text(category.id ?? 'N/A')),
+                      DataCell(Text(category.id)),
                       DataCell(Text(category.name)),
                       DataCell(
                         Text(
@@ -112,7 +124,6 @@ class _BusinessDirectoriesScreenState extends ConsumerState<BusinessDirectoriesS
                           textAlign: TextAlign.right,
                         ),
                       ),
-
                       DataCell(
                         Row(
                           children: [
@@ -154,7 +165,8 @@ class _BusinessDirectoriesScreenState extends ConsumerState<BusinessDirectoriesS
     }
 
     // Get all businesses from all categories
-    final allBusinesses = state.categories.expand((category) => category.business).toList();
+    final allBusinesses =
+        state.categories.expand((category) => category.business).toList();
 
     return RefreshIndicator(
       onRefresh: () => ref
@@ -167,7 +179,8 @@ class _BusinessDirectoriesScreenState extends ConsumerState<BusinessDirectoriesS
               itemBuilder: (context, index) {
                 final business = allBusinesses[index];
                 return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: ListTile(
                     title: Text(business.name),
                     // subtitle: Text(business.businessName ?? 'No description'),

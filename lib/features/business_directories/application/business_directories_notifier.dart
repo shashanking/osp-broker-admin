@@ -1,29 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:osp_broker_admin/core/infrastructure/base_api_service.dart';
+import 'package:osp_broker_admin/features/business_directories/application/business_directories_state.dart';
 
 import '../data/repositories/business_directories_repository.dart';
 import '../domain/business_list_model.dart';
 import '../domain/business_directories_model.dart';
-
-part 'business_directories_notifier.freezed.dart';
-
-@freezed
-class BusinessDirectoriesState with _$BusinessDirectoriesState {
-  const factory BusinessDirectoriesState({
-    @Default(false) bool isLoading,
-    @Default(false) bool isCreating,
-    @Default(false) bool isUpdating,
-    @Default(false) bool isDeleting,
-    String? error,
-    @Default(<BusinessCategory>[]) List<BusinessCategory> categories,
-    BusinessCategory? selectedCategory,
-  }) = _BusinessDirectoriesState;
-  
-  const BusinessDirectoriesState._();
-  
-  factory BusinessDirectoriesState.initial() => const BusinessDirectoriesState();
-}
 
 class BusinessDirectoriesNotifier extends StateNotifier<BusinessDirectoriesState> {
   final BusinessDirectoriesRepository _repository;
