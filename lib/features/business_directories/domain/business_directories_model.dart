@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:flutter/material.dart';
 
 part 'business_directories_model.freezed.dart';
 part 'business_directories_model.g.dart';
@@ -34,6 +35,7 @@ class BusinessCategory with _$BusinessCategory {
     required String id,
     required String name,
     required String description,
+    @Default(false) bool isDeleted,
     required DateTime createdAt,
     required DateTime updatedAt,
     @Default(<BusinessItem>[]) List<BusinessItem> business,
@@ -55,10 +57,26 @@ class BusinessItem with _$BusinessItem {
       _$BusinessItemFromJson(json);
 }
 
-// Extension to get business count
+// Extension to get business count and category status
 // This provides a convenient way to get the count of businesses in a category
 extension BusinessCategoryX on BusinessCategory {
   int get businessCount => business.length;
+  
+  /// Returns true if the category is active (not deleted)
+  bool get isActive => !isDeleted;
+  
+  /// Returns the status text for the category
+  String get statusText => isDeleted ? 'Deleted' : 'Active';
+  
+  /// Returns the status color for the category
+  Color get statusColor => isDeleted 
+      ? const Color(0xFFFFEBEE)  // Light red for deleted
+      : const Color(0xFFE8F5E9); // Light green for active
+      
+  /// Returns the status text color for the category
+  Color get statusTextColor => isDeleted 
+      ? const Color(0xFFD32F2F)  // Red text for deleted
+      : const Color(0xFF2E7D32); // Green text for active
 }
 
 /// Response model for business list API

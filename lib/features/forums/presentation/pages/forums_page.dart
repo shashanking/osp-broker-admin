@@ -72,7 +72,7 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
         Expanded(
           child: SingleChildScrollView(
             child: Container(
-              padding: const EdgeInsets.all(24.0),
+              padding: EdgeInsets.all(MediaQuery.of(context).size.width < 768 ? 12.0 : 24.0),
               decoration: BoxDecoration(
                 color: AppColors.backgroundLight,
               ),
@@ -80,10 +80,10 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Page Title
-                  const Text(
+                  Text(
                     'Forum Listing and Management',
                     style: TextStyle(
-                      fontSize: 24,
+                      fontSize: MediaQuery.of(context).size.width < 768 ? 20 : 24,
                       fontWeight: FontWeight.bold,
                       color: Colors.black,
                     ),
@@ -118,34 +118,36 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
                         ],
                       ),
                       const SizedBox(height: 24),
-                      _selectedTab == 0
-                          ? ForumCategoriesTable(
-                              categories: categories,
-                              membershipPlans: forumState.membershipPlans)
-                          : _selectedTab == 1
-                              ? isLoading
-                                  ? const Center(
-                                      child: CircularProgressIndicator())
-                                  : error != null
-                                      ? Center(child: Text('Error: $error'))
-                                      : ForumForumsTable(
-                                          forums: forums,
-                                          categories: categories)
-                              : _selectedTab == 2
-                                  ? isLoading
-                                      ? const Center(
-                                          child: CircularProgressIndicator())
-                                      : error != null
-                                          ? Center(child: Text('Error: $error'))
-                                          : ForumTopicsTable(
-                                              topics: forumState.topics,
-                                              forums: forums)
-                                  : isLoading
-                                      ? const Center(
-                                          child: CircularProgressIndicator())
-                                      : error != null
-                                          ? Center(child: Text('Error: $error'))
-                                          : Container()
+                      _buildResponsiveTable(
+                        _selectedTab == 0
+                            ? ForumCategoriesTable(
+                                categories: categories,
+                                membershipPlans: forumState.membershipPlans)
+                            : _selectedTab == 1
+                                ? isLoading
+                                    ? const Center(
+                                        child: CircularProgressIndicator())
+                                    : error != null
+                                        ? Center(child: Text('Error: $error'))
+                                        : ForumForumsTable(
+                                            forums: forums,
+                                            categories: categories)
+                                : _selectedTab == 2
+                                    ? isLoading
+                                        ? const Center(
+                                            child: CircularProgressIndicator())
+                                        : error != null
+                                            ? Center(child: Text('Error: $error'))
+                                            : ForumTopicsTable(
+                                                topics: forumState.topics,
+                                                forums: forums)
+                                    : isLoading
+                                        ? const Center(
+                                            child: CircularProgressIndicator())
+                                        : error != null
+                                            ? Center(child: Text('Error: $error'))
+                                            : Container(),
+                      )
                     ],
                   ),
                 ],
@@ -157,7 +159,44 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
     );
   }
 
+  Widget _buildResponsiveTable(Widget table) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 768;
+    
+    if (isMobile) {
+      // Wrap table in horizontal scroll for mobile with proper constraints
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: SizedBox(
+          width: screenWidth * 1.5, // Give table 1.5x screen width for scrolling
+          child: table,
+        ),
+      );
+    }
+    
+    return table;
+  }
+
   Widget _buildActionCards() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 768;
+    final isTablet = screenWidth >= 768 && screenWidth < 1024;
+    
+    // Determine grid layout based on screen size
+    int crossAxisCount;
+    double childAspectRatio;
+    
+    if (isMobile) {
+      crossAxisCount = 2; // 2 columns on mobile
+      childAspectRatio = 1.5;
+    } else if (isTablet) {
+      crossAxisCount = 3; // 3 columns on tablet
+      childAspectRatio = 2.0;
+    } else {
+      crossAxisCount = 4; // 4 columns on desktop
+      childAspectRatio = 2.8;
+    }
+    
     // Define gradients for each card
     final gradients = [
       {
@@ -217,10 +256,10 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 4,
+      crossAxisCount: crossAxisCount,
       mainAxisSpacing: 16,
       crossAxisSpacing: 16,
-      childAspectRatio: 2.8,
+      childAspectRatio: childAspectRatio,
       children: [
         HoverActionCard(
           assetName: 'add-category.png',
@@ -314,155 +353,6 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildStatsCards() {
-    final stats = [
-      {
-        'title': 'Announcements',
-        'count': '18',
-        'change': '-1.3%',
-        'icon': 'announcements.png',
-        'changePositive': false,
-      },
-      {
-        'title': 'Active Events',
-        'count': '26',
-        'change': '+3.7%',
-        'icon': 'events.png',
-        'changePositive': true,
-      },
-      {
-        'title': 'Active polls',
-        'count': '26',
-        'change': '+3.7%',
-        'icon': 'events.png',
-        'changePositive': true,
-      },
-      {
-        'title': 'Approval pending',
-        'count': '32',
-        'change': '-4.3%',
-        'icon': 'approvals.png',
-        'changePositive': false,
-      },
-    ];
-
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 4,
-      mainAxisSpacing: 16,
-      crossAxisSpacing: 16,
-      childAspectRatio: 2.8,
-      children: stats
-          .map((stat) => _buildStatCard(
-                title: stat['title'] as String,
-                count: stat['count'] as String,
-                change: stat['change'] as String,
-                iconAsset: stat['icon'] as String,
-                isChangePositive: stat['changePositive'] as bool,
-              ))
-          .toList(),
-    );
-  }
-
-  Widget _buildStatCard({
-    required String title,
-    required String count,
-    required String change,
-    required String iconAsset,
-    required bool isChangePositive,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE6E6E6), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Icon circle
-          Container(
-            width: 48,
-            height: 48,
-            decoration: const BoxDecoration(
-              color: Color(0xFF24439B),
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Image.asset(
-                'assets/icons/forum/$iconAsset',
-                width: 28,
-                height: 28,
-                fit: BoxFit.contain,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          // Title, value, view button
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Colors.black87,
-                  ),
-                ),
-                Text(
-                  count,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          // Change indicator
-          Column(
-            mainAxisSize: MainAxisSize.max,
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    isChangePositive
-                        ? Icons.arrow_upward
-                        : Icons.arrow_downward,
-                    color: isChangePositive ? Colors.green : Colors.red,
-                    size: 18,
-                  ),
-                  Text(
-                    change,
-                    style: TextStyle(
-                      color: isChangePositive ? Colors.green : Colors.red,
-                      fontWeight: FontWeight.w500,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 }

@@ -58,26 +58,30 @@ class _BusinessDirectoriesPageState extends ConsumerState<BusinessDirectoriesPag
     );
     
     return Scaffold(
-      body: Column(
-        children: [
-          TopBar(
-            userName: userName,
-            userRole: userRole,
-            onNotificationTap: () {
-              // Handle notification tap
-            },
-            onProfileTap: () {
-              // Handle profile tap
-            },
-            onCreateAuctionTap: () {
-              // Handle create auction tap
-            },
-          ),
-          const BusinessDirectoriesTopSection(),
-          const Expanded(
-            child: BusinessDirectoriesTableSection(),
-          ),
-        ],
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            TopBar(
+              userName: userName,
+              userRole: userRole,
+              onNotificationTap: () {
+                // Handle notification tap
+              },
+              onProfileTap: () {
+                // Handle profile tap
+              },
+              onCreateAuctionTap: () {
+                // Handle create auction tap
+              },
+            ),
+            const BusinessDirectoriesTopSection(),
+            // Use a Container with specific height instead of Expanded
+            Container(
+              height: 600, // Fixed height for table section
+              child: const BusinessDirectoriesTableSection(),
+            ),
+          ],
+        ),
       ),
     );
   }

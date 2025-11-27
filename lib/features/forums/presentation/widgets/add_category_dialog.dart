@@ -16,7 +16,6 @@ class _AddCategoryDialogState extends ConsumerState<AddCategoryDialog> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
-  String? _selectedModeratorId;
   final Set<String> _selectedMembershipPlanIds = {};
 
   @override
@@ -27,15 +26,12 @@ class _AddCategoryDialogState extends ConsumerState<AddCategoryDialog> {
     if (cat != null) {
       _nameController.text = cat.name;
       _descriptionController.text = cat.description;
-      _selectedModeratorId = cat.moderatorId;
       _selectedMembershipPlanIds.clear();
       _selectedMembershipPlanIds.addAll(cat.membershipAccess);
     } else {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        final state = ref.read(forumAdminNotifierProvider);
-        if (state.moderators.isNotEmpty) {
-          _selectedModeratorId = state.moderators.first.id;
-        }
+        // Load membership plans if not already loaded
+        ref.read(forumAdminNotifierProvider.notifier).loadMembershipPlans();
       });
     }
   }
@@ -49,12 +45,6 @@ class _AddCategoryDialogState extends ConsumerState<AddCategoryDialog> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_selectedModeratorId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a moderator')),
-      );
-      return;
-    }
 
     try {
       if (widget.category != null) {
@@ -64,9 +54,8 @@ class _AddCategoryDialogState extends ConsumerState<AddCategoryDialog> {
           {
             'name': _nameController.text.trim(),
             'description': _descriptionController.text.trim(),
-            'moderatorId': _selectedModeratorId!,
             'icon': widget.category!.icon,
-            'membership_access': _selectedMembershipPlanIds.toList(),
+            'membership_access': [..._selectedMembershipPlanIds],
           },
         );
       } else {
@@ -74,9 +63,10 @@ class _AddCategoryDialogState extends ConsumerState<AddCategoryDialog> {
         await ref.read(forumAdminNotifierProvider.notifier).createCategory(
           name: _nameController.text.trim(),
           description: _descriptionController.text.trim(),
-          moderatorId: _selectedModeratorId!,
-          icon: 'https://ui-avatars.com/api/?name=${_nameController.text.trim().replaceAll(' ', '+')}&background=random',
-          membershipAccess: _selectedMembershipPlanIds.toList(),
+          moderatorId: null, // No moderator needed
+          icon:
+              'https://ui-avatars.com/api/?name=${_nameController.text.trim().replaceAll(' ', '+')}&background=random',
+          membershipAccess: [..._selectedMembershipPlanIds],
         );
       }
 
@@ -86,7 +76,9 @@ class _AddCategoryDialogState extends ConsumerState<AddCategoryDialog> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to ${widget.category != null ? 'update' : 'create'} category: $e')),
+          SnackBar(
+              content: Text(
+                  'Failed to ${widget.category != null ? 'update' : 'create'} category: $e')),
         );
       }
     }
@@ -95,13 +87,12 @@ class _AddCategoryDialogState extends ConsumerState<AddCategoryDialog> {
   @override
   Widget build(BuildContext context) {
     final forumState = ref.watch(forumAdminNotifierProvider);
-    final moderators = forumState.moderators;
     final membershipPlans = forumState.membershipPlans;
-    final isLoading =
-        forumState.isLoadingModerators || forumState.isLoadingMembershipPlans;
+    final isLoading = forumState.isLoadingMembershipPlans;
 
     return AlertDialog(
-      title: Text(widget.category != null ? 'Edit Category' : 'Add New Category'),
+      title:
+          Text(widget.category != null ? 'Edit Category' : 'Add New Category'),
       content: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -121,35 +112,6 @@ class _AddCategoryDialogState extends ConsumerState<AddCategoryDialog> {
                 decoration: const InputDecoration(labelText: 'Description'),
                 maxLines: 3,
               ),
-              const SizedBox(height: 24),
-              const Text('Moderator',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : DropdownButtonFormField<String>(
-                      value: _selectedModeratorId,
-                      items: moderators
-                          .map((moderator) => DropdownMenuItem(
-                                value: moderator.id,
-                                child: Text(moderator.fullName ?? 'Unknown'),
-                              ))
-                          .toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedModeratorId = value;
-                        });
-                      },
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                      ),
-                      validator: (value) =>
-                          value == null ? 'Please select a moderator' : null,
-                    ),
               const SizedBox(height: 24),
               const Text('Membership Plans',
                   style: TextStyle(fontWeight: FontWeight.bold)),

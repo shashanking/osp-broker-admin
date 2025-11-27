@@ -15,11 +15,13 @@ class PollAnalytics {
 
   factory PollAnalytics.fromJson(Map<String, dynamic> json) {
     return PollAnalytics(
-      id: json['id'] as String,
-      pollId: json['pollId'] as String,
-      votes: List<int>.from(json['votes'] as List),
-      createdAt: json['createdAt'] as String,
-      updatedAt: json['updatedAt'] as String,
+      id: json['id'] as String? ?? '',
+      pollId: json['pollId'] as String? ?? '',
+      votes: (json['votes'] as List<dynamic>?)
+          ?.map((e) => e as int)
+          .toList() ?? [],
+      createdAt: json['createdAt'] as String? ?? '',
+      updatedAt: json['updatedAt'] as String? ?? '',
     );
   }
 }

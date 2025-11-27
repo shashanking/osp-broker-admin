@@ -231,7 +231,16 @@ class _ForumRow extends ConsumerWidget {
                 Expanded(
                   flex: 1,
                   child: Text(
-                    (forum.count['topics'] ?? 0).toString(),
+                    (() {
+                      final topicsCount = forum.count['topics'];
+                      if (topicsCount is int) {
+                        return topicsCount.toString();
+                      } else if (topicsCount is String) {
+                        return topicsCount;
+                      } else {
+                        return '0';
+                      }
+                    })(),
                     textAlign: TextAlign.left,
                   ),
                 ),

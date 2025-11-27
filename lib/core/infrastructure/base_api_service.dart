@@ -16,6 +16,7 @@ class BaseApiService {
   final Dio _dio;
   final Box _authBox;
   String? _authToken;
+  bool _isRefreshingToken = false;
 
   BaseApiService(this._dio, this._authBox) {
     _authToken = _authBox.get('token') as String?;
@@ -41,7 +42,7 @@ class BaseApiService {
     try {
       await _authBox.put('token', token);
       await _authBox.put('userId', userId);
-      
+
       if (refreshToken != null) {
         await _authBox.put('refreshToken', refreshToken);
       }
@@ -57,6 +58,38 @@ class BaseApiService {
     await _authBox.delete('refreshToken');
   }
 
+  // Check if we have a refresh token
+  String? get _refreshToken => _authBox.get('refreshToken') as String?;
+
+  // Refresh token using direct API call to avoid circular dependency
+  Future<bool> _refreshAccessToken() async {
+    if (_isRefreshingToken) return false;
+
+    final refreshToken = _refreshToken;
+    if (refreshToken == null) return false;
+
+    _isRefreshingToken = true;
+    try {
+      // Make direct API call to refresh token endpoint
+      final response = await _dio.post(
+        '${ApiUrls.baseUrl}${ApiUrls.refreshToken}',
+        options: Options(headers: {'Content-Type': 'application/json'}),
+      );
+
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        final newToken = response.data['data']['accessToken'];
+        await setAuthTokens(token: newToken);
+        return true;
+      }
+      return false;
+    } catch (e) {
+      print('BaseApiService: Token refresh failed: $e');
+      return false;
+    } finally {
+      _isRefreshingToken = false;
+    }
+  }
+
   // Request options with auth header
   Options _getOptions({Options? options, bool requireAuth = true}) {
     options ??= Options();
@@ -67,7 +100,7 @@ class BaseApiService {
     return options;
   }
 
-  // HTTP Methods
+  // HTTP Methods with automatic retry on token refresh
   Future<Response> get(
     String endpoint, {
     Map<String, dynamic>? queryParameters,
@@ -81,8 +114,7 @@ class BaseApiService {
         options: options,
       );
     } on DioException catch (e) {
-      _handleDioError(e);
-      rethrow;
+      return await _handleDioErrorWithRetry(e, () => get(endpoint, queryParameters: queryParameters, requireAuth: requireAuth));
     }
   }
 
@@ -97,8 +129,7 @@ class BaseApiService {
         options: options,
       );
     } on DioException catch (e) {
-      _handleDioError(e);
-      rethrow;
+      return await _handleDioErrorWithRetry(e, () => delete(endpoint, requireAuth: requireAuth));
     }
   }
 
@@ -115,8 +146,7 @@ class BaseApiService {
         options: options,
       );
     } on DioException catch (e) {
-      _handleDioError(e);
-      rethrow;
+      return await _handleDioErrorWithRetry(e, () => post(endpoint, data: data, requireAuth: requireAuth));
     }
   }
 
@@ -133,21 +163,60 @@ class BaseApiService {
         options: options,
       );
     } on DioException catch (e) {
-      _handleDioError(e);
-      rethrow;
+      return await _handleDioErrorWithRetry(e, () => put(endpoint, data: data, requireAuth: requireAuth));
     }
+  }
+
+  // Enhanced error handling with token refresh
+  Future<Response> _handleDioErrorWithRetry(DioException e, Future<Response> Function() retryFunction) async {
+    final response = e.response;
+    final statusCode = response?.statusCode;
+
+    // Check if it's a 401 error (unauthorized/token expired)
+    if (statusCode == 401) {
+      // Check if we have a refresh token and haven't already tried refreshing
+      if (_refreshToken != null && !_isRefreshingToken) {
+        print('BaseApiService: Token expired (401), attempting to refresh...');
+
+        // Try to refresh the token
+        final refreshSuccess = await _refreshAccessToken();
+
+        if (refreshSuccess) {
+          print('BaseApiService: Token refreshed successfully, retrying original request...');
+          try {
+            // Retry the original request with the new token
+            return await retryFunction();
+          } catch (retryError) {
+            print('BaseApiService: Retry after refresh failed: $retryError');
+            // If retry fails, fall through to error handling
+          }
+        } else {
+          print('BaseApiService: Token refresh failed');
+          // Clear tokens if refresh failed
+          await clearAuthTokens();
+        }
+      } else {
+        print('BaseApiService: No refresh token available or already refreshing');
+        // Clear tokens if no refresh token or already refreshing
+        await clearAuthTokens();
+      }
+    }
+
+    // Handle other errors normally
+    _handleDioError(e);
+    throw e; // Throw the original exception instead of rethrow
   }
 
   // Error handling
   void _handleDioError(DioException e) {
     final response = e.response;
     final statusCode = response?.statusCode;
-    
+
     if (statusCode == 401) {
-      // Handle token expiration
+      // Handle token expiration (already handled above, but keeping for consistency)
       clearAuthTokens();
     }
-    
+
     // Log detailed error information
     print('''
     === API Error ===
@@ -159,7 +228,7 @@ class BaseApiService {
     Headers: ${e.requestOptions.headers}
     =================
     ''');
-    
+
     // Rethrow with more detailed message
     if (statusCode == 500) {
       throw Exception('Server error (500): ${response?.data?['message'] ?? 'Internal server error occurred'}');

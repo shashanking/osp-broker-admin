@@ -3,6 +3,7 @@ import 'package:osp_broker_admin/features/forums/presentation/widgets/add_catego
 import '../../domain/forum_models.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/forum_admin_notifier.dart';
+import '../../../users/application/user_notifier.dart';
 
 import 'package:osp_broker_admin/features/membership/data/models/membership_plan_model.dart';
 
@@ -149,14 +150,21 @@ class _CategoryRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Get moderators from Riverpod provider
+    // Get moderators and users from Riverpod providers
     final moderators = ref.watch(forumAdminNotifierProvider).moderators;
+    final users = ref.watch(userNotifierProvider).users;
+
+    // Create a map of userId to user for quick lookup
+    final userMap = {for (var user in users) user.id: user};
 
     String moderatorName = category.moderatorId ?? '';
     if (moderators.isNotEmpty) {
-      final foundList = moderators.where((m) => m.id == category.moderatorId);
-      if (foundList.isNotEmpty && foundList.first.fullName.isNotEmpty)
-        moderatorName = foundList.first.fullName;
+      final foundModerator =
+          moderators.where((m) => m.userId == category.moderatorId).firstOrNull;
+      if (foundModerator != null) {
+        final user = userMap[foundModerator.userId];
+        moderatorName = user?.fullName ?? 'Unknown User';
+      }
     }
 
     String membershipNames = '';

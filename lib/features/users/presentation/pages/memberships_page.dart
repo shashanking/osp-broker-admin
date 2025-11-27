@@ -9,7 +9,7 @@ import 'package:osp_broker_admin/features/users/presentation/widgets/user_member
 
 class MembershipsPage extends ConsumerStatefulWidget {
   const MembershipsPage({super.key, this.onBackPressed});
-  
+
   final VoidCallback? onBackPressed;
 
   @override
@@ -35,13 +35,13 @@ class _MembershipsPageState extends ConsumerState<MembershipsPage> {
     try {
       // Load users first
       await ref.read(userNotifierProvider.notifier).fetchUsers();
-      
+
       // Load memberships and plans in parallel
       await Future.wait([
         ref.read(userNotifierProvider.notifier).loadAllUserMemberships(),
         ref.read(membershipNotifierProvider.notifier).fetchMemberships(),
       ]);
-      
+
       if (mounted && !_isInitialLoad) {
         // Only show success message on refresh, not initial load
         ScaffoldMessenger.of(context).showSnackBar(
@@ -77,12 +77,12 @@ class _MembershipsPageState extends ConsumerState<MembershipsPage> {
   Widget build(BuildContext context) {
     final users = ref.watch(userNotifierProvider).users;
     final isLoading = ref.watch(
-      userNotifierProvider.select((state) => 
-        state.isLoadingMemberships || _isInitialLoad || _isRefreshing
-      ),
+      userNotifierProvider.select((state) =>
+          state.isLoadingMemberships || _isInitialLoad || _isRefreshing),
     );
-    final error = ref.watch(userNotifierProvider.select((state) => state.error));
-    
+    final error =
+        ref.watch(userNotifierProvider.select((state) => state.error));
+
     // Show loading indicator if no data is loaded yet or if we're refreshing
     if (_isInitialLoad && users.isEmpty) {
       return const Scaffold(
@@ -91,14 +91,13 @@ class _MembershipsPageState extends ConsumerState<MembershipsPage> {
     }
 
     return Scaffold(
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      body: ListView(
         children: [
           TopBar(
             userName: 'Admin',
             userRole: 'Admin',
-            greeting: _selectedUserIds.isEmpty 
-                ? 'User Memberships' 
+            greeting: _selectedUserIds.isEmpty
+                ? 'User Memberships'
                 : '${_selectedUserIds.length} selected',
             showBackButton: true,
             onBackPressed: () {
@@ -121,31 +120,33 @@ class _MembershipsPageState extends ConsumerState<MembershipsPage> {
               ),
             ),
           if (_selectedUserIds.isNotEmpty) _buildBulkActionBar(),
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: () {
-                setState(() {
-                  _isRefreshing = true;
-                });
-                return _loadData();
-              },
-              child: isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : users.isEmpty
-                      ? const Center(child: Text('No users found'))
-                      : UserMembershipsTable(
-                          users: users,
-                          selectedUserIds: _selectedUserIds,
-                          onUserSelected: (userId, selected) {
-                            setState(() {
-                              if (selected) {
-                                _selectedUserIds.add(userId);
-                              } else {
-                                _selectedUserIds.remove(userId);
-                              }
-                            });
-                          },
-                        ),
+          SingleChildScrollView(
+            child: Expanded(
+              child: RefreshIndicator(
+                onRefresh: () {
+                  setState(() {
+                    _isRefreshing = true;
+                  });
+                  return _loadData();
+                },
+                child: isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : users.isEmpty
+                        ? const Center(child: Text('No users found'))
+                        : UserMembershipsTable(
+                            users: users,
+                            selectedUserIds: _selectedUserIds,
+                            onUserSelected: (userId, selected) {
+                              setState(() {
+                                if (selected) {
+                                  _selectedUserIds.add(userId);
+                                } else {
+                                  _selectedUserIds.remove(userId);
+                                }
+                              });
+                            },
+                          ),
+              ),
             ),
           ),
         ],
@@ -169,13 +170,16 @@ class _MembershipsPageState extends ConsumerState<MembershipsPage> {
             TextButton.icon(
               icon: const Icon(Icons.add_circle_outline),
               label: const Text('Add Membership'),
-              onPressed: membershipPlans.isEmpty ? null : _showBulkAddMembershipDialog,
+              onPressed:
+                  membershipPlans.isEmpty ? null : _showBulkAddMembershipDialog,
             ),
             const SizedBox(width: 16),
             TextButton.icon(
               icon: const Icon(Icons.remove_circle_outline, color: Colors.red),
-              label: const Text('Remove Memberships', style: TextStyle(color: Colors.red)),
-              onPressed: _selectedUserIds.isEmpty ? null : _showBulkRemoveConfirmation,
+              label: const Text('Remove Memberships',
+                  style: TextStyle(color: Colors.red)),
+              onPressed:
+                  _selectedUserIds.isEmpty ? null : _showBulkRemoveConfirmation,
             ),
           ] else
             const Padding(
@@ -207,13 +211,13 @@ class _MembershipsPageState extends ConsumerState<MembershipsPage> {
       final planId = result['planId'] as String;
       final startDate = result['startDate'] as DateTime;
       final endDate = result['endDate'] as DateTime;
-      
+
       setState(() => _isBulkActionInProgress = true);
-      
+
       try {
         final notifier = ref.read(userNotifierProvider.notifier);
         int successCount = 0;
-        
+
         for (final userId in _selectedUserIds) {
           try {
             await notifier.createUserMembership(
@@ -228,7 +232,7 @@ class _MembershipsPageState extends ConsumerState<MembershipsPage> {
             debugPrint('Error adding membership to user $userId: $e');
           }
         }
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Added memberships to $successCount users')),
@@ -267,17 +271,17 @@ class _MembershipsPageState extends ConsumerState<MembershipsPage> {
 
     if (confirmed == true && mounted) {
       setState(() => _isBulkActionInProgress = true);
-      
+
       try {
         final notifier = ref.read(userNotifierProvider.notifier);
         int successCount = 0;
-        
+
         for (final userId in _selectedUserIds.toList()) {
           try {
             // Get user's memberships
-            final memberships = ref.read(userNotifierProvider)
-                .userMemberships[userId] ?? [];
-                
+            final memberships =
+                ref.read(userNotifierProvider).userMemberships[userId] ?? [];
+
             // Delete each membership
             for (final membership in memberships) {
               await notifier.deleteUserMembership(membership.id, userId);
@@ -287,10 +291,11 @@ class _MembershipsPageState extends ConsumerState<MembershipsPage> {
             debugPrint('Error removing memberships from user $userId: $e');
           }
         }
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Removed memberships from $successCount users')),
+            SnackBar(
+                content: Text('Removed memberships from $successCount users')),
           );
           setState(() => _selectedUserIds.clear());
         }
@@ -309,7 +314,8 @@ class _BulkAddMembershipDialog extends StatefulWidget {
   const _BulkAddMembershipDialog({required this.plans});
 
   @override
-  _BulkAddMembershipDialogState createState() => _BulkAddMembershipDialogState();
+  _BulkAddMembershipDialogState createState() =>
+      _BulkAddMembershipDialogState();
 }
 
 class _BulkAddMembershipDialogState extends State<_BulkAddMembershipDialog> {
@@ -381,7 +387,8 @@ class _BulkAddMembershipDialogState extends State<_BulkAddMembershipDialog> {
                 if (date != null) {
                   setState(() {
                     _startDate = date;
-                    _endDate = _calculateEndDate(_startDate, _selectedPlan.billingCycle);
+                    _endDate = _calculateEndDate(
+                        _startDate, _selectedPlan.billingCycle);
                   });
                 }
               },

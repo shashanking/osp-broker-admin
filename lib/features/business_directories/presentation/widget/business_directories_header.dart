@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'business_category_tableSection.dart';
 import 'business_list_tableSection.dart';
+import 'business_category_filters.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:osp_broker_admin/features/business_directories/application/business_directories_notifier.dart';
 import 'package:osp_broker_admin/features/business_directories/domain/business_directories_model.dart';
@@ -45,18 +46,22 @@ class _BusinessDirectoriesTableSectionState
     super.initState();
     // Load business categories when the widget initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(businessDirectoriesNotifierProvider.notifier).loadBusinessCategories();
+      ref
+          .read(businessDirectoriesNotifierProvider.notifier)
+          .loadBusinessCategories();
     });
   }
 
   // Filter and sort categories based on current filters and sort options
-  List<BusinessCategory> _getFilteredAndSortedCategories(List<BusinessCategory> categories) {
+  List<BusinessCategory> _getFilteredAndSortedCategories(
+      List<BusinessCategory> categories) {
     // Apply search filter
     var filtered = categories.where((category) {
-      final nameMatch = category.name.toLowerCase().contains(_searchQuery.toLowerCase());
-      final statusMatch = _statusFilter == 'all' || 
-                         (_statusFilter == 'active' && category.business.isNotEmpty) ||
-                         (_statusFilter == 'inactive' && category.business.isEmpty);
+      final nameMatch =
+          category.name.toLowerCase().contains(_searchQuery.toLowerCase());
+      final statusMatch = _statusFilter == 'all' ||
+          (_statusFilter == 'active' && category.business.isNotEmpty) ||
+          (_statusFilter == 'inactive' && category.business.isEmpty);
       return nameMatch && statusMatch;
     }).toList();
 
@@ -114,17 +119,18 @@ class _BusinessDirectoriesTableSectionState
               .read(businessDirectoriesNotifierProvider.notifier)
               .deleteBusinessCategory(category['id']);
         }
-        
+
         // Clear selection after deletion
         setState(() {
           _selectedCategories.clear();
         });
-        
+
         // Show success message
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('${_selectedCategories.length} categories deleted successfully'),
+              content: Text(
+                  '${_selectedCategories.length} categories deleted successfully'),
               backgroundColor: Colors.green,
             ),
           );
@@ -184,7 +190,8 @@ class _BusinessDirectoriesTableSectionState
                   _sortBy = value!;
                   _sortAscending = false;
                 });
-                Navigator.of(context).pop({'sortBy': value, 'ascending': false});
+                Navigator.of(context)
+                    .pop({'sortBy': value, 'ascending': false});
               },
             ),
           ],
@@ -255,181 +262,172 @@ class _BusinessDirectoriesTableSectionState
             offset: const Offset(0, 0),
           ),
         ],
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(8),
       ),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(8),
       child: Column(
         children: [
           // Header with tabs and search
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 16),
+            child: Column(
+              // Changed from Row to Column for better layout
               children: [
-                // Tabs
-                Container(
-                  width: 407,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF4F2ED),
-                    borderRadius: BorderRadius.circular(50),
-                  ),
-                  child: Row(
-                    children: [
-                      _buildTabButton('Business Category', isBusinessCategory),
-                      _buildTabButton('Business List', !isBusinessCategory),
-                      // Container(
-                      //   margin: const EdgeInsets.only(left: 8),
-                      //   padding: const EdgeInsets.symmetric(
-                      //       horizontal: 10, vertical: 4),
-                      //   decoration: BoxDecoration(
-                      //     color: const Color(0xFF333333),
-                      //     borderRadius: BorderRadius.circular(32),
-                      //   ),
-                      //   child: Text(
-                      //     categories.length.toString(),
-                      //     style: const TextStyle(
-                      //       color: Colors.white,
-                      //       fontWeight: FontWeight.w600,
-                      //       fontSize: 16,
-                      //     ),
-                      //   ),
-                      // ),
-                    ],
-                  ),
-                ),
-
-                // Search and filter
-                SizedBox(
-                  width: 641,
-                  height: 36,
-                  child: Row(
-                    children: [
-                      // Search bar
-                      Expanded(
-                        child: Container(
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF9F6EF),
-                            borderRadius: BorderRadius.circular(35),
-                          ),
-                          child: TextField(
-                            controller: _searchController,
-                            onChanged: (value) {
-                              setState(() {
-                                _searchQuery = value;
-                              });
-                            },
-                            decoration: const InputDecoration(
-                              hintText: 'Search for Business Categories...',
-                              hintStyle: TextStyle(
-                                color: Color(0xFF333333),
-                                fontSize: 14,
-                              ),
-                              prefixIcon: Icon(Icons.search,
-                                  size: 16, color: Color(0xFF333333)),
-                              border: InputBorder.none,
-                              contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 10),
-                            ),
-                          ),
-                        ),
+                // Tabs row
+                Row(
+                  children: [
+                    Container(
+                      width: 300, // Reduced from 407
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF4F2ED),
+                        borderRadius: BorderRadius.circular(50),
                       ),
-                      const SizedBox(width: 24),
-                      
-                      // Sort button
-                      Container(
-                        height: 30,
+                      child: Row(
+                        children: [
+                          _buildTabButton(
+                              'Business Category', isBusinessCategory),
+                          _buildTabButton('Business List', !isBusinessCategory),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                // Search and filter row
+                Row(
+                  children: [
+                    // Search bar
+                    Expanded(
+                      child: Container(
+                        height: 36,
                         decoration: BoxDecoration(
-                          border: Border.all(color: const Color(0xFF333333)),
-                          borderRadius: const BorderRadius.horizontal(
-                            left: Radius.circular(42),
-                            right: Radius.zero,
-                          ),
+                          color: const Color(0xFFF9F6EF),
+                          borderRadius: BorderRadius.circular(35),
                         ),
-                        child: TextButton.icon(
-                          onPressed: _showSortOptions,
-                          icon: const Icon(Icons.sort, size: 14, color: Color(0xFF333333)),
-                          label: const Text(
-                            'Sort',
-                            style: TextStyle(
+                        child: TextField(
+                          controller: _searchController,
+                          onChanged: (value) {
+                            setState(() {
+                              _searchQuery = value;
+                            });
+                          },
+                          decoration: const InputDecoration(
+                            hintText: 'Search for Business Categories...',
+                            hintStyle: TextStyle(
                               color: Color(0xFF333333),
                               fontSize: 14,
                             ),
-                          ),
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            prefixIcon: Icon(Icons.search,
+                                size: 16, color: Color(0xFF333333)),
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 10),
                           ),
                         ),
                       ),
-                      
-                      // Filter button
+                    ),
+                    const SizedBox(width: 16), // Reduced from 24
+
+                    // Sort button
+                    Container(
+                      height: 30,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: const Color(0xFF333333)),
+                        borderRadius: const BorderRadius.horizontal(
+                          left: Radius.circular(42),
+                          right: Radius.zero,
+                        ),
+                      ),
+                      child: TextButton.icon(
+                        onPressed: _showSortOptions,
+                        icon: const Icon(Icons.sort,
+                            size: 14, color: Color(0xFF333333)),
+                        label: const Text(
+                          'Sort',
+                          style: TextStyle(
+                            color: Color(0xFF333333),
+                            fontSize: 14,
+                          ),
+                        ),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                        ),
+                      ),
+                    ),
+
+                    // Filter button
+                    Container(
+                      height: 30,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF333333),
+                        borderRadius: BorderRadius.horizontal(
+                          left: Radius.zero,
+                          right: Radius.circular(42),
+                        ),
+                      ),
+                      child: TextButton.icon(
+                        onPressed: _showFilterOptions,
+                        icon: const Icon(Icons.filter_alt_outlined,
+                            size: 14, color: Colors.white),
+                        label: const Text(
+                          'Filter',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                          ),
+                        ),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 12),
+
+                    // Delete button (only show if items are selected)
+                    if (_selectedCategories.isNotEmpty)
                       Container(
+                        width: 30,
                         height: 30,
                         decoration: const BoxDecoration(
-                          color: Color(0xFF333333),
-                          borderRadius: BorderRadius.horizontal(
-                            left: Radius.zero,
-                            right: Radius.circular(42),
-                          ),
+                          color: Color(0xFFC02A2A),
+                          shape: BoxShape.circle,
                         ),
-                        child: TextButton.icon(
-                          onPressed: _showFilterOptions,
-                          icon: const Icon(Icons.filter_alt_outlined, 
-                              size: 14, color: Colors.white),
-                          label: const Text(
-                            'Filter',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                            ),
-                          ),
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                          ),
+                        child: IconButton(
+                          onPressed: _deleteSelectedCategories,
+                          icon: const Icon(Icons.delete_outline,
+                              size: 16, color: Colors.white),
+                          padding: EdgeInsets.zero,
                         ),
                       ),
-                      
-                      const SizedBox(width: 12),
-                      
-                      // Delete button (only show if items are selected)
-                      if (_selectedCategories.isNotEmpty)
-                        Container(
-                          width: 30,
-                          height: 30,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFC02A2A),
-                            shape: BoxShape.circle,
-                          ),
-                          child: IconButton(
-                            onPressed: _deleteSelectedCategories,
-                            icon: const Icon(Icons.delete_outline, 
-                                size: 16, color: Colors.white),
-                            padding: EdgeInsets.zero,
-                          ),
-                        ),
-                    ],
-                  ),
+                  ],
                 ),
               ],
             ),
           ),
-          
+
+          // Add filter widget for business categories
+          if (isBusinessCategory) const BusinessCategoryFilters(),
+
           // Loading indicator
           if (state.isLoading && categories.isEmpty)
-            const Expanded(
+            const SizedBox(
+              height: 200,
               child: Center(
                 child: CircularProgressIndicator(),
               ),
             )
           else if (state.error != null)
-            Expanded(
+            SizedBox(
+              height: 200,
               child: Center(
                 child: Text('Error: ${state.error}'),
               ),
             )
           else
-            Expanded(
+            SizedBox(
+              height: 400, // Fixed height for content area
               child: isBusinessCategory
                   ? const BusinessCategoryTableSection()
                   : const BusinessListTableSection(),

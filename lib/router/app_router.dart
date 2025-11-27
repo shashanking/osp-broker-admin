@@ -16,12 +16,18 @@ import 'package:osp_broker_admin/features/membership/presentation/pages/membersh
 import 'package:osp_broker_admin/features/users/presentation/pages/users_page.dart';
 import 'package:osp_broker_admin/features/users/presentation/pages/memberships_page.dart';
 import 'package:osp_broker_admin/features/business_directories/presentation/pages/business_directories.dart';
+import 'package:osp_broker_admin/features/auction/presentation/auction_screen.dart';
+import 'package:osp_broker_admin/features/chat/presentation/pages/chat_list_screen.dart';
+import 'package:osp_broker_admin/features/chat/presentation/pages/chat_screen.dart';
+import 'package:osp_broker_admin/features/chat/presentation/pages/all_chats_screen.dart';
 
 enum AppRoute {
   splash('/splash'),
   login('/login'),
   dashboard('/dashboard'),
   forums('/forums'),
+  auctions('/auctions'),
+  chat('/chat'),
   users('/users'),
   memberships('/memberships'),
   businessDirectories('/business-directories'),
@@ -36,6 +42,8 @@ class RoutePaths {
   static const String login = '/login';
   static const String dashboard = '/dashboard';
   static const String forums = '/forums';
+  static const String auctions = '/auctions';
+  static const String chat = '/chat';
   static const String users = '/users';
   static const String memberships = '/memberships';
   static const String businessDirectories = '/business-directories';
@@ -110,6 +118,45 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ),
 
+          // Auctions section
+          GoRoute(
+            path: AppRoute.auctions.path,
+            name: AppRoute.auctions.name,
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: AuctionScreen(),
+            ),
+          ),
+
+          // Chat section
+          GoRoute(
+            path: AppRoute.chat.path,
+            name: AppRoute.chat.name,
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: ChatListScreen(),
+            ),
+          ),
+          GoRoute(
+            path: '/chat/:recipientId',
+            pageBuilder: (context, state) {
+              final recipientId = state.pathParameters['recipientId']!;
+              final recipientName = state.uri.queryParameters['recipientName'] ?? 'User';
+              return NoTransitionPage(
+                child: ChatScreen(
+                  recipientId: recipientId,
+                  recipientName: recipientName,
+                ),
+              );
+            },
+          ),
+          // All chats (admin view)
+          GoRoute(
+            path: '/all-chats',
+            name: 'all-chats',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: AllChatsScreen(),
+            ),
+          ),
+
           // Users section
           GoRoute(
             path: AppRoute.users.path,
@@ -162,6 +209,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           state.matchedLocation.startsWith('/dashboard') ||
               state.matchedLocation.startsWith('/users') ||
               state.matchedLocation.startsWith('/business-directories') ||
+              state.matchedLocation.startsWith('/auctions') ||
+              state.matchedLocation.startsWith('/chat') ||
+              state.matchedLocation.startsWith('/all-chats') ||
               state.matchedLocation.startsWith('/settings');
 
       debugPrint(

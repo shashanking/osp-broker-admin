@@ -13,9 +13,21 @@ class BusinessDirectoriesState with _$BusinessDirectoriesState {
     String? error,
     @Default(<BusinessCategory>[]) List<BusinessCategory> categories,
     BusinessCategory? selectedCategory,
+    @Default(true) bool showActiveOnly,
+    @Default(false) bool showDeletedOnly,
   }) = _BusinessDirectoriesState;
   
   const BusinessDirectoriesState._();
   
   factory BusinessDirectoriesState.initial() => const BusinessDirectoriesState();
+  
+  /// Returns filtered categories based on current filter settings
+  List<BusinessCategory> get filteredCategories {
+    if (showDeletedOnly) {
+      return categories.where((category) => category.isDeleted).toList();
+    } else if (showActiveOnly) {
+      return categories.where((category) => !category.isDeleted).toList();
+    }
+    return categories; // Show all if no specific filter is applied
+  }
 }

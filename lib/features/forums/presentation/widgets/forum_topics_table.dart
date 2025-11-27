@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../domain/forum_models.dart';
+import '../pages/topic_detail_page.dart';
 
 
 class ForumTopicsTable extends StatelessWidget {
@@ -97,6 +98,26 @@ class _TopicRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final forumName = forums
+        .firstWhere(
+          (f) => f.id == topic.forumId,
+          orElse: () => Forum(
+            id: topic.forumId,
+            title: 'Unknown Forum',
+            description: '',
+            categoryId: '',
+            userId: '',
+            author: '',
+            comments: 0,
+            isDeleted: false,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            topics: const [],
+            count: {},
+          ),
+        )
+        .title;
+
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: Container(
@@ -104,7 +125,17 @@ class _TopicRow extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
           hoverColor: Colors.blue.withOpacity(0.06),
-          onTap: () {}, // Optionally open topic details
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => TopicDetailPage(
+                  topic: topic,
+                  forumName: forumName,
+                ),
+              ),
+            );
+          },
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 10.0),
             child: Row(
@@ -153,9 +184,10 @@ class _TopicRow extends StatelessWidget {
                             userId: '',
                             author: '',
                             comments: 0,
+                            isDeleted: false,
                             createdAt: DateTime.now(),
                             updatedAt: DateTime.now(),
-                            topics: [],
+                            topics: const [],
                             count: {},
                           ),
                         )
@@ -173,9 +205,20 @@ class _TopicRow extends StatelessWidget {
                 ),
                 // Comments
                 Expanded(
-                  child: Text(
-                    topic.comments.length.toString(),
-                    textAlign: TextAlign.left,
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.comment_outlined,
+                        size: 14,
+                        color: Colors.grey[600],
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        topic.comments.length.toString(),
+                        textAlign: TextAlign.left,
+                        style: const TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                    ],
                   ),
                 ),
                 // Created

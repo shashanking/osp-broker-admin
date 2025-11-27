@@ -1,23 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:osp_broker_admin/features/business_directories/domain/business_directories_model.dart';
-import '../../application/business_directories_notifier.dart';
 
 class AddBusinessCategoryDialog extends ConsumerStatefulWidget {
-  final Function(String name, String iconName) onSave;
+  final Function(String name, String description) onSave;
   final BusinessCategory? category;
-  const AddBusinessCategoryDialog({Key? key, this.category, required this.onSave}) : super(key: key);
+  const AddBusinessCategoryDialog(
+      {Key? key, this.category, required this.onSave})
+      : super(key: key);
 
   @override
-  ConsumerState<AddBusinessCategoryDialog> createState() => _AddBusinessCategoryDialogState();
+  ConsumerState<AddBusinessCategoryDialog> createState() =>
+      _AddBusinessCategoryDialogState();
 }
 
-class _AddBusinessCategoryDialogState extends ConsumerState<AddBusinessCategoryDialog> {
+class _AddBusinessCategoryDialogState
+    extends ConsumerState<AddBusinessCategoryDialog> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
-  String _selectedIcon = 'restaurant';
-  bool _isPublic = true;
   bool _isLoading = false;
 
   @override
@@ -26,7 +27,6 @@ class _AddBusinessCategoryDialogState extends ConsumerState<AddBusinessCategoryD
     if (widget.category != null) {
       _nameController.text = widget.category!.name;
       _descriptionController.text = widget.category!.description;
-      // If you have icon/isPublic fields, set them here too
     }
   }
 
@@ -39,32 +39,37 @@ class _AddBusinessCategoryDialogState extends ConsumerState<AddBusinessCategoryD
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+
     setState(() => _isLoading = true);
-    final notifier = ref.read(businessDirectoriesNotifierProvider.notifier);
+
     try {
-      if (widget.category != null) {
-        // Update existing
-        await notifier.updateBusinessCategory(
-          id: widget.category!.id,
-          name: _nameController.text.trim(),
-          description: _descriptionController.text.trim(),
-        );
-      } else {
-        // Create new
-        await notifier.createBusinessCategory(
-          name: _nameController.text.trim(),
-          description: _descriptionController.text.trim(),
-        );
+      final name = _nameController.text.trim();
+      final description = _descriptionController.text.trim();
+
+      // Call the onSave callback
+      await widget.onSave(name, description);
+
+      // Close dialog on success - use a slight delay to ensure state is properly updated
+      if (mounted) {
+        await Future.delayed(const Duration(milliseconds: 100));
+        if (mounted) {
+          Navigator.of(context).pop(true);
+        }
       }
-      if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to ${widget.category != null ? 'update' : 'create'} category: $e')),
+          SnackBar(
+            content: Text(
+                'Failed to ${widget.category != null ? 'update' : 'create'} category: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -100,11 +105,11 @@ class _AddBusinessCategoryDialogState extends ConsumerState<AddBusinessCategoryD
                   ),
                   IconButton(
                     icon: const Icon(Icons.close, size: 24),
-                    onPressed: () => Navigator.of(context).pop(),
+                    onPressed: () => Navigator.of(context).maybePop(),
                   ),
                 ],
               ),
-              
+
               // Divider
               Container(
                 height: 2,
@@ -118,7 +123,7 @@ class _AddBusinessCategoryDialogState extends ConsumerState<AddBusinessCategoryD
                   borderRadius: BorderRadius.circular(27),
                 ),
               ),
-              
+
               // Category Name Field
               _buildTextField(
                 label: 'Category Name',
@@ -143,130 +148,9 @@ class _AddBusinessCategoryDialogState extends ConsumerState<AddBusinessCategoryD
                   return null;
                 },
               ),
-              
-              const SizedBox(height: 24),
-              
-              // Icon Selection
-              const Text(
-                'Icon',
-                style: TextStyle(
-                  fontFamily: 'Montserrat',
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                  color: Color(0xFF121212),
-                ),
-              ),
-              const SizedBox(height: 8),
-              
-              // Icon Picker
-              Container(
-                height: 48,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEBE6DC),
-                  borderRadius: BorderRadius.circular(35),
-                  border: Border.all(color: const Color(0xFFC8C8C8)),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: _selectedIcon,
-                    isExpanded: true,
-                    icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF333333)),
-                    style: const TextStyle(
-                      fontFamily: 'Montserrat',
-                      fontSize: 14,
-                      color: Color(0xFF333333),
-                    ),
-                    items: const [
-                      DropdownMenuItem(value: 'restaurant', child: Text('Restaurant')),
-                      DropdownMenuItem(value: 'attorney', child: Text('Attorney')),
-                      DropdownMenuItem(value: 'law_firm', child: Text('Law Firm')),
-                      DropdownMenuItem(value: 'it_service', child: Text('IT Service')),
-                      DropdownMenuItem(value: 'fire_service', child: Text('Fire Service')),
-                    ],
-                    onChanged: (value) {
-                      if (value != null) {
-                        setState(() {
-                          _selectedIcon = value;
-                        });
-                      }
-                    },
-                  ),
-                ),
-              ),
-              
-              const SizedBox(height: 24),
-              
-              // Visibility Toggle
-              const Text(
-                'Visibility',
-                style: TextStyle(
-                  fontFamily: 'Montserrat',
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                  color: Color(0xFF121212),
-                ),
-              ),
-              const SizedBox(height: 8),
-              
-              Container(
-                height: 48,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF333333),
-                  borderRadius: BorderRadius.circular(29),
-                ),
-                child: ToggleButtons(
-                  isSelected: [_isPublic, !_isPublic],
-                  onPressed: (index) {
-                    setState(() {
-                      _isPublic = index == 0;
-                    });
-                  },
-                  borderRadius: BorderRadius.circular(29),
-                  selectedColor: const Color(0xFF333333),
-                  fillColor: Colors.transparent,
-                  renderBorder: false,
-                  children: [
-                    Container(
-                      width: 159,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: _isPublic ? const Color(0xFF80C02A) : Colors.transparent,
-                        borderRadius: BorderRadius.circular(54),
-                      ),
-                      child: const Text(
-                        'Active',
-                        style: TextStyle(
-                          fontFamily: 'Basement Grotesque',
-                          fontWeight: FontWeight.w800,
-                          fontSize: 16,
-                          color: Color(0xFF333333),
-                        ),
-                      ),
-                    ),
-                    Container(
-                      width: 159,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: !_isPublic ? const Color(0xFF80C02A) : Colors.transparent,
-                        borderRadius: BorderRadius.circular(54),
-                      ),
-                      child: const Text(
-                        'Inactive',
-                        style: TextStyle(
-                          fontFamily: 'Basement Grotesque',
-                          fontWeight: FontWeight.w800,
-                          fontSize: 16,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              
+
               const SizedBox(height: 34),
-              
+
               // Create/Update Button
               SizedBox(
                 width: double.infinity,
@@ -283,10 +167,13 @@ class _AddBusinessCategoryDialogState extends ConsumerState<AddBusinessCategoryD
                       ? const SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white),
                         )
                       : Text(
-                          widget.category == null ? 'Create Category' : 'Update Category',
+                          widget.category == null
+                              ? 'Create Category'
+                              : 'Update Category',
                           style: const TextStyle(
                             fontFamily: 'Basement Grotesque',
                             fontWeight: FontWeight.w800,
@@ -302,7 +189,7 @@ class _AddBusinessCategoryDialogState extends ConsumerState<AddBusinessCategoryD
       ),
     );
   }
-  
+
   Widget _buildTextField({
     required String label,
     required String hint,

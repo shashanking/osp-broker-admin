@@ -140,6 +140,74 @@ class BusinessDirectoriesNotifier extends StateNotifier<BusinessDirectoriesState
     state = state.copyWith(error: null);
   }
 
+  /// Sets filter to show only active categories
+  void showActiveOnly() {
+    state = state.copyWith(showActiveOnly: true, showDeletedOnly: false);
+  }
+
+  /// Sets filter to show only deleted categories
+  void showDeletedOnly() {
+    state = state.copyWith(showActiveOnly: false, showDeletedOnly: true);
+  }
+
+  /// Sets filter to show all categories
+  void showAllCategories() {
+    state = state.copyWith(showActiveOnly: false, showDeletedOnly: false);
+  }
+
+  /// Soft deletes a business category (sets isDeleted to true)
+  Future<void> softDeleteBusinessCategory(String id) async {
+    state = state.copyWith(isDeleting: true, error: null);
+    try {
+      await _repository.softDeleteBusinessCategory(id);
+      
+      // Update the category in the state to reflect the soft delete
+      state = state.copyWith(
+        categories: state.categories.map((category) {
+          if (category.id == id) {
+            return category.copyWith(isDeleted: true);
+          }
+          return category;
+        }).toList(),
+        selectedCategory: state.selectedCategory?.id == id 
+            ? null 
+            : state.selectedCategory,
+        isDeleting: false,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        error: e.toString(),
+        isDeleting: false,
+      );
+      rethrow;
+    }
+  }
+
+  /// Restores a soft deleted business category (sets isDeleted to false)
+  Future<void> restoreBusinessCategory(String id) async {
+    state = state.copyWith(isUpdating: true, error: null);
+    try {
+      await _repository.restoreBusinessCategory(id);
+      
+      // Update the category in the state to reflect the restore
+      state = state.copyWith(
+        categories: state.categories.map((category) {
+          if (category.id == id) {
+            return category.copyWith(isDeleted: false);
+          }
+          return category;
+        }).toList(),
+        isUpdating: false,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        error: e.toString(),
+        isUpdating: false,
+      );
+      rethrow;
+    }
+  }
+
   /// Fetches all businesses
   Future<List<BusinessModel>> fetchAllBusinesses() async {
     state = state.copyWith(isLoading: true, error: null);
@@ -152,6 +220,18 @@ class BusinessDirectoriesNotifier extends StateNotifier<BusinessDirectoriesState
         error: e.toString(),
         isLoading: false,
       );
+      rethrow;
+    }
+  }
+
+  /// Verifies a business by ID
+  Future<void> verifyBusiness(String businessId) async {
+    try {
+      // keep state non-blocking for UI list; just clear error
+      state = state.copyWith(error: null);
+      await _repository.verifyBusiness(businessId);
+    } catch (e) {
+      state = state.copyWith(error: 'Failed to verify business: ${e.toString()}');
       rethrow;
     }
   }

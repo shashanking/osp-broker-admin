@@ -3,11 +3,15 @@ import 'package:osp_broker_admin/core/infrastructure/base_api_service.dart';
 import '../data/repositories/user_repository.dart';
 import '../data/models/user_model.dart';
 import '../data/models/user_membership_model.dart';
+import '../data/models/moderator_model.dart';
 
 class UserState {
   final List<UserModel> users;
-  final Map<String, List<UserMembershipModel>> userMemberships; // userId -> memberships
+  final List<ModeratorModel> moderators;
+  final Map<String, List<UserMembershipModel>>
+      userMemberships; // userId -> memberships
   final bool isLoading;
+  final bool isLoadingModerators;
   final bool isLoadingMemberships;
   final String? error;
   final Set<String> updatingUserIds;
@@ -15,8 +19,10 @@ class UserState {
 
   UserState({
     this.users = const [],
+    this.moderators = const [],
     this.userMemberships = const {},
     this.isLoading = false,
+    this.isLoadingModerators = false,
     this.isLoadingMemberships = false,
     this.error,
     this.updatingUserIds = const {},
@@ -25,8 +31,10 @@ class UserState {
 
   UserState copyWith({
     List<UserModel>? users,
+    List<ModeratorModel>? moderators,
     Map<String, List<UserMembershipModel>>? userMemberships,
     bool? isLoading,
+    bool? isLoadingModerators,
     bool? isLoadingMemberships,
     String? error,
     Set<String>? updatingUserIds,
@@ -34,12 +42,15 @@ class UserState {
   }) {
     return UserState(
       users: users ?? this.users,
+      moderators: moderators ?? this.moderators,
       userMemberships: userMemberships ?? this.userMemberships,
       isLoading: isLoading ?? this.isLoading,
+      isLoadingModerators: isLoadingModerators ?? this.isLoadingModerators,
       isLoadingMemberships: isLoadingMemberships ?? this.isLoadingMemberships,
       error: error,
       updatingUserIds: updatingUserIds ?? this.updatingUserIds,
-      loadingMembershipUserIds: loadingMembershipUserIds ?? this.loadingMembershipUserIds,
+      loadingMembershipUserIds:
+          loadingMembershipUserIds ?? this.loadingMembershipUserIds,
     );
   }
 }
@@ -82,16 +93,43 @@ class UserNotifier extends StateNotifier<UserState> {
     }
   }
 
+  Future<UserModel?> fetchUserProfile(String userId) async {
+    try {
+      return await repository.fetchUserProfile(userId);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+      return null;
+    }
+  }
+
+  Future<List<UserMembershipModel>> getUserMemberships(String userId) async {
+    try {
+      return await repository.getUserMemberships(userId);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+      return [];
+    }
+  }
+
+  Future<Map<String, dynamic>?> fetchUserProfileDetails(String userId) async {
+    try {
+      return await repository.fetchUserProfileDetails(userId);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+      return null;
+    }
+  }
+
   Future<void> fetchUsers() async {
     try {
       // Only show loading state if we don't have any data yet
       if (state.users.isEmpty) {
         state = state.copyWith(isLoading: true, error: null);
       }
-      
+
       final users = await repository.fetchAllUsers();
       if (!mounted) return;
-      
+
       state = state.copyWith(
         users: users,
         isLoading: false,
@@ -106,17 +144,31 @@ class UserNotifier extends StateNotifier<UserState> {
     }
   }
 
-  Future<List<UserModel>> fetchModerators() async {
+  Future<void> fetchModerators() async {
     try {
+      // Only show loading state if we don't have any data yet
+      if (state.moderators.isEmpty) {
+        state = state.copyWith(isLoadingModerators: true, error: null);
+      }
+
       final moderators = await repository.fetchModerators();
-      return moderators;
+      if (!mounted) return;
+
+      state = state.copyWith(
+        moderators: moderators,
+        isLoadingModerators: false,
+        error: null, // Clear any previous errors
+      );
     } catch (e) {
-      state = state.copyWith(error: 'Failed to fetch moderators: $e');
-      return [];
+      if (!mounted) return;
+      state = state.copyWith(
+        error: 'Failed to fetch moderators: $e',
+        isLoadingModerators: false,
+      );
     }
   }
 
-  Future<void> assignModerator(String userId) async {
+  Future<void> assignModerator(String userId, {String? categoryId}) async {
     state = state.copyWith(updatingUserIds: {...state.updatingUserIds, userId});
     try {
       // Optimistically update the user role in the list
@@ -135,8 +187,13 @@ class UserNotifier extends StateNotifier<UserState> {
               : u)
           .toList();
       state = state.copyWith(users: updatedUsers);
-      await repository.assignModerator(userId);
-      await fetchUsers();
+      await repository.assignModerator(userId, categoryId: categoryId);
+
+      // Refresh both users and moderators lists
+      await Future.wait([
+        fetchUsers(),
+        fetchModerators(),
+      ]);
     } catch (e) {
       state = state.copyWith(error: e.toString());
     } finally {
@@ -164,10 +221,23 @@ class UserNotifier extends StateNotifier<UserState> {
         }
         return u;
       }).toList();
-      
-      state = state.copyWith(users: updatedUsers);
+
+      // Optimistically remove from moderators list
+      final updatedModerators =
+          state.moderators.where((m) => m.userId != userId).toList();
+
+      state = state.copyWith(
+        users: updatedUsers,
+        moderators: updatedModerators,
+      );
+
       await repository.removeModerator(userId);
-      await fetchUsers();
+
+      // Refresh both users and moderators lists
+      await Future.wait([
+        fetchUsers(),
+        fetchModerators(),
+      ]);
     } catch (e) {
       state = state.copyWith(error: e.toString());
       rethrow;
@@ -183,14 +253,14 @@ class UserNotifier extends StateNotifier<UserState> {
       state = state.copyWith(
         loadingMembershipUserIds: {...state.loadingMembershipUserIds, userId},
       );
-      
+
       final success = await repository.deleteUserMembership(membershipId);
-      
+
       if (success) {
         // Instead of just updating local state, refresh all memberships to ensure consistency
         await loadAllUserMemberships();
       }
-      
+
       return success;
     } catch (e) {
       print('Error deleting membership: $e');
@@ -198,7 +268,8 @@ class UserNotifier extends StateNotifier<UserState> {
     } finally {
       if (mounted) {
         state = state.copyWith(
-          loadingMembershipUserIds: {...state.loadingMembershipUserIds}..remove(userId),
+          loadingMembershipUserIds: {...state.loadingMembershipUserIds}
+            ..remove(userId),
         );
       }
     }
@@ -227,7 +298,7 @@ class UserNotifier extends StateNotifier<UserState> {
 
       // Instead of just adding to local state, refresh all memberships to ensure consistency
       await loadAllUserMemberships();
-      
+
       return newMembership;
     } catch (e) {
       print('Error creating membership: $e');
@@ -235,7 +306,8 @@ class UserNotifier extends StateNotifier<UserState> {
     } finally {
       if (mounted) {
         state = state.copyWith(
-          loadingMembershipUserIds: {...state.loadingMembershipUserIds}..remove(userId),
+          loadingMembershipUserIds: {...state.loadingMembershipUserIds}
+            ..remove(userId),
         );
       }
     }
@@ -243,11 +315,11 @@ class UserNotifier extends StateNotifier<UserState> {
 
   Future<void> loadUserMemberships(String userId) async {
     if (state.loadingMembershipUserIds.contains(userId)) return;
-    
+
     state = state.copyWith(
       loadingMembershipUserIds: {...state.loadingMembershipUserIds, userId},
     );
-    
+
     try {
       final memberships = await repository.getUserMemberships(userId);
       state = state.copyWith(
@@ -261,7 +333,8 @@ class UserNotifier extends StateNotifier<UserState> {
       print('Error loading memberships: $e');
     } finally {
       state = state.copyWith(
-        loadingMembershipUserIds: {...state.loadingMembershipUserIds}..remove(userId),
+        loadingMembershipUserIds: {...state.loadingMembershipUserIds}
+          ..remove(userId),
       );
     }
   }
@@ -275,12 +348,13 @@ class UserNotifier extends StateNotifier<UserState> {
           error: null,
         );
       }
-      
+
       // Force fetch from server by not using cache
-      final memberships = await repository.getAllUserMemberships(forceRefresh: true);
-      
+      final memberships =
+          await repository.getAllUserMemberships(forceRefresh: true);
+
       if (!mounted) return;
-      
+
       // Group memberships by userId
       final membershipsByUser = <String, List<UserMembershipModel>>{};
       for (final membership in memberships) {
@@ -290,7 +364,7 @@ class UserNotifier extends StateNotifier<UserState> {
           ifAbsent: () => [membership],
         );
       }
-      
+
       state = state.copyWith(
         userMemberships: membershipsByUser,
         isLoadingMemberships: false,
@@ -313,15 +387,16 @@ class UserNotifier extends StateNotifier<UserState> {
     required DateTime endDate,
   }) async {
     try {
-      state = state.copyWith(updatingUserIds: {...state.updatingUserIds, userId});
-      
+      state =
+          state.copyWith(updatingUserIds: {...state.updatingUserIds, userId});
+
       final success = await repository.assignMembership(
         userId: userId,
         membershipPlanId: membershipPlanId,
         startDate: startDate,
         endDate: endDate,
       );
-      
+
       if (success) {
         // Reload the user's memberships
         await loadUserMemberships(userId);
@@ -329,7 +404,8 @@ class UserNotifier extends StateNotifier<UserState> {
         throw Exception('Failed to assign membership');
       }
     } catch (e) {
-      state = state.copyWith(error: 'Failed to assign membership: ${e.toString()}');
+      state =
+          state.copyWith(error: 'Failed to assign membership: ${e.toString()}');
       rethrow;
     } finally {
       final newSet = {...state.updatingUserIds}..remove(userId);
@@ -342,10 +418,11 @@ class UserNotifier extends StateNotifier<UserState> {
     required String membershipId,
   }) async {
     try {
-      state = state.copyWith(updatingUserIds: {...state.updatingUserIds, userId});
-      
+      state =
+          state.copyWith(updatingUserIds: {...state.updatingUserIds, userId});
+
       final success = await repository.cancelMembership(membershipId);
-      
+
       if (success) {
         // Remove the cancelled membership from state
         state = state.copyWith(
@@ -361,7 +438,8 @@ class UserNotifier extends StateNotifier<UserState> {
         throw Exception('Failed to cancel membership');
       }
     } catch (e) {
-      state = state.copyWith(error: 'Failed to cancel membership: ${e.toString()}');
+      state =
+          state.copyWith(error: 'Failed to cancel membership: ${e.toString()}');
       rethrow;
     } finally {
       final newSet = {...state.updatingUserIds}..remove(userId);

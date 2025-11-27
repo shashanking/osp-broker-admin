@@ -36,6 +36,7 @@ class BusinessDirectoriesRepository {
     required String description,
   }) async {
     try {
+      log('Creating business category with name: $name, description: $description');
       final response = await _apiService.post(
         '/business/category',
         data: {
@@ -43,9 +44,49 @@ class BusinessDirectoriesRepository {
           'description': description,
         },
       );
-      return BusinessCategory.fromJson(response.data['data']['category']);
+      
+      log('Create category response: ${response.data}');
+      log('Response status code: ${response.statusCode}');
+      
+      // The API might return the category directly or nested in data
+      if (response.data is Map<String, dynamic>) {
+        final responseData = Map<String, dynamic>.from(response.data as Map);
+        
+        // Check if category is nested in data
+        if (responseData.containsKey('data') && responseData['data'] != null) {
+          final dataRaw = responseData['data'];
+          if (dataRaw is Map) {
+            final data = Map<String, dynamic>.from(dataRaw);
+            // Check if category is further nested
+            if (data.containsKey('category')) {
+              log('Parsing category from data.category');
+              final categoryRaw = data['category'];
+              if (categoryRaw is Map) {
+                final categoryMap = Map<String, dynamic>.from(categoryRaw);
+                return BusinessCategory.fromJson(categoryMap);
+              }
+              throw Exception('Unexpected category format: ${data['category']}');
+            } else {
+              log('Parsing category from data directly');
+              return BusinessCategory.fromJson(data);
+            }
+          }
+        } else {
+          // Category might be at root level
+          log('Parsing category from root level');
+          return BusinessCategory.fromJson(responseData);
+        }
+      }
+      
+      throw Exception('Unexpected response format: ${response.data}');
     } on DioException catch (e) {
+      log('DioException creating category: ${e.message}');
+      log('Response data: ${e.response?.data}');
       throw Exception('Failed to create business category: ${e.message}');
+    } catch (e, stackTrace) {
+      log('Unexpected error creating category: $e');
+      log('Stack trace: $stackTrace');
+      throw Exception('Failed to create business category: $e');
     }
   }
 
@@ -56,6 +97,7 @@ class BusinessDirectoriesRepository {
     required String description,
   }) async {
     try {
+      log('Updating business category $id with name: $name, description: $description');
       final response = await _apiService.put(
         '/business/category/$id',
         data: {
@@ -63,9 +105,43 @@ class BusinessDirectoriesRepository {
           'description': description,
         },
       );
-      return BusinessCategory.fromJson(response.data['data']['category']);
+      
+      log('Update category response: ${response.data}');
+      log('Response status code: ${response.statusCode}');
+      
+      // The API might return the category directly or nested in data
+      if (response.data is Map<String, dynamic>) {
+        final responseData = response.data as Map<String, dynamic>;
+        
+        // Check if category is nested in data
+        if (responseData.containsKey('data') && responseData['data'] != null) {
+          final data = responseData['data'];
+          if (data is Map<String, dynamic>) {
+            // Check if category is further nested
+            if (data.containsKey('category')) {
+              log('Parsing updated category from data.category');
+              return BusinessCategory.fromJson(data['category']);
+            } else {
+              log('Parsing updated category from data directly');
+              return BusinessCategory.fromJson(data);
+            }
+          }
+        } else {
+          // Category might be at root level
+          log('Parsing updated category from root level');
+          return BusinessCategory.fromJson(responseData);
+        }
+      }
+      
+      throw Exception('Unexpected response format: ${response.data}');
     } on DioException catch (e) {
+      log('DioException updating category: ${e.message}');
+      log('Response data: ${e.response?.data}');
       throw Exception('Failed to update business category: ${e.message}');
+    } catch (e, stackTrace) {
+      log('Unexpected error updating category: $e');
+      log('Stack trace: $stackTrace');
+      throw Exception('Failed to update business category: $e');
     }
   }
 
@@ -115,12 +191,45 @@ class BusinessDirectoriesRepository {
     }
   }
 
+  /// Verifies a business by ID
+  Future<void> verifyBusiness(String businessId) async {
+    try {
+      await _apiService.post('/business/$businessId', requireAuth: true);
+    } on DioException catch (e) {
+      throw Exception('Failed to verify business: ${e.message}');
+    }
+  }
+
   /// Deletes a business category
   Future<void> deleteBusinessCategory(String id) async {
     try {
       await _apiService.delete('/business/category/$id');
     } on DioException catch (e) {
       throw Exception('Failed to delete business category: ${e.message}');
+    }
+  }
+
+  /// Soft deletes a business category (sets isDeleted to true)
+  Future<void> softDeleteBusinessCategory(String id) async {
+    try {
+      await _apiService.put(
+        '/business/category/$id/soft-delete',
+        data: {'isDeleted': true},
+      );
+    } on DioException catch (e) {
+      throw Exception('Failed to soft delete business category: ${e.message}');
+    }
+  }
+
+  /// Restores a soft deleted business category (sets isDeleted to false)
+  Future<void> restoreBusinessCategory(String id) async {
+    try {
+      await _apiService.put(
+        '/business/category/$id/restore',
+        data: {'isDeleted': false},
+      );
+    } on DioException catch (e) {
+      throw Exception('Failed to restore business category: ${e.message}');
     }
   }
 }

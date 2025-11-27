@@ -56,8 +56,6 @@ class _BusinessListTableSectionState extends ConsumerState<BusinessListTableSect
       for (final c in _categories) c.id: c.name
     };
     return Container(
-      width: 1526,
-      height: 668,
       margin: const EdgeInsets.only(top: 20),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -121,22 +119,23 @@ class _BusinessListTableSectionState extends ConsumerState<BusinessListTableSect
           ),
           
           // Business Name
-          _buildHeaderCell('Business Name', 390),
+          _buildHeaderCell('Business Name', flex: 4),
           
-          // Handle
-          _buildHeaderCell('Owner Name', 210),
+          // Owner Name
+          _buildHeaderCell('Owner Name', flex: 2),
           
-          // Number of Schools
-          _buildHeaderCell('Category', 200),
+          // Category
+          _buildHeaderCell('Category', flex: 2),
           
           // Join Date
-          _buildHeaderCell('Join Date', 150),
+          _buildHeaderCell('Join Date', flex: 2),
           
           // Status
-          _buildHeaderCell('Status', 150),
+          _buildHeaderCell('Status', flex: 2),
           
           // Actions
           const Expanded(
+            flex: 2,
             child: Text(
               'Actions',
               style: TextStyle(
@@ -151,17 +150,20 @@ class _BusinessListTableSectionState extends ConsumerState<BusinessListTableSect
     );
   }
   
-  Widget _buildHeaderCell(String text, double width) {
-    return SizedBox(
-      width: width,
+  Widget _buildHeaderCell(String text, {required int flex}) {
+    return Expanded(
+      flex: flex,
       child: Row(
         children: [
-          Text(
-            text,
-            style: const TextStyle(
-              color: Color(0xFF333333),
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                color: Color(0xFF333333),
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           const SizedBox(width: 4),
@@ -199,34 +201,79 @@ class _BusinessListTableSectionState extends ConsumerState<BusinessListTableSect
             ),
           ),
           // Business Name
-          _buildCell(business.businessName, 390, FontWeight.w400),
+          _buildCell(business.businessName, flex: 4, fontWeight: FontWeight.w400),
           // Owner Name
-          _buildCell(business.accountOwnerUsername, 210, FontWeight.w400),
+          _buildCell(business.accountOwnerUsername, flex: 2, fontWeight: FontWeight.w400),
           // Category (show name instead of ID)
-          _buildCell(categoryName, 200, FontWeight.w700),
+          _buildCell(categoryName, flex: 2, fontWeight: FontWeight.w700),
           // Join Date (not present in model, show foundedYear)
-          _buildCell(business.foundedYear, 150, FontWeight.w400),
+          _buildCell(business.foundedYear, flex: 2, fontWeight: FontWeight.w400),
           // Status
-          Container(
-            width: 150,
-            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
-            decoration: BoxDecoration(
-              color: statusColor,
-              borderRadius: BorderRadius.circular(29),
-            ),
-            child: Text(
-              status,
-              style: const TextStyle(
-                color: Color(0xFF4D4D4D),
-                fontSize: 16,
-                fontWeight: FontWeight.w400,
+          Expanded(
+            flex: 2,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
+              decoration: BoxDecoration(
+                color: statusColor,
+                borderRadius: BorderRadius.circular(29),
+              ),
+              child: Text(
+                status,
+                style: const TextStyle(
+                  color: Color(0xFF4D4D4D),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ),
           // Actions
           Expanded(
+            flex: 2,
             child: Row(
               children: [
+                if (!business.authorizedUser) ...[
+                  // Verify button (only when pending)
+                  ElevatedButton(
+                    onPressed: () async {
+                      try {
+                        await ref
+                            .read(businessDirectoriesNotifierProvider.notifier)
+                            .verifyBusiness(business.id);
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Business verified successfully'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        }
+                        // Refresh list to reflect updated status
+                        await _fetchBusinesses();
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Failed to verify: $e'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF80C02A),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(29),
+                      ),
+                    ),
+                    child: const Text('Verify'),
+                  ),
+                  const SizedBox(width: 12),
+                ],
                 // Edit button
                 Container(
                   height: 30,
@@ -265,9 +312,9 @@ class _BusinessListTableSectionState extends ConsumerState<BusinessListTableSect
     );
   }
   
-  Widget _buildCell(String text, double width, FontWeight fontWeight) {
-    return SizedBox(
-      width: width,
+  Widget _buildCell(String text, {required int flex, required FontWeight fontWeight}) {
+    return Expanded(
+      flex: flex,
       child: Text(
         text,
         style: TextStyle(
@@ -275,6 +322,7 @@ class _BusinessListTableSectionState extends ConsumerState<BusinessListTableSect
           fontSize: 16,
           fontWeight: fontWeight,
         ),
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }

@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart'; // Added for Hive.initFlutter
 import 'package:osp_broker_admin/core/constants/app_colors.dart';
 import 'package:osp_broker_admin/core/infrastructure/providers.dart';
+import 'package:osp_broker_admin/core/realtime/socket_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,6 +44,9 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
+    
+    // Initialize socket service for real-time chat
+    ref.watch(socketBootstrapProvider);
 
     return ScreenUtilInit(
       designSize: const Size(375, 812), // iPhone 13 dimensions

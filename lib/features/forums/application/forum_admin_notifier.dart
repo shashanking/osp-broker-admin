@@ -6,7 +6,8 @@ import 'package:osp_broker_admin/features/forums/domain/forum_models.dart';
 import 'package:osp_broker_admin/features/membership/application/membership_notifier.dart';
 import 'package:osp_broker_admin/features/membership/data/models/membership_plan_model.dart';
 import 'package:osp_broker_admin/features/users/application/user_notifier.dart';
-import 'package:osp_broker_admin/features/users/data/models/user_model.dart';
+
+import 'package:osp_broker_admin/features/users/data/models/moderator_model.dart';
 import 'package:osp_broker_admin/features/forums/domain/poll_analytics_model.dart';
 
 part 'forum_admin_notifier.freezed.dart';
@@ -17,6 +18,7 @@ class ForumAdminState with _$ForumAdminState {
     @Default(false) bool isLoading,
     @Default(false) bool isLoadingModerators,
     @Default(false) bool isLoadingMembershipPlans,
+    @Default(false) bool isLoadingComments,
     String? error,
     @Default(<Category>[]) List<Category> categories,
     @Default(<Forum>[]) List<Forum> forums,
@@ -24,19 +26,21 @@ class ForumAdminState with _$ForumAdminState {
     @Default(<Announcement>[]) List<Announcement> announcements,
     @Default(<Event>[]) List<Event> events,
     @Default(<Poll>[]) List<Poll> polls,
-    @Default(<UserModel>[]) List<UserModel> moderators,
+    @Default(<Comment>[]) List<Comment> comments,
+    @Default(<ModeratorModel>[]) List<ModeratorModel> moderators,
     @Default(<MembershipPlanModel>[]) List<MembershipPlanModel> membershipPlans,
     Category? selectedCategory,
     Forum? selectedForum,
     Topic? selectedTopic,
   }) = _ForumAdminState;
-  
+
   const ForumAdminState._();
-  
+
   factory ForumAdminState.initial() => const ForumAdminState(
         isLoading: false,
         isLoadingModerators: false,
         isLoadingMembershipPlans: false,
+        isLoadingComments: false,
         error: null,
         categories: [],
         forums: [],
@@ -44,6 +48,7 @@ class ForumAdminState with _$ForumAdminState {
         announcements: [],
         events: [],
         polls: [],
+        comments: [],
         moderators: [],
         membershipPlans: [],
         selectedCategory: null,
@@ -56,13 +61,22 @@ class ForumAdminNotifier extends StateNotifier<ForumAdminState> {
   final ForumRepository _repository;
   final Ref _ref;
 
-  ForumAdminNotifier(this._repository, this._ref) : super(ForumAdminState.initial());
-  
+  ForumAdminNotifier(this._repository, this._ref)
+      : super(ForumAdminState.initial());
+
   // Load moderators from UserNotifier
   Future<void> loadModerators() async {
     state = state.copyWith(isLoadingModerators: true);
     try {
-      final moderators = await _ref.read(userNotifierProvider.notifier).fetchModerators();
+      // Ensure users are loaded first (needed for UI to show moderator names)
+      await _ref.read(userNotifierProvider.notifier).fetchUsers();
+
+      // Trigger the fetch in user notifier
+      await _ref.read(userNotifierProvider.notifier).fetchModerators();
+
+      // Get the moderators from user notifier state
+      final moderators = _ref.read(userNotifierProvider).moderators;
+
       state = state.copyWith(
         moderators: moderators,
         isLoadingModerators: false,
@@ -75,7 +89,7 @@ class ForumAdminNotifier extends StateNotifier<ForumAdminState> {
       rethrow;
     }
   }
-  
+
   // Load membership plans from MembershipNotifier
   Future<void> loadMembershipPlans() async {
     state = state.copyWith(isLoadingMembershipPlans: true);
@@ -109,7 +123,7 @@ class ForumAdminNotifier extends StateNotifier<ForumAdminState> {
   Future<Category> createCategory({
     required String name,
     required String description,
-    required String moderatorId,
+    String? moderatorId,
     required String icon,
     required List<String> membershipAccess,
   }) async {
@@ -205,9 +219,8 @@ class ForumAdminNotifier extends StateNotifier<ForumAdminState> {
         description: description,
       );
       // Update the forum in state.forums
-      final updatedForums = state.forums.map((f) =>
-        f.id == forumId ? updatedForum : f
-      ).toList();
+      final updatedForums =
+          state.forums.map((f) => f.id == forumId ? updatedForum : f).toList();
       state = state.copyWith(forums: updatedForums, isLoading: false);
       return updatedForum;
     } catch (e) {
@@ -271,7 +284,7 @@ class ForumAdminNotifier extends StateNotifier<ForumAdminState> {
         title: title,
         description: description,
       );
-      
+
       // Update the announcements list
       state = state.copyWith(
         announcements: [...state.announcements, announcement],
@@ -298,13 +311,13 @@ class ForumAdminNotifier extends StateNotifier<ForumAdminState> {
         question: question,
         options: options,
       );
-      
+
       // Update the polls list
       state = state.copyWith(
         polls: [...state.polls, poll],
         isLoading: false,
       );
-      
+
       return poll;
     } catch (e) {
       state = state.copyWith(
@@ -351,7 +364,7 @@ class ForumAdminNotifier extends StateNotifier<ForumAdminState> {
     try {
       state = state.copyWith(isLoading: true);
       await _repository.deleteAnnouncement(id);
-      
+
       // Update the announcements list by removing the deleted announcement
       state = state.copyWith(
         announcements: state.announcements.where((a) => a.id != id).toList(),
@@ -398,13 +411,13 @@ class ForumAdminNotifier extends StateNotifier<ForumAdminState> {
         description: description,
         date: date,
       );
-      
+
       // Update the events list
       state = state.copyWith(
         events: [...state.events, event],
         isLoading: false,
       );
-      
+
       return event;
     } catch (e) {
       state = state.copyWith(
@@ -442,6 +455,77 @@ class ForumAdminNotifier extends StateNotifier<ForumAdminState> {
       final polls = await _repository.fetchAllPolls();
       state = state.copyWith(
         polls: polls,
+        isLoading: false,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        error: e.toString(),
+        isLoading: false,
+      );
+      rethrow;
+    }
+  }
+
+  // Comments
+  Future<void> fetchCommentsForTopic(String topicId) async {
+    try {
+      state = state.copyWith(isLoadingComments: true, error: null);
+      final comments = await _repository.fetchCommentsForTopic(topicId);
+      state = state.copyWith(
+        comments: comments,
+        isLoadingComments: false,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        error: e.toString(),
+        isLoadingComments: false,
+      );
+      rethrow;
+    }
+  }
+
+  Future<void> deleteComment(String commentId) async {
+    try {
+      state = state.copyWith(isLoading: true);
+      await _repository.deleteComment(commentId);
+      // Remove comment from state
+      final updatedComments = state.comments.where((c) => c.id != commentId).toList();
+      state = state.copyWith(
+        comments: updatedComments,
+        isLoading: false,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        error: e.toString(),
+        isLoading: false,
+      );
+      rethrow;
+    }
+  }
+
+  // Topic moderation
+  Future<void> closeTopic(String topicId) async {
+    try {
+      state = state.copyWith(isLoading: true);
+      await _repository.closeTopic(topicId);
+      state = state.copyWith(isLoading: false);
+    } catch (e) {
+      state = state.copyWith(
+        error: e.toString(),
+        isLoading: false,
+      );
+      rethrow;
+    }
+  }
+
+  Future<void> deleteTopic(String topicId) async {
+    try {
+      state = state.copyWith(isLoading: true);
+      await _repository.deleteTopic(topicId);
+      // Remove topic from state
+      final updatedTopics = state.topics.where((t) => t.id != topicId).toList();
+      state = state.copyWith(
+        topics: updatedTopics,
         isLoading: false,
       );
     } catch (e) {

@@ -3,6 +3,8 @@ import 'package:osp_broker_admin/features/users/application/user_notifier.dart';
 
 import '../../data/models/user_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'category_selection_dialog.dart';
+import '../pages/user_detail_page.dart';
 
 class UserUsersTable extends StatefulWidget {
   final List<UserModel> users;
@@ -164,10 +166,22 @@ class _UserRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 0),
-      child: Row(
-        children: [
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => UserDetailPage(
+              userId: user.id,
+              userName: user.fullName,
+            ),
+          ),
+        );
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 0),
+        child: Row(
+          children: [
           SizedBox(width: 32, child: Checkbox(value: false, onChanged: null)),
           Expanded(flex: 2, child: Text(user.fullName)),
           Expanded(flex: 2, child: Text(user.email)),
@@ -182,7 +196,8 @@ class _UserRow extends ConsumerWidget {
               children: [
                 Consumer(
                   builder: (context, ref, _) {
-                    final updating = ref.watch(userNotifierProvider.select((s) => s.updatingUserIds.contains(user.id)));
+                    final updating = ref.watch(userNotifierProvider
+                        .select((s) => s.updatingUserIds.contains(user.id)));
                     if (updating) {
                       return SizedBox(
                         width: 28,
@@ -202,9 +217,12 @@ class _UserRow extends ConsumerWidget {
                               onPressed: updating
                                   ? null
                                   : () {
-                                      ref.read(userNotifierProvider.notifier).removeModerator(user.id);
+                                      ref
+                                          .read(userNotifierProvider.notifier)
+                                          .removeModerator(user.id);
                                     },
-                              child: const Icon(Icons.remove_circle_outline, size: 18, color: Colors.orange),
+                              child: const Icon(Icons.remove_circle_outline,
+                                  size: 18, color: Colors.orange),
                             ),
                           )
                         : Tooltip(
@@ -217,10 +235,27 @@ class _UserRow extends ConsumerWidget {
                               ),
                               onPressed: updating
                                   ? null
-                                  : () {
-                                      ref.read(userNotifierProvider.notifier).assignModerator(user.id);
+                                  : () async {
+                                      // Show category selection dialog
+                                      final selectedCategory = await showDialog(
+                                        context: context,
+                                        builder: (context) =>
+                                            CategorySelectionDialog(
+                                          userId: user.id,
+                                          userName: user.fullName,
+                                        ),
+                                      );
+
+                                      if (selectedCategory != null) {
+                                        ref
+                                            .read(userNotifierProvider.notifier)
+                                            .assignModerator(user.id,
+                                                categoryId:
+                                                    selectedCategory.id);
+                                      }
                                     },
-                              child: const Icon(Icons.add_circle_outline, size: 18, color: Colors.blue),
+                              child: const Icon(Icons.add_circle_outline,
+                                  size: 18, color: Colors.blue),
                             ),
                           );
                   },
@@ -334,7 +369,8 @@ class _UserRow extends ConsumerWidget {
                   ),
                 ],
               )),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -241,16 +241,49 @@ class _UserMembershipsTableState extends ConsumerState<UserMembershipsTable> {
               ),
             );
 
-            // Sort memberships by status (active first) and then by end date (newest first)
-            final sortedMemberships =
-                List<UserMembershipModel>.from(userMemberships)
-                  ..sort((a, b) {
-                    if (a.status == 'active' && b.status != 'active') return -1;
-                    if (a.status != 'active' && b.status == 'active') return 1;
-                    return b.endDate.compareTo(a.endDate); // Newest first
-                  });
+            // Pick highest-priced active membership (endDate in future). If none active, show none.
+            UserMembershipModel? pickRelevantMembership(
+                List<UserMembershipModel> memberships,
+                List<MembershipPlanModel> plans) {
+              final now = DateTime.now();
+              // Active: endDate not reached. Optionally ensure status is active if provided.
+              final active = memberships.where((m) =>
+                  m.endDate.isAfter(now) && (m.status.toLowerCase() == 'active'));
+
+              if (active.isEmpty) return null;
+
+              double planPriceFor(String planId) {
+                final plan = plans.firstWhere(
+                  (p) => p.id == planId,
+                  orElse: () => MembershipPlanModel(
+                    id: planId,
+                    name: '',
+                    description: '',
+                    price: 0,
+                    billingCycle: '',
+                    features: const [],
+                    createdAt: DateTime.now(),
+                    updatedAt: DateTime.now(),
+                    userMembership: const [],
+                  ),
+                );
+                return plan.price;
+              }
+
+              final sorted = List<UserMembershipModel>.from(active)
+                ..sort((a, b) {
+                  final priceB = planPriceFor(b.membershipPlanId);
+                  final priceA = planPriceFor(a.membershipPlanId);
+                  if (priceB.compareTo(priceA) != 0) {
+                    return priceB.compareTo(priceA); // highest price first
+                  }
+                  return b.endDate.compareTo(a.endDate); // later end date first
+                });
+              return sorted.first;
+            }
+
             final relevantMembership =
-                sortedMemberships.isNotEmpty ? sortedMemberships.first : null;
+                pickRelevantMembership(userMemberships, membershipPlans);
 
             final isSelected = widget.selectedUserIds.contains(user.id);
 
