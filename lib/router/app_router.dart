@@ -217,6 +217,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               state.matchedLocation.startsWith('/auctions') ||
               state.matchedLocation.startsWith('/chat') ||
               state.matchedLocation.startsWith('/all-chats') ||
+              state.matchedLocation.startsWith('/shop') ||
               state.matchedLocation.startsWith('/settings');
 
       debugPrint(
