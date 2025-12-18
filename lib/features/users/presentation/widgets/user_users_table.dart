@@ -8,7 +8,7 @@ import '../pages/user_detail_page.dart';
 
 class UserUsersTable extends StatefulWidget {
   final List<UserModel> users;
-  const UserUsersTable({Key? key, required this.users}) : super(key: key);
+  const UserUsersTable({super.key, required this.users});
 
   @override
   State<UserUsersTable> createState() => _UserUsersTableState();
@@ -162,7 +162,7 @@ class _UserUsersTableState extends State<UserUsersTable> {
 
 class _UserRow extends ConsumerWidget {
   final UserModel user;
-  const _UserRow({Key? key, required this.user}) : super(key: key);
+  const _UserRow({required this.user});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

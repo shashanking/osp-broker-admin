@@ -95,7 +95,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         children: [
                           // osp-broker logo
                           Image.asset(
-                            'assets/images/osp-logo.png',
+                            'assets/images/logo.png',
                             scale: 2,
                           ),
                           SizedBox(height: 24.h),

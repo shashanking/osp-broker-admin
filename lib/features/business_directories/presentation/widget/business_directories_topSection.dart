@@ -87,10 +87,11 @@ class _BusinessDirectoriesTopSectionState
         onSave: (name, description) async {
           // This will be called when the user saves the category
           debugPrint('Saving category: $name with description: $description');
-          
+
           try {
             // Call the API to save the category
-            await ref.read(businessDirectoriesNotifierProvider.notifier)
+            await ref
+                .read(businessDirectoriesNotifierProvider.notifier)
                 .createBusinessCategory(
                   name: name,
                   description: description,
@@ -137,7 +138,8 @@ class _BusinessDirectoriesTopSectionState
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0), // Reduced padding
+      padding: const EdgeInsets.symmetric(
+          horizontal: 16.0, vertical: 12.0), // Reduced padding
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -173,7 +175,8 @@ class _BusinessDirectoriesTopSectionState
                 const SizedBox(width: 12), // Reduced from 20
                 Consumer(
                   builder: (context, ref, _) {
-                    final state = ref.watch(businessDirectoriesNotifierProvider);
+                    final state =
+                        ref.watch(businessDirectoriesNotifierProvider);
                     final categoryCount = state.categories.length;
                     return _buildStatCard(
                       title: 'Total Business Categories',
@@ -204,33 +207,6 @@ class _BusinessDirectoriesTopSectionState
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildTimePeriodButton(String text, {bool isSelected = false}) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      child: TextButton(
-        onPressed: () {},
-        style: TextButton.styleFrom(
-          backgroundColor:
-              isSelected ? const Color(0xFF333333) : Colors.transparent,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(42),
-          ),
-        ),
-        child: Text(
-          text,
-          style: TextStyle(
-            color:
-                isSelected ? const Color(0xFFEBE6DC) : const Color(0xFF4D4D4D),
-            fontSize: 14,
-            fontFamily: 'Lato',
-            fontWeight: FontWeight.w400,
-          ),
-        ),
       ),
     );
   }
@@ -307,7 +283,8 @@ class _BusinessDirectoriesTopSectionState
                             horizontal: 8, vertical: 4), // Reduced padding
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(16), // Reduced from 32
+                          borderRadius:
+                              BorderRadius.circular(16), // Reduced from 32
                         ),
                         child: const Text(
                           'Add',

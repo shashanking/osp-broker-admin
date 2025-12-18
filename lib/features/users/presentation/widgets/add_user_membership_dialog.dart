@@ -29,18 +29,21 @@ class _AddUserMembershipDialogState
 
   void _updateEndDateBasedOnBillingCycle() {
     if (_selectedPlanId.isEmpty) return;
-    
+
     final plan = ref.read(membershipNotifierProvider).plans.firstWhere(
-      (p) => p.id == _selectedPlanId,
-      orElse: () => ref.read(membershipNotifierProvider).plans.first,
-    );
+          (p) => p.id == _selectedPlanId,
+          orElse: () => ref.read(membershipNotifierProvider).plans.first,
+        );
 
     if (plan.billingCycle == 'monthly') {
-      _endDate = DateTime(_startDate.year, _startDate.month + 1, _startDate.day);
+      _endDate =
+          DateTime(_startDate.year, _startDate.month + 1, _startDate.day);
     } else if (plan.billingCycle == 'quarterly') {
-      _endDate = DateTime(_startDate.year, _startDate.month + 3, _startDate.day);
+      _endDate =
+          DateTime(_startDate.year, _startDate.month + 3, _startDate.day);
     } else if (plan.billingCycle == 'yearly') {
-      _endDate = DateTime(_startDate.year + 1, _startDate.month, _startDate.day);
+      _endDate =
+          DateTime(_startDate.year + 1, _startDate.month, _startDate.day);
     } else {
       // Default to 30 days if no valid billing cycle
       _endDate = _startDate.add(const Duration(days: 30));
@@ -165,9 +168,7 @@ class _AddUserMembershipDialogState
                   border: OutlineInputBorder(),
                 ),
                 items: plans.map((plan) {
-                  final durationText = plan.billingCycle != null
-                      ? '${plan.billingCycle} billing cycle'
-                      : 'Custom';
+                  final durationText = '${plan.billingCycle} billing cycle';
                   return DropdownMenuItem(
                     value: plan.id,
                     child:

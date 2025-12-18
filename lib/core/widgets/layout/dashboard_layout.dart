@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:osp_broker_admin/core/constants/app_colors.dart';
 
 export 'top_bar.dart';
@@ -26,12 +27,53 @@ class DashboardLayout extends StatefulWidget {
 
 class _DashboardLayoutState extends State<DashboardLayout> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  bool _isSidebarCollapsed = false;
+
+  static const String _sidebarCollapsedKey = 'sidebar_collapsed';
+
+  @override
+  void initState() {
+    super.initState();
+    _restoreSidebarCollapsedState();
+  }
+
+  Future<void> _restoreSidebarCollapsedState() async {
+    try {
+      final Box box = Hive.isBoxOpen('auth')
+          ? Hive.box('auth')
+          : await Hive.openBox('auth');
+      bool collapsed = (box.get(_sidebarCollapsedKey) as bool?) ?? false;
+      if (collapsed) {
+        collapsed = false;
+        await box.put(_sidebarCollapsedKey, false);
+      }
+      if (!mounted) return;
+      setState(() {
+        _isSidebarCollapsed = collapsed;
+      });
+    } catch (_) {
+      // If Hive isn't available for some reason, just fall back to default.
+    }
+  }
+
+  Future<void> _persistSidebarCollapsedState(bool value) async {
+    try {
+      final Box box = Hive.isBoxOpen('auth')
+          ? Hive.box('auth')
+          : await Hive.openBox('auth');
+      await box.put(_sidebarCollapsedKey, value);
+    } catch (_) {
+      // Ignore persistence errors.
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 768;
     final isTablet = MediaQuery.of(context).size.width >= 768 &&
         MediaQuery.of(context).size.width < 1024;
+    final shouldCollapseSidebar =
+        !isMobile && (isTablet || _isSidebarCollapsed);
 
     return Scaffold(
       key: _scaffoldKey,
@@ -58,17 +100,55 @@ class _DashboardLayoutState extends State<DashboardLayout> {
           // Desktop/Tablet: Left Navigation Rail
           if (!isMobile)
             Container(
-              width: isTablet ? 80 : 280,
+              width: shouldCollapseSidebar ? 80 : 280,
               color: AppColors.sidebarBackground,
               child: Column(
                 children: [
                   const SizedBox(height: 24),
                   // Logo
-                  Image.asset(
-                    'assets/images/osp-logo.png',
-                    height: 40,
-                    errorBuilder: (context, error, stackTrace) =>
-                        const FlutterLogo(size: 40),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (!shouldCollapseSidebar)
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 16),
+                            child: Image.asset(
+                              'assets/images/logo.png',
+                              height: 40,
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  const FlutterLogo(size: 40),
+                            ),
+                          ),
+                        )
+                      else
+                        Image.asset(
+                          'assets/images/logo.png',
+                          height: 40,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const FlutterLogo(size: 40),
+                        ),
+                      if (!isTablet)
+                        IconButton(
+                          tooltip: shouldCollapseSidebar
+                              ? 'Expand sidebar'
+                              : 'Collapse sidebar',
+                          onPressed: () {
+                            setState(() {
+                              _isSidebarCollapsed = !_isSidebarCollapsed;
+                            });
+                            _persistSidebarCollapsedState(_isSidebarCollapsed);
+                          },
+                          icon: Icon(
+                            shouldCollapseSidebar
+                                ? Icons.keyboard_double_arrow_right
+                                : Icons.keyboard_double_arrow_left,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                    ],
                   ),
                   const SizedBox(height: 32),
                   // Navigation Items
@@ -89,7 +169,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                     label: 'Forums',
                     isSelected: widget.currentRoute == '/forums',
                     onTap: () => context.go('/forums'),
-                    isTablet: isTablet,
+                    isTablet: shouldCollapseSidebar,
                   ),
                   _buildNavItem(
                     context,
@@ -97,7 +177,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                     label: 'Auctions',
                     isSelected: widget.currentRoute == '/auctions',
                     onTap: () => context.go('/auctions'),
-                    isTablet: isTablet,
+                    isTablet: shouldCollapseSidebar,
                   ),
                   _buildNavItem(
                     context,
@@ -106,7 +186,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                     isSelected: widget.currentRoute.startsWith('/chat') &&
                         widget.currentRoute != '/all-chats',
                     onTap: () => context.go('/chat'),
-                    isTablet: isTablet,
+                    isTablet: shouldCollapseSidebar,
                   ),
                   _buildNavItem(
                     context,
@@ -114,7 +194,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                     label: 'All Chats',
                     isSelected: widget.currentRoute == '/all-chats',
                     onTap: () => context.go('/all-chats'),
-                    isTablet: isTablet,
+                    isTablet: shouldCollapseSidebar,
                   ),
                   _buildNavItem(
                     context,
@@ -123,7 +203,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                     isSelected:
                         widget.currentRoute.startsWith('/business-directories'),
                     onTap: () => context.go('/business-directories'),
-                    isTablet: isTablet,
+                    isTablet: shouldCollapseSidebar,
                   ),
                   _buildNavItem(
                     context,
@@ -131,7 +211,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                     label: 'Shop',
                     isSelected: widget.currentRoute.startsWith('/shop'),
                     onTap: () => context.go('/shop'),
-                    isTablet: isTablet,
+                    isTablet: shouldCollapseSidebar,
                   ),
                   _buildNavItem(
                     context,
@@ -139,7 +219,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                     label: 'Users',
                     isSelected: widget.currentRoute == '/users',
                     onTap: () => context.go('/users'),
-                    isTablet: isTablet,
+                    isTablet: shouldCollapseSidebar,
                   ),
                   _buildNavItem(
                     context,
@@ -147,7 +227,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                     label: 'Membership Plans',
                     isSelected: widget.currentRoute == '/plans',
                     onTap: () => context.go('/plans'),
-                    isTablet: isTablet,
+                    isTablet: shouldCollapseSidebar,
                   ),
                   // _buildNavItem(
                   //   context,
@@ -195,7 +275,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                           context.go('/login');
                         }
                       },
-                      isTablet: isTablet,
+                      isTablet: shouldCollapseSidebar,
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -219,49 +299,54 @@ class _DashboardLayoutState extends State<DashboardLayout> {
     required VoidCallback onTap,
     bool isTablet = false,
   }) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(
-          top: 4,
-          bottom: 4,
-          left: 16,
-        ),
-        padding: EdgeInsets.symmetric(
-          vertical: 12,
-          horizontal: isTablet ? 8 : 16,
-        ),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.sidebarSelected : Colors.transparent,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(50),
-            bottomLeft: Radius.circular(50),
+    return Tooltip(
+      message: label,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          margin: const EdgeInsets.only(
+            top: 4,
+            bottom: 4,
+            left: 16,
           ),
-        ),
-        child: Row(
-          mainAxisAlignment:
-              isTablet ? MainAxisAlignment.center : MainAxisAlignment.start,
-          children: [
-            Icon(
-              icon,
-              color:
-                  isSelected ? AppColors.background : AppColors.sidebarSelected,
-              size: 20,
+          padding: EdgeInsets.symmetric(
+            vertical: 12,
+            horizontal: isTablet ? 8 : 16,
+          ),
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.sidebarSelected : Colors.transparent,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(50),
+              bottomLeft: Radius.circular(50),
             ),
-            if (!isTablet) ...[
-              const SizedBox(width: 12),
-              Text(
-                label,
-                style: TextStyle(
-                  color: isSelected
-                      ? AppColors.background
-                      : AppColors.sidebarSelected,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  fontSize: 14,
-                ),
+          ),
+          child: Row(
+            mainAxisAlignment:
+                isTablet ? MainAxisAlignment.center : MainAxisAlignment.start,
+            children: [
+              Icon(
+                icon,
+                color: isSelected
+                    ? AppColors.background
+                    : AppColors.sidebarSelected,
+                size: 20,
               ),
+              if (!isTablet) ...[
+                const SizedBox(width: 12),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: isSelected
+                        ? AppColors.background
+                        : AppColors.sidebarSelected,
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.normal,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -276,7 +361,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
             const SizedBox(height: 24),
             // Logo
             Image.asset(
-              'assets/images/osp-logo.png',
+              'assets/images/logo.png',
               height: 40,
               errorBuilder: (context, error, stackTrace) =>
                   const FlutterLogo(size: 40),

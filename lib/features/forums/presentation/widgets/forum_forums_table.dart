@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../domain/forum_models.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'add_forum_dialog.dart';
-import '../../application/forum_admin_notifier.dart';
 
 class ForumForumsTable extends StatelessWidget {
   final List<Forum> forums;

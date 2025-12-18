@@ -397,7 +397,7 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                         content: Text(
-                            'Error creating category: ${e?.toString() ?? 'Unknown error'}')),
+                            'Error creating category: ${e.toString()}')),
                   );
                 }
               }
@@ -458,7 +458,7 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                         content: Text(
-                            'Error creating category: ${e?.toString() ?? 'Unknown error'}')),
+                            'Error creating category: ${e.toString()}')),
                   );
                 }
               }
@@ -497,7 +497,7 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                       content: Text(
-                          'Error deleting category: ${e?.toString() ?? 'Unknown error'}')),
+                          'Error deleting category: ${e.toString()}')),
                 );
               }
             },
@@ -784,7 +784,7 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                                 content: Text(
-                                    'Error creating auction: ${e?.toString() ?? 'Unknown error'}')),
+                                    'Error creating auction: ${e.toString()}')),
                           );
                         }
                       }
@@ -816,7 +816,7 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
             content: Text(
-                'Error approving auction: ${e?.toString() ?? 'Unknown error'}')),
+                'Error approving auction: ${e.toString()}')),
       );
     }
   }

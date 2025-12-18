@@ -24,23 +24,6 @@ class _BusinessDirectoriesTableSectionState
   String _statusFilter = 'all';
   String _searchQuery = '';
 
-  // Icons and colors for different categories
-  final Map<String, IconData> _categoryIcons = {
-    'Restaurant': Icons.restaurant,
-    'Attorney': Icons.gavel,
-    'Law Firm': Icons.business,
-    'IT Service': Icons.computer,
-    'Fire Service': Icons.local_fire_department,
-  };
-
-  final Map<String, Color> _categoryColors = {
-    'Restaurant': const Color(0xFFD59823),
-    'Attorney': const Color(0xFF80C02A),
-    'Law Firm': const Color(0xFF473DDA),
-    'IT Service': const Color(0xFF25B4DC),
-    'Fire Service': Colors.orange,
-  };
-
   @override
   void initState() {
     super.initState();

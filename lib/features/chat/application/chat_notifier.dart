@@ -16,6 +16,18 @@ class ChatNotifier extends StateNotifier<ChatState> {
   Timer? _typingTimeout;
   Timer? _typingDebounce;
 
+  DateTime _parseDate(dynamic value) {
+    if (value == null) return DateTime.now();
+    if (value is DateTime) return value;
+    if (value is Map) {
+      final maybe = value[r'$date'];
+      if (maybe is String) {
+        return DateTime.tryParse(maybe) ?? DateTime.now();
+      }
+    }
+    return DateTime.tryParse(value.toString()) ?? DateTime.now();
+  }
+
   ChatNotifier({
     required this.apiService,
     required this.recipientId,
@@ -41,18 +53,18 @@ class ChatNotifier extends StateNotifier<ChatState> {
     // Ensure socket is connected first
     socketService.connect().then((_) {
       debugPrint('[ChatNotifier-$recipientId] ✅ Socket connection established');
-      
+
       // Register user with socket
       if (currentUserId != null && currentUserId!.isNotEmpty) {
         socketService.registerUser(currentUserId!);
-        debugPrint('[ChatNotifier-$recipientId] ✅ User registered: $currentUserId');
+        debugPrint(
+            '[ChatNotifier-$recipientId] ✅ User registered: $currentUserId');
       }
-      
+
       // Register message and typing listeners AFTER connection is established
       socketService.onNewMessage(_handleIncomingMessage);
       socketService.onTypingUpdate(_handleTypingUpdate);
       debugPrint('[ChatNotifier-$recipientId] ✅ Listeners registered');
-      
     }).catchError((e) {
       debugPrint('[ChatNotifier-$recipientId] ❌ Socket connection error: $e');
       // Still register listeners even if connection fails (they'll work on reconnect)
@@ -63,13 +75,15 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
   void startTyping() async {
     final actualRecipientId = await _getResolvedRecipientId();
-    debugPrint('[ChatNotifier-$recipientId] 📝 Starting typing for: $actualRecipientId');
+    debugPrint(
+        '[ChatNotifier-$recipientId] 📝 Starting typing for: $actualRecipientId');
     socketService.startTyping(actualRecipientId);
   }
 
   void stopTyping() async {
     final actualRecipientId = await _getResolvedRecipientId();
-    debugPrint('[ChatNotifier-$recipientId] 🛑 Stopping typing for: $actualRecipientId');
+    debugPrint(
+        '[ChatNotifier-$recipientId] 🛑 Stopping typing for: $actualRecipientId');
     socketService.stopTyping(actualRecipientId);
   }
 
@@ -114,7 +128,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
     debugPrint('[ChatNotifier-$recipientId] 📨 _handleIncomingMessage called');
     debugPrint('[ChatNotifier-$recipientId] Data type: ${data.runtimeType}');
     debugPrint('[ChatNotifier-$recipientId] Data: $data');
-    
+
     ChatMessage? incoming;
     if (data is String) {
       final actualRecipientId = await _getResolvedRecipientId();
@@ -140,10 +154,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
               map['_id'] ??
               'rt-${DateTime.now().millisecondsSinceEpoch}')
           .toString();
-      final tsStr = map['createdAt'] as String?;
-      final ts = tsStr != null
-          ? DateTime.tryParse(tsStr) ?? DateTime.now()
-          : DateTime.now();
+      final ts = _parseDate(map['createdAt']);
       final read = map['read'] as bool? ?? false;
 
       incoming = ChatMessage(
@@ -173,20 +184,25 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
     debugPrint('[ChatNotifier-$recipientId] Message check:');
     debugPrint('[ChatNotifier-$recipientId]   senderId: ${message.senderId}');
-    debugPrint('[ChatNotifier-$recipientId]   recipientId: ${message.recipientId}');
+    debugPrint(
+        '[ChatNotifier-$recipientId]   recipientId: ${message.recipientId}');
     debugPrint('[ChatNotifier-$recipientId]   currentUserId: $me');
-    debugPrint('[ChatNotifier-$recipientId]   actualRecipientId: $actualRecipientId');
-    debugPrint('[ChatNotifier-$recipientId]   isForThisThread: $isForThisThread');
+    debugPrint(
+        '[ChatNotifier-$recipientId]   actualRecipientId: $actualRecipientId');
+    debugPrint(
+        '[ChatNotifier-$recipientId]   isForThisThread: $isForThisThread');
 
     if (me.isNotEmpty && !isForThisThread) {
-      debugPrint('[ChatNotifier-$recipientId] ⚠️ Message not for this thread, ignoring');
+      debugPrint(
+          '[ChatNotifier-$recipientId] ⚠️ Message not for this thread, ignoring');
       return;
     }
 
     final messages = [...state.messages];
     final existingIndex = messages.indexWhere((m) => m.id == message.id);
     if (existingIndex != -1) {
-      debugPrint('[ChatNotifier-$recipientId] ⚠️ Message already exists (id: ${message.id}), ignoring');
+      debugPrint(
+          '[ChatNotifier-$recipientId] ⚠️ Message already exists (id: ${message.id}), ignoring');
       return;
     }
 
@@ -198,23 +214,28 @@ class ChatNotifier extends StateNotifier<ChatState> {
         message.timestamp.difference(msg.timestamp).inSeconds.abs() < 30);
 
     if (recentOptimisticIndex != -1) {
-      debugPrint('[ChatNotifier-$recipientId] ✅ Replacing optimistic message at index $recentOptimisticIndex');
+      debugPrint(
+          '[ChatNotifier-$recipientId] ✅ Replacing optimistic message at index $recentOptimisticIndex');
       messages[recentOptimisticIndex] = message;
     } else {
       debugPrint('[ChatNotifier-$recipientId] ✅ Adding new message to list');
       messages.add(message);
     }
 
+    messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+
     if (message.senderId != currentUserId) {
-      debugPrint('[ChatNotifier-$recipientId] Message from other user, clearing typing status');
+      debugPrint(
+          '[ChatNotifier-$recipientId] Message from other user, clearing typing status');
       _typingTimeout?.cancel();
       state = state.copyWith(messages: messages, typingStatus: null);
     } else {
       debugPrint('[ChatNotifier-$recipientId] Message from current user');
       state = state.copyWith(messages: messages);
     }
-    
-    debugPrint('[ChatNotifier-$recipientId] ✅ State updated, total messages: ${messages.length}');
+
+    debugPrint(
+        '[ChatNotifier-$recipientId] ✅ State updated, total messages: ${messages.length}');
   }
 
   Future<void> fetchMessages() async {
@@ -222,29 +243,35 @@ class ChatNotifier extends StateNotifier<ChatState> {
     try {
       final actualRecipientId = await _getResolvedRecipientId();
       debugPrint('[ChatNotifier] fetchMessages - recipientId: $recipientId');
-      debugPrint('[ChatNotifier] fetchMessages - actualRecipientId: $actualRecipientId');
-      debugPrint('[ChatNotifier] fetchMessages - currentUserId: $currentUserId');
+      debugPrint(
+          '[ChatNotifier] fetchMessages - actualRecipientId: $actualRecipientId');
+      debugPrint(
+          '[ChatNotifier] fetchMessages - currentUserId: $currentUserId');
 
       final response = await apiService.get('/chat/$actualRecipientId');
       debugPrint('[ChatNotifier] fetchMessages - API response received');
       final List<ChatMessage> messages = (response.data['data'] as List)
           .map((m) => ChatMessage(
-                id: m['id'] as String,
-                senderId: m['senderId'] as String,
-                recipientId: m['recipientId'] as String,
-                content: m['content'] as String,
+                id: m['id']?.toString() ?? m['_id']?.toString() ?? '',
+                senderId: m['senderId']?.toString() ?? '',
+                recipientId: m['recipientId']?.toString() ?? '',
+                content: m['content']?.toString() ?? '',
                 isRead: m['read'] as bool? ?? false,
-                timestamp: DateTime.parse(m['createdAt'] as String),
+                timestamp: _parseDate(m['createdAt']),
               ))
           .toList();
+
+      messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
       debugPrint('[ChatNotifier] ✅ Loaded ${messages.length} messages');
       state = state.copyWith(isLoading: false, messages: messages);
     } catch (e) {
       debugPrint('[ChatNotifier] ⚠️ Error fetching messages: $e');
       // If 404 or "No messages found", it just means this is a new conversation
       // Don't show an error, just start with empty messages
-      if (e.toString().contains('404') || e.toString().contains('No messages found')) {
-        debugPrint('[ChatNotifier] ℹ️ No existing messages, starting fresh conversation');
+      if (e.toString().contains('404') ||
+          e.toString().contains('No messages found')) {
+        debugPrint(
+            '[ChatNotifier] ℹ️ No existing messages, starting fresh conversation');
         state = state.copyWith(isLoading: false, messages: [], error: null);
       } else {
         // For other errors, show the error message
@@ -258,7 +285,8 @@ class ChatNotifier extends StateNotifier<ChatState> {
     try {
       final actualRecipientId = await _getResolvedRecipientId();
       debugPrint('[ChatNotifier] sendMessage - recipientId: $recipientId');
-      debugPrint('[ChatNotifier] sendMessage - actualRecipientId: $actualRecipientId');
+      debugPrint(
+          '[ChatNotifier] sendMessage - actualRecipientId: $actualRecipientId');
       debugPrint('[ChatNotifier] sendMessage - senderId: $senderId');
       debugPrint('[ChatNotifier] sendMessage - content: $content');
 
@@ -270,14 +298,17 @@ class ChatNotifier extends StateNotifier<ChatState> {
         isRead: true,
         timestamp: DateTime.now(),
       );
-      debugPrint('[ChatNotifier] 📤 Adding optimistic message: ${optimistic.id}');
-      debugPrint('[ChatNotifier] Current messages count: ${state.messages.length}');
+      debugPrint(
+          '[ChatNotifier] 📤 Adding optimistic message: ${optimistic.id}');
+      debugPrint(
+          '[ChatNotifier] Current messages count: ${state.messages.length}');
       state = state.copyWith(messages: [...state.messages, optimistic]);
-      debugPrint('[ChatNotifier] ✅ Optimistic message added, new count: ${state.messages.length}');
+      debugPrint(
+          '[ChatNotifier] ✅ Optimistic message added, new count: ${state.messages.length}');
 
       debugPrint('[ChatNotifier] Sending POST to /chat/$actualRecipientId');
       debugPrint('[ChatNotifier] POST data: {content: $content}');
-      
+
       final response = await apiService
           .post('/chat/$actualRecipientId', data: {'content': content});
 
@@ -292,15 +323,13 @@ class ChatNotifier extends StateNotifier<ChatState> {
         // The server returns {data: {message: {...}}}
         final serverMessage = serverData['message'] ?? serverData;
         debugPrint('[ChatNotifier] Server message: $serverMessage');
-        
+
         final serverId = serverMessage['id']?.toString();
-        final serverTimestamp = serverMessage['createdAt'] != null
-            ? DateTime.tryParse(serverMessage['createdAt'])
-            : null;
-        
+        final serverTimestamp = _parseDate(serverMessage['createdAt']);
+
         debugPrint('[ChatNotifier] Server ID: $serverId');
         debugPrint('[ChatNotifier] Server timestamp: $serverTimestamp');
-        
+
         if (serverId != null) {
           final updatedMessages = state.messages.map((msg) {
             if (msg.id == optimistic.id) {
@@ -310,18 +339,22 @@ class ChatNotifier extends StateNotifier<ChatState> {
                 recipientId: msg.recipientId,
                 content: msg.content,
                 isRead: msg.isRead,
-                timestamp: serverTimestamp ?? msg.timestamp,
+                timestamp: serverTimestamp,
               );
             }
             return msg;
           }).toList();
+
+          updatedMessages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
           state = state.copyWith(messages: updatedMessages);
-          
-          debugPrint('[ChatNotifier] ✅ Message updated with server ID: $serverId');
+
+          debugPrint(
+              '[ChatNotifier] ✅ Message updated with server ID: $serverId');
         }
       } else {
         // If no server response data, at least keep the optimistic message
-        debugPrint('[ChatNotifier] ⚠️ No server message data in response, keeping optimistic message');
+        debugPrint(
+            '[ChatNotifier] ⚠️ No server message data in response, keeping optimistic message');
       }
     } catch (e) {
       state = state.copyWith(error: e.toString());

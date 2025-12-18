@@ -117,7 +117,7 @@ class _SplashPageState extends ConsumerState<SplashPage> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Image.asset(
-            'assets/images/osp-logo.png',
+            'assets/images/logo.png',
             width: 200,
             height: 200,
           ),
@@ -156,7 +156,7 @@ class _SplashPageState extends ConsumerState<SplashPage> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Image.asset(
-            'assets/images/osp-logo.png',
+            'assets/images/logo.png',
             width: 200,
             height: 200,
           ),
@@ -176,7 +176,7 @@ class _SplashPageState extends ConsumerState<SplashPage> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Image.asset(
-            'assets/images/osp-logo.png',
+            'assets/images/logo.png',
             width: 200,
             height: 200,
           ),

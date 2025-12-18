@@ -59,6 +59,7 @@ dependencies:
   flutter_quill: ^11.4.2
   socket_io_client: ^2.0.3
   timeago: ^3.7.1
+  collection: ^1.19.1
 
 dev_dependencies:
   flutter_test:

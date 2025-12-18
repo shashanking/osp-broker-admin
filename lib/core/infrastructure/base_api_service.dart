@@ -25,9 +25,11 @@ class BaseApiService {
   // Getters
   String? get authToken {
     final token = _authBox.get('token');
-    print('BaseApiService: Getting auth token: ${token != null ? 'Token exists' : 'No token found'}');
+    print(
+        'BaseApiService: Getting auth token: ${token != null ? 'Token exists' : 'No token found'}');
     return token;
   }
+
   bool get isAuthenticated => _authToken != null;
 
   String? get userId => _authBox.get('userId') as String?;
@@ -52,6 +54,29 @@ class BaseApiService {
     }
   }
 
+  bool _isJwtExpiredError(DioException e) {
+    final statusCode = e.response?.statusCode;
+    if (statusCode == 401) return true;
+
+    final data = e.response?.data;
+    if (data is Map) {
+      final message = data['message']?.toString().toLowerCase();
+      if (message != null && message.contains('jwt expired')) return true;
+
+      final errorSource = data['errorSourse'] ?? data['errorSource'];
+      if (errorSource is List) {
+        for (final item in errorSource) {
+          if (item is Map) {
+            final m = item['message']?.toString().toLowerCase();
+            if (m != null && m.contains('jwt expired')) return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
   Future<void> clearAuthTokens() async {
     _authToken = null;
     await _authBox.delete('token');
@@ -73,7 +98,15 @@ class BaseApiService {
       // Make direct API call to refresh token endpoint
       final response = await _dio.post(
         '${ApiUrls.baseUrl}${ApiUrls.refreshToken}',
-        options: Options(headers: {'Content-Type': 'application/json'}),
+        data: {
+          'refreshToken': refreshToken,
+        },
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $refreshToken',
+          },
+        ),
       );
 
       if (response.statusCode == 200 && response.data['success'] == true) {
@@ -114,7 +147,10 @@ class BaseApiService {
         options: options,
       );
     } on DioException catch (e) {
-      return await _handleDioErrorWithRetry(e, () => get(endpoint, queryParameters: queryParameters, requireAuth: requireAuth));
+      return await _handleDioErrorWithRetry(
+          e,
+          () => get(endpoint,
+              queryParameters: queryParameters, requireAuth: requireAuth));
     }
   }
 
@@ -129,7 +165,8 @@ class BaseApiService {
         options: options,
       );
     } on DioException catch (e) {
-      return await _handleDioErrorWithRetry(e, () => delete(endpoint, requireAuth: requireAuth));
+      return await _handleDioErrorWithRetry(
+          e, () => delete(endpoint, requireAuth: requireAuth));
     }
   }
 
@@ -146,7 +183,8 @@ class BaseApiService {
         options: options,
       );
     } on DioException catch (e) {
-      return await _handleDioErrorWithRetry(e, () => post(endpoint, data: data, requireAuth: requireAuth));
+      return await _handleDioErrorWithRetry(
+          e, () => post(endpoint, data: data, requireAuth: requireAuth));
     }
   }
 
@@ -163,17 +201,16 @@ class BaseApiService {
         options: options,
       );
     } on DioException catch (e) {
-      return await _handleDioErrorWithRetry(e, () => put(endpoint, data: data, requireAuth: requireAuth));
+      return await _handleDioErrorWithRetry(
+          e, () => put(endpoint, data: data, requireAuth: requireAuth));
     }
   }
 
   // Enhanced error handling with token refresh
-  Future<Response> _handleDioErrorWithRetry(DioException e, Future<Response> Function() retryFunction) async {
-    final response = e.response;
-    final statusCode = response?.statusCode;
-
-    // Check if it's a 401 error (unauthorized/token expired)
-    if (statusCode == 401) {
+  Future<Response> _handleDioErrorWithRetry(
+      DioException e, Future<Response> Function() retryFunction) async {
+    // Token expiry is sometimes returned by the backend as 500 with message `jwt expired`
+    if (_isJwtExpiredError(e)) {
       // Check if we have a refresh token and haven't already tried refreshing
       if (_refreshToken != null && !_isRefreshingToken) {
         print('BaseApiService: Token expired (401), attempting to refresh...');
@@ -182,7 +219,8 @@ class BaseApiService {
         final refreshSuccess = await _refreshAccessToken();
 
         if (refreshSuccess) {
-          print('BaseApiService: Token refreshed successfully, retrying original request...');
+          print(
+              'BaseApiService: Token refreshed successfully, retrying original request...');
           try {
             // Retry the original request with the new token
             return await retryFunction();
@@ -196,7 +234,8 @@ class BaseApiService {
           await clearAuthTokens();
         }
       } else {
-        print('BaseApiService: No refresh token available or already refreshing');
+        print(
+            'BaseApiService: No refresh token available or already refreshing');
         // Clear tokens if no refresh token or already refreshing
         await clearAuthTokens();
       }
@@ -231,7 +270,8 @@ class BaseApiService {
 
     // Rethrow with more detailed message
     if (statusCode == 500) {
-      throw Exception('Server error (500): ${response?.data?['message'] ?? 'Internal server error occurred'}');
+      throw Exception(
+          'Server error (500): ${response?.data?['message'] ?? 'Internal server error occurred'}');
     } else if (response?.data is Map && response?.data['message'] != null) {
       throw Exception(response?.data['message']);
     } else {
