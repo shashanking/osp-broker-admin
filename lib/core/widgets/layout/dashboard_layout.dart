@@ -30,25 +30,27 @@ class _DashboardLayoutState extends State<DashboardLayout> {
   @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 768;
-    final isTablet = MediaQuery.of(context).size.width >= 768 && 
-                     MediaQuery.of(context).size.width < 1024;
+    final isTablet = MediaQuery.of(context).size.width >= 768 &&
+        MediaQuery.of(context).size.width < 1024;
 
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: AppColors.background,
       // Mobile: Show app bar with menu button
-      appBar: isMobile ? AppBar(
-        backgroundColor: AppColors.sidebarBackground,
-        title: Text(
-          widget.title,
-          style: const TextStyle(color: Colors.white),
-        ),
-        leading: IconButton(
-          icon: const Icon(Icons.menu, color: Colors.white),
-          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-        ),
-        actions: widget.actions,
-      ) : null,
+      appBar: isMobile
+          ? AppBar(
+              backgroundColor: AppColors.sidebarBackground,
+              title: Text(
+                widget.title,
+                style: const TextStyle(color: Colors.white),
+              ),
+              leading: IconButton(
+                icon: const Icon(Icons.menu, color: Colors.white),
+                onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+              ),
+              actions: widget.actions,
+            )
+          : null,
       // Mobile: Navigation drawer
       drawer: isMobile ? _buildDrawer(context) : null,
       body: Row(
@@ -59,145 +61,147 @@ class _DashboardLayoutState extends State<DashboardLayout> {
               width: isTablet ? 80 : 280,
               color: AppColors.sidebarBackground,
               child: Column(
-              children: [
-                const SizedBox(height: 24),
-                // Logo
-                Image.asset(
-                  'assets/images/osp-logo.png',
-                  height: 40,
-                  errorBuilder: (context, error, stackTrace) =>
-                      const FlutterLogo(size: 40),
-                ),
-                const SizedBox(height: 32),
-                // Navigation Items
-                // _buildNavItem(
-                //   context,
-                //   icon: Icons.dashboard,
-                //   label: 'Overview',
-                //   isSelected: widget.currentRoute == '/dashboard',
-                //   onTap: () {
-                //     if (widget.currentRoute != '/dashboard') {
-                //       context.go('/dashboard');
-                //     }
-                //   },
-                // ),
-                _buildNavItem(
-                  context,
-                  icon: Icons.forum,
-                  label: 'Forums',
-                  isSelected: widget.currentRoute == '/forums',
-                  onTap: () => context.go('/forums'),
-                  isTablet: isTablet,
-                ),
-                _buildNavItem(
-                  context,
-                  icon: Icons.gavel,
-                  label: 'Auctions',
-                  isSelected: widget.currentRoute == '/auctions',
-                  onTap: () => context.go('/auctions'),
-                  isTablet: isTablet,
-                ),
-                _buildNavItem(
-                  context,
-                  icon: Icons.chat,
-                  label: 'Messages',
-                  isSelected: widget.currentRoute.startsWith('/chat') &&
-                      widget.currentRoute != '/all-chats',
-                  onTap: () => context.go('/chat'),
-                  isTablet: isTablet,
-                ),
-                _buildNavItem(
-                  context,
-                  icon: Icons.chat_bubble_outline,
-                  label: 'All Chats',
-                  isSelected: widget.currentRoute == '/all-chats',
-                  onTap: () => context.go('/all-chats'),
-                  isTablet: isTablet,
-                ),
-                _buildNavItem(
-                  context,
-                  icon: Icons.business,
-                  label: 'Business Directories',
-                  isSelected: widget.currentRoute.startsWith('/business-directories'),
-                  onTap: () => context.go('/business-directories'),
-                  isTablet: isTablet,
-                ),
-                // _buildNavItem(
-                //   context,
-                //   icon: Icons.shopping_cart,
-                //   label: 'Shop',
-                //   isSelected: currentRoute == '/shop',
-                //   onTap: () => context.go('/shop'),
-                // ),
-                _buildNavItem(
-                  context,
-                  icon: Icons.people,
-                  label: 'Users',
-                  isSelected: widget.currentRoute == '/users',
-                  onTap: () => context.go('/users'),
-                  isTablet: isTablet,
-                ),
-                _buildNavItem(
-                  context,
-                  icon: Icons.credit_card,
-                  label: 'Membership Plans',
-                  isSelected: widget.currentRoute == '/plans',
-                  onTap: () => context.go('/plans'),
-                  isTablet: isTablet,
-                ),
-                // _buildNavItem(
-                //   context,
-                //   icon: Icons.games,
-                //   label: 'Games',
-                //   isSelected: currentRoute == '/games',
-                //   onTap: () => context.go('/games'),
-                // ),
-                // _buildNavItem(
-                //   context,
-                //   icon: Icons.analytics,
-                //   label: 'Reports & Analytics',
-                //   isSelected: currentRoute == '/reports',
-                //   onTap: () => context.go('/reports'),
-                // ),
-                // _buildNavItem(
-                //   context,
-                //   icon: Icons.settings,
-                //   label: 'Settings',
-                //   isSelected: currentRoute == '/settings',
-                //   onTap: () => context.go('/settings'),
-                // ),
-                const Spacer(),
-                Container(
-                  margin: const EdgeInsets.only(
-                    top: 4,
-                    bottom: 4,
-                    left: 16,
+                children: [
+                  const SizedBox(height: 24),
+                  // Logo
+                  Image.asset(
+                    'assets/images/osp-logo.png',
+                    height: 40,
+                    errorBuilder: (context, error, stackTrace) =>
+                        const FlutterLogo(size: 40),
                   ),
-                  decoration: BoxDecoration(
-                    color: Color(0xFFCC1919),
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(50),
-                      bottomLeft: Radius.circular(50),
-                    ),
-                  ),
-                  child: _buildNavItem(
+                  const SizedBox(height: 32),
+                  // Navigation Items
+                  // _buildNavItem(
+                  //   context,
+                  //   icon: Icons.dashboard,
+                  //   label: 'Overview',
+                  //   isSelected: widget.currentRoute == '/dashboard',
+                  //   onTap: () {
+                  //     if (widget.currentRoute != '/dashboard') {
+                  //       context.go('/dashboard');
+                  //     }
+                  //   },
+                  // ),
+                  _buildNavItem(
                     context,
-                    icon: Icons.logout,
-                    label: 'Logout',
-                    isSelected: false,
-                    onTap: () async {
-                      await widget.onLogout();
-                      if (context.mounted) {
-                        context.go('/login');
-                      }
-                    },
+                    icon: Icons.forum,
+                    label: 'Forums',
+                    isSelected: widget.currentRoute == '/forums',
+                    onTap: () => context.go('/forums'),
                     isTablet: isTablet,
                   ),
-                ),
-                const SizedBox(height: 24),
-              ],
+                  _buildNavItem(
+                    context,
+                    icon: Icons.gavel,
+                    label: 'Auctions',
+                    isSelected: widget.currentRoute == '/auctions',
+                    onTap: () => context.go('/auctions'),
+                    isTablet: isTablet,
+                  ),
+                  _buildNavItem(
+                    context,
+                    icon: Icons.chat,
+                    label: 'Messages',
+                    isSelected: widget.currentRoute.startsWith('/chat') &&
+                        widget.currentRoute != '/all-chats',
+                    onTap: () => context.go('/chat'),
+                    isTablet: isTablet,
+                  ),
+                  _buildNavItem(
+                    context,
+                    icon: Icons.chat_bubble_outline,
+                    label: 'All Chats',
+                    isSelected: widget.currentRoute == '/all-chats',
+                    onTap: () => context.go('/all-chats'),
+                    isTablet: isTablet,
+                  ),
+                  _buildNavItem(
+                    context,
+                    icon: Icons.business,
+                    label: 'Business Directories',
+                    isSelected:
+                        widget.currentRoute.startsWith('/business-directories'),
+                    onTap: () => context.go('/business-directories'),
+                    isTablet: isTablet,
+                  ),
+                  _buildNavItem(
+                    context,
+                    icon: Icons.shopping_cart,
+                    label: 'Shop',
+                    isSelected: widget.currentRoute.startsWith('/shop'),
+                    onTap: () => context.go('/shop'),
+                    isTablet: isTablet,
+                  ),
+                  _buildNavItem(
+                    context,
+                    icon: Icons.people,
+                    label: 'Users',
+                    isSelected: widget.currentRoute == '/users',
+                    onTap: () => context.go('/users'),
+                    isTablet: isTablet,
+                  ),
+                  _buildNavItem(
+                    context,
+                    icon: Icons.credit_card,
+                    label: 'Membership Plans',
+                    isSelected: widget.currentRoute == '/plans',
+                    onTap: () => context.go('/plans'),
+                    isTablet: isTablet,
+                  ),
+                  // _buildNavItem(
+                  //   context,
+                  //   icon: Icons.games,
+                  //   label: 'Games',
+                  //   isSelected: currentRoute == '/games',
+                  //   onTap: () => context.go('/games'),
+                  // ),
+                  // _buildNavItem(
+                  //   context,
+                  //   icon: Icons.analytics,
+                  //   label: 'Reports & Analytics',
+                  //   isSelected: currentRoute == '/reports',
+                  //   onTap: () => context.go('/reports'),
+                  // ),
+                  // _buildNavItem(
+                  //   context,
+                  //   icon: Icons.settings,
+                  //   label: 'Settings',
+                  //   isSelected: currentRoute == '/settings',
+                  //   onTap: () => context.go('/settings'),
+                  // ),
+                  const Spacer(),
+                  Container(
+                    margin: const EdgeInsets.only(
+                      top: 4,
+                      bottom: 4,
+                      left: 16,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Color(0xFFCC1919),
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(50),
+                        bottomLeft: Radius.circular(50),
+                      ),
+                    ),
+                    child: _buildNavItem(
+                      context,
+                      icon: Icons.logout,
+                      label: 'Logout',
+                      isSelected: false,
+                      onTap: () async {
+                        await widget.onLogout();
+                        if (context.mounted) {
+                          context.go('/login');
+                        }
+                      },
+                      isTablet: isTablet,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
             ),
-          ),
           // Main Content
           Expanded(
             child: widget.child,
@@ -235,11 +239,13 @@ class _DashboardLayoutState extends State<DashboardLayout> {
           ),
         ),
         child: Row(
-          mainAxisAlignment: isTablet ? MainAxisAlignment.center : MainAxisAlignment.start,
+          mainAxisAlignment:
+              isTablet ? MainAxisAlignment.center : MainAxisAlignment.start,
           children: [
             Icon(
               icon,
-              color: isSelected ? AppColors.background : AppColors.sidebarSelected,
+              color:
+                  isSelected ? AppColors.background : AppColors.sidebarSelected,
               size: 20,
             ),
             if (!isTablet) ...[
@@ -329,6 +335,16 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                     isSelected: widget.currentRoute == '/users',
                     onTap: () {
                       context.go('/users');
+                      Navigator.pop(context);
+                    },
+                  ),
+                  _buildDrawerItem(
+                    context,
+                    icon: Icons.shopping_cart,
+                    label: 'Shop',
+                    isSelected: widget.currentRoute.startsWith('/shop'),
+                    onTap: () {
+                      context.go('/shop');
                       Navigator.pop(context);
                     },
                   ),

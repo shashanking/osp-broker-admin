@@ -20,6 +20,7 @@ import 'package:osp_broker_admin/features/auction/presentation/auction_screen.da
 import 'package:osp_broker_admin/features/chat/presentation/pages/chat_list_screen.dart';
 import 'package:osp_broker_admin/features/chat/presentation/pages/chat_screen.dart';
 import 'package:osp_broker_admin/features/chat/presentation/pages/all_chats_screen.dart';
+import 'package:osp_broker_admin/features/shop/presentation/pages/shop_page.dart';
 
 enum AppRoute {
   splash('/splash'),
@@ -139,7 +140,8 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/chat/:recipientId',
             pageBuilder: (context, state) {
               final recipientId = state.pathParameters['recipientId']!;
-              final recipientName = state.uri.queryParameters['recipientName'] ?? 'User';
+              final recipientName =
+                  state.uri.queryParameters['recipientName'] ?? 'User';
               return NoTransitionPage(
                 child: ChatScreen(
                   recipientId: recipientId,
@@ -165,7 +167,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               child: const UsersPage(),
             ),
           ),
-          
+
           // Memberships section
           GoRoute(
             path: AppRoute.memberships.path,
@@ -186,6 +188,9 @@ final routerProvider = Provider<GoRouter>((ref) {
 
           // Business Directories section
           goRouteBusinessDirectories,
+
+          // Shop section
+          goRouteShop,
 
           // Settings section
           GoRoute(
