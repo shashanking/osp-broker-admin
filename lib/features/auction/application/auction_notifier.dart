@@ -190,13 +190,19 @@ class AuctionNotifier extends StateNotifier<AuctionState> {
   }) async {
     state = state.copyWith(isLoadingAuctions: true, error: null);
     try {
+      // Get authenticated user ID
+      final userId = _apiService.userId;
+      if (userId == null) {
+        throw Exception('User not authenticated. Please log in again.');
+      }
+
       // Prepare the request data
       final Map<String, dynamic> data = {
         'title': title,
         'description': description,
         'categoryIds': categoryIds,
         'timeFrame': timeFrame, // Already in ISO-8601 format from frontend
-        'userId': '68bf065c6edb628ff134c460', // TODO: Get from auth
+        'userId': userId,
       };
 
       // Add files if provided (for future implementation)

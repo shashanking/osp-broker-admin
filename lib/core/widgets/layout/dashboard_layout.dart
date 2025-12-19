@@ -106,10 +106,42 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                 children: [
                   const SizedBox(height: 24),
                   // Logo
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (!shouldCollapseSidebar)
+                  if (shouldCollapseSidebar)
+                    Column(
+                      children: [
+                        Image.asset(
+                          'assets/images/logo.png',
+                          height: 30,
+                          width: 30,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const FlutterLogo(size: 30),
+                        ),
+                        if (!isTablet)
+                          IconButton(
+                            tooltip: shouldCollapseSidebar
+                                ? 'Expand sidebar'
+                                : 'Collapse sidebar',
+                            onPressed: () {
+                              setState(() {
+                                _isSidebarCollapsed = !_isSidebarCollapsed;
+                              });
+                              _persistSidebarCollapsedState(_isSidebarCollapsed);
+                            },
+                            icon: Icon(
+                              shouldCollapseSidebar
+                                  ? Icons.keyboard_double_arrow_right
+                                  : Icons.keyboard_double_arrow_left,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                      ],
+                    )
+                  else
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
                         Expanded(
                           child: Padding(
                             padding: const EdgeInsets.only(left: 16),
@@ -121,35 +153,28 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                                   const FlutterLogo(size: 40),
                             ),
                           ),
-                        )
-                      else
-                        Image.asset(
-                          'assets/images/logo.png',
-                          height: 40,
-                          errorBuilder: (context, error, stackTrace) =>
-                              const FlutterLogo(size: 40),
                         ),
-                      if (!isTablet)
-                        IconButton(
-                          tooltip: shouldCollapseSidebar
-                              ? 'Expand sidebar'
-                              : 'Collapse sidebar',
-                          onPressed: () {
-                            setState(() {
-                              _isSidebarCollapsed = !_isSidebarCollapsed;
-                            });
-                            _persistSidebarCollapsedState(_isSidebarCollapsed);
-                          },
-                          icon: Icon(
-                            shouldCollapseSidebar
-                                ? Icons.keyboard_double_arrow_right
-                                : Icons.keyboard_double_arrow_left,
-                            color: Colors.white,
-                            size: 20,
+                        if (!isTablet)
+                          IconButton(
+                            tooltip: shouldCollapseSidebar
+                                ? 'Expand sidebar'
+                                : 'Collapse sidebar',
+                            onPressed: () {
+                              setState(() {
+                                _isSidebarCollapsed = !_isSidebarCollapsed;
+                              });
+                              _persistSidebarCollapsedState(_isSidebarCollapsed);
+                            },
+                            icon: Icon(
+                              shouldCollapseSidebar
+                                  ? Icons.keyboard_double_arrow_right
+                                  : Icons.keyboard_double_arrow_left,
+                              color: Colors.white,
+                              size: 20,
+                            ),
                           ),
-                        ),
-                    ],
-                  ),
+                      ],
+                    ),
                   const SizedBox(height: 32),
                   // Navigation Items
                   // _buildNavItem(
@@ -252,6 +277,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                   // ),
                   const Spacer(),
                   Container(
+                    width: double.infinity,
                     margin: const EdgeInsets.only(
                       top: 4,
                       bottom: 4,
@@ -304,6 +330,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
       child: InkWell(
         onTap: onTap,
         child: Container(
+          width: double.infinity,
           margin: const EdgeInsets.only(
             top: 4,
             bottom: 4,

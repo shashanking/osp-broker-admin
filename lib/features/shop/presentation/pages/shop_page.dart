@@ -6,6 +6,7 @@ import 'package:osp_broker_admin/core/widgets/layout/top_bar.dart';
 import '../../application/shop_pin_notifier.dart';
 import '../../application/shop_badge_notifier.dart';
 import '../../application/shop_kudo_coin_notifier.dart';
+import '../../domain/shop_badge_model.dart';
 
 final GoRoute goRouteShop = GoRoute(
   path: ShopPage.routePath,
@@ -264,10 +265,30 @@ class _AddBadgeDialogState extends ConsumerState<_AddBadgeDialog> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    final state = ref.read(shopBadgeNotifierProvider);
+    final name = _nameController.text.trim();
+    final existingBadge = state.badges.firstWhere(
+      (b) => b.name.toLowerCase() == name.toLowerCase(),
+      orElse: () => ShopBadgeModel(
+        id: '',
+        name: '',
+        description: '',
+        price: 0,
+        isDeleted: false,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ),
+    );
+    if (existingBadge.name.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Badge already exists')),
+      );
+      return;
+    }
     setState(() => _submitting = true);
     try {
       await ref.read(shopBadgeNotifierProvider.notifier).createBadge(
-            name: _nameController.text.trim(),
+            name: name,
             description: _descriptionController.text.trim(),
             price: int.parse(_priceController.text.trim()),
           );
