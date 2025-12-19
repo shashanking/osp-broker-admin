@@ -100,108 +100,54 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
               ],
             ),
           ),
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      minWidth: constraints.maxWidth,
-                    ),
-                    child: DataTable(
-                      columnSpacing: 20,
-                      dataRowHeight: 60,
-                      headingRowHeight: 40,
-                      columns: const [
-                        DataColumn(
-                            label: SizedBox(
-                          width: 120,
-                          child: Text('Name',
-                              style: TextStyle(fontWeight: FontWeight.bold)),
-                        )),
-                        DataColumn(
-                            label: SizedBox(
-                          width: 200,
-                          child: Text('Description',
-                              style: TextStyle(fontWeight: FontWeight.bold)),
-                        )),
-                        DataColumn(
-                            label: SizedBox(
-                          width: 100,
-                          child: Text('Created',
-                              style: TextStyle(fontWeight: FontWeight.bold)),
-                        )),
-                        DataColumn(
-                            label: SizedBox(
-                          width: 120,
-                          child: Text('Actions',
-                              style: TextStyle(fontWeight: FontWeight.bold)),
-                        )),
-                      ],
-                      rows: categories.map((category) {
-                        return DataRow(
-                          cells: [
-                            DataCell(
-                              SizedBox(
-                                width: 120,
-                                child: Text(
-                                  category.name,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ),
-                            DataCell(
-                              SizedBox(
-                                width: 200,
-                                child: Text(
-                                  category.description,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ),
-                            DataCell(
-                              SizedBox(
-                                width: 100,
-                                child: Text(
-                                  '${category.createdAt.day}/${category.createdAt.month}/${category.createdAt.year}',
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ),
-                            DataCell(
-                              SizedBox(
-                                width: 120,
-                                child: Row(
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.edit, size: 20),
-                                      onPressed: () {
-                                        _showEditCategoryDialog(category);
-                                      },
-                                      color: Colors.blue,
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.delete, size: 20),
-                                      onPressed: () {
-                                        _showDeleteCategoryDialog(category);
-                                      },
-                                      color: Colors.red,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        );
-                      }).toList(),
-                    ),
+        Expanded(
+          child: ListView.builder(
+            itemCount: categories.length,
+            itemBuilder: (context, index) {
+              final category = categories[index];
+              return Card(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: ListTile(
+                  title: Text(category.name),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        category.description,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Created: ${category.createdAt.day}/${category.createdAt.month}/${category.createdAt.year}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
                   ),
-                );
-              },
-            ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit, size: 20),
+                        onPressed: () {
+                          _showEditCategoryDialog(category);
+                        },
+                        color: Colors.blue,
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete, size: 20),
+                        onPressed: () {
+                          _showDeleteCategoryDialog(category);
+                        },
+                        color: Colors.red,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
           ),
+        ),
         ],
       ),
     );
