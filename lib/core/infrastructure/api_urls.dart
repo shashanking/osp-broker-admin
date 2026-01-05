@@ -1,5 +1,5 @@
 class ApiUrls {
-  static const String baseUrl = 'https://sayanchoudhuryofficial.in/api';
+  static const String baseUrl = 'https://api.myprimenetwork.com/api';
   static const String login = '/auth/login';
   static const String signup = '/auth/signup';
   static const String logout = '/auth/logout';
