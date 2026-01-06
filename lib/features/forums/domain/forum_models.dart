@@ -2,7 +2,6 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'forum_models.freezed.dart';
 
-
 @freezed
 class Category with _$Category {
   const factory Category({
@@ -11,7 +10,7 @@ class Category with _$Category {
     required String description,
     String? moderatorId,
     required String icon,
-    @Default(<String>[]) @JsonKey(name: 'membership_access') List<String> membershipAccess,
+    @Default(<String>[]) List<String> membershipAccess,
     required DateTime createdAt,
     required DateTime updatedAt,
     @Default(true) bool isActive,
@@ -26,10 +25,13 @@ class Category with _$Category {
       moderatorId: json['moderatorId'] as String?,
       icon: json['icon'] as String? ?? '',
       membershipAccess: (json['membership_access'] as List<dynamic>?)
-          ?.map((e) => e as String)
-          .toList() ?? [],
-      createdAt: DateTime.parse(json['createdAt'] as String? ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(json['updatedAt'] as String? ?? DateTime.now().toIso8601String()),
+              ?.map((e) => e as String)
+              .toList() ??
+          [],
+      createdAt: DateTime.parse(
+          json['createdAt'] as String? ?? DateTime.now().toIso8601String()),
+      updatedAt: DateTime.parse(
+          json['updatedAt'] as String? ?? DateTime.now().toIso8601String()),
       isActive: json['isActive'] as bool? ?? true,
       count: json['count'] as Map<String, dynamic>?,
     );
@@ -47,8 +49,10 @@ class ForumTopicSummary with _$ForumTopicSummary {
     return ForumTopicSummary(
       forumId: json['forumId'] as String? ?? '',
       comments: (json['comments'] as List<dynamic>?)
-          ?.map((e) => ForumCommentSummary.fromJson(e as Map<String, dynamic>))
-          .toList() ?? [],
+              ?.map((e) =>
+                  ForumCommentSummary.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
     );
   }
 }
@@ -80,7 +84,7 @@ class Forum with _$Forum {
     required DateTime createdAt,
     required DateTime updatedAt,
     @Default(<ForumTopicSummary>[]) List<ForumTopicSummary> topics,
-    @JsonKey(name: '_count') @Default({}) Map<String, dynamic> count,
+    @Default(<String, dynamic>{}) Map<String, dynamic> count,
   }) = _Forum;
 
   factory Forum.fromJson(Map<String, dynamic> json) {
@@ -93,11 +97,15 @@ class Forum with _$Forum {
       author: json['author'] as String? ?? '',
       comments: json['comments'] as int? ?? 0,
       isDeleted: json['isDeleted'] as bool? ?? false,
-      createdAt: DateTime.parse(json['createdAt'] as String? ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(json['updatedAt'] as String? ?? DateTime.now().toIso8601String()),
+      createdAt: DateTime.parse(
+          json['createdAt'] as String? ?? DateTime.now().toIso8601String()),
+      updatedAt: DateTime.parse(
+          json['updatedAt'] as String? ?? DateTime.now().toIso8601String()),
       topics: (json['topics'] as List<dynamic>?)
-          ?.map((e) => ForumTopicSummary.fromJson(e as Map<String, dynamic>))
-          .toList() ?? [],
+              ?.map(
+                  (e) => ForumTopicSummary.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
       count: json['_count'] as Map<String, dynamic>? ?? {},
     );
   }
@@ -127,8 +135,10 @@ class Topic with _$Topic {
       author: json['author'] as String? ?? '',
       views: json['views'] as int? ?? 0,
       forumId: json['forumId'] as String? ?? '',
-      createdAt: DateTime.parse(json['createdAt'] as String? ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(json['updatedAt'] as String? ?? DateTime.now().toIso8601String()),
+      createdAt: DateTime.parse(
+          json['createdAt'] as String? ?? DateTime.now().toIso8601String()),
+      updatedAt: DateTime.parse(
+          json['updatedAt'] as String? ?? DateTime.now().toIso8601String()),
       comments: json['comments'] as List<dynamic>? ?? [],
       isClosed: json['isClosed'] as bool? ?? false,
       attachments: json['attachments'] as List<dynamic>? ?? [],
@@ -195,8 +205,9 @@ class Poll with _$Poll {
       id: json['id'] as String? ?? '',
       question: json['question'] as String? ?? '',
       options: (json['options'] as List<dynamic>?)
-          ?.map((e) => e as String)
-          .toList() ?? [],
+              ?.map((e) => e as String)
+              .toList() ??
+          [],
       createdAt: json['createdAt'] as String? ?? '',
       updatedAt: json['updatedAt'] as String? ?? '',
     );
@@ -223,8 +234,10 @@ class Comment with _$Comment {
       author: json['author'] as String? ?? '',
       topicId: json['topicId'] as String? ?? '',
       commenterId: json['commenterId'] as String? ?? '',
-      createdAt: DateTime.parse(json['createdAt'] as String? ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(json['updatedAt'] as String? ?? DateTime.now().toIso8601String()),
+      createdAt: DateTime.parse(
+          json['createdAt'] as String? ?? DateTime.now().toIso8601String()),
+      updatedAt: DateTime.parse(
+          json['updatedAt'] as String? ?? DateTime.now().toIso8601String()),
       topic: json['topic'] == null
           ? null
           : CommentTopic.fromJson(json['topic'] as Map<String, dynamic>),

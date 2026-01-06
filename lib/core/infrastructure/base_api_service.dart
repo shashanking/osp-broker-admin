@@ -2,9 +2,9 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
+import 'api_urls.dart';
 import 'dio_provider.dart';
 import 'hive_provider.dart';
-import 'api_urls.dart';
 
 final baseApiServiceProvider = Provider<BaseApiService>((ref) {
   final dio = ref.watch(dioProvider);
@@ -126,9 +126,13 @@ class BaseApiService {
   // Request options with auth header
   Options _getOptions({Options? options, bool requireAuth = true}) {
     options ??= Options();
-    if (requireAuth && _authToken != null) {
+    // Always read the latest token from storage to avoid stale in-memory cache.
+    final token = _authBox.get('token') as String?;
+    _authToken = token;
+
+    if (requireAuth && token != null) {
       options.headers ??= {};
-      options.headers!['Authorization'] = 'Bearer $_authToken';
+      options.headers!['Authorization'] = 'Bearer $token';
     }
     return options;
   }
