@@ -1,13 +1,14 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:go_router/go_router.dart';
-import 'package:osp_broker_admin/core/widgets/layout/top_bar.dart';
 import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:osp_broker_admin/core/utils/csv_export.dart';
+import 'package:osp_broker_admin/core/widgets/layout/top_bar.dart';
+
+import '../../application/user_notifier.dart';
 import '../widgets/user_stat_card.dart';
 import '../widgets/user_users_table.dart';
-
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../application/user_notifier.dart';
 
 class UsersPage extends ConsumerStatefulWidget {
   const UsersPage({super.key});
@@ -151,87 +152,158 @@ class _UsersPageState extends ConsumerState<UsersPage> {
         SizedBox(height: 24),
 
         // Role filter
-        Row(
-          children: [
-            Container(
-              width: 0.45.sw,
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isNarrow = constraints.maxWidth < 900;
+
+            final roleFilter = SizedBox(
               height: 70,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: _roles
-                      .map((role) => Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: ChoiceChip(
-                              label: Text(
-                                role,
-                                overflow: TextOverflow.visible,
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: _roles
+                        .map((role) => Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: ChoiceChip(
+                                label: Text(
+                                  role,
+                                  overflow: TextOverflow.visible,
+                                ),
+                                selected: _selectedRole == role,
+                                onSelected: (selected) {
+                                  setState(() {
+                                    _selectedRole = selected ? role : '';
+                                  });
+                                },
                               ),
-                              selected: _selectedRole == role,
-                              onSelected: (selected) {
-                                setState(() {
-                                  _selectedRole = selected ? role : '';
-                                });
-                              },
-                            ),
-                          ))
-                      .toList(),
+                            ))
+                        .toList(),
+                  ),
                 ),
               ),
-            ),
-            // Search bar and actions
-            Row(
-              children: [
-                Container(
-                  width: 0.2.sw,
-                  height: 70,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                      hintText: 'Search by name, email, or phone...',
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      contentPadding: const EdgeInsets.symmetric(
-                          vertical: 0, horizontal: 16),
-                      suffixIcon: _searchQuery.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear, size: 20),
-                              onPressed: () {
-                                _searchController.clear();
-                                setState(() => _searchQuery = '');
-                              },
-                            )
-                          : null,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  height: 40,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      context.go('/memberships');
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.indigo,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+            );
+
+            final searchAndActions = Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    height: 48,
+                    child: TextField(
+                      controller: _searchController,
+                      decoration: InputDecoration(
+                        hintText: 'Search by name, email, or phone...',
+                        prefixIcon: const Icon(Icons.search),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        contentPadding: const EdgeInsets.symmetric(
+                            vertical: 0, horizontal: 16),
+                        suffixIcon: _searchQuery.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear, size: 20),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() => _searchQuery = '');
+                                },
+                              )
+                            : null,
                       ),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
                     ),
-                    icon: const Icon(Icons.card_membership, size: 16),
-                    label: const Text('View Memberships'),
                   ),
-                ),
+                  const SizedBox(height: 10),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        SizedBox(
+                          height: 40,
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              context.go('/memberships');
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.indigo,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
+                            ),
+                            icon: const Icon(Icons.card_membership, size: 16),
+                            label: const Text('View Memberships'),
+                          ),
+                        ),
+                        SizedBox(
+                          height: 40,
+                          child: ElevatedButton.icon(
+                            onPressed: () async {
+                              final users =
+                                  ref.read(userNotifierProvider).users;
+                              final rows = users
+                                  .map(
+                                    (u) => <String, Object?>{
+                                      'id': u.id,
+                                      'fullName': u.fullName,
+                                      'email': u.email,
+                                      'role': u.role,
+                                      'phone': u.phone,
+                                      'isBanned': u.isBanned,
+                                      'createdAt': u.createdAt,
+                                      'updatedAt': u.updatedAt,
+                                    },
+                                  )
+                                  .toList();
+                              await exportCsv(
+                                fileName: 'users.csv',
+                                rows: rows,
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.black87,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
+                            ),
+                            icon: const Icon(Icons.download, size: 16),
+                            label: const Text('Export CSV'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+
+            if (isNarrow) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  roleFilter,
+                  const SizedBox(height: 8),
+                  searchAndActions,
+                ],
+              );
+            }
+
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(flex: 3, child: roleFilter),
+                Expanded(flex: 3, child: searchAndActions),
               ],
-            ),
-          ],
+            );
+          },
         ),
         Expanded(
           child: Builder(

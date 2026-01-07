@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:osp_broker_admin/core/constants/app_colors.dart';
 import 'package:osp_broker_admin/core/widgets/layout/top_bar.dart';
 import 'package:osp_broker_admin/features/dashboard/application/dashboard_notifier.dart';
@@ -96,6 +97,7 @@ class _OverviewPageState extends ConsumerState<OverviewPage> {
                           change: '+2.5%',
                           isPositive: true,
                           icon: Icons.gavel,
+                          onViewTap: () => context.go('/auctions'),
                         ),
                         StatCard(
                           title: 'New Business Pages',
@@ -103,6 +105,7 @@ class _OverviewPageState extends ConsumerState<OverviewPage> {
                           change: '-1.5%',
                           isPositive: false,
                           icon: Icons.business,
+                          onViewTap: () => context.go('/business-directories'),
                         ),
                         StatCard(
                           title: 'Active Forum Threads',
@@ -110,6 +113,7 @@ class _OverviewPageState extends ConsumerState<OverviewPage> {
                           change: '-1.3%',
                           isPositive: false,
                           icon: Icons.forum,
+                          onViewTap: () => context.go('/forums'),
                         ),
                         StatCard(
                           title: 'Total Users',
@@ -117,6 +121,7 @@ class _OverviewPageState extends ConsumerState<OverviewPage> {
                           change: '+4.3%',
                           isPositive: true,
                           icon: Icons.people,
+                          onViewTap: () => context.go('/users'),
                         ),
                       ],
                     ),

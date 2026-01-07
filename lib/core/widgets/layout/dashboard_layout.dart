@@ -109,11 +109,14 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                   if (shouldCollapseSidebar)
                     Column(
                       children: [
-                        Image.asset(
-                          'assets/images/logo.png',
-                          height: 40,
-                          errorBuilder: (context, error, stackTrace) =>
-                              const FlutterLogo(size: 40),
+                        InkWell(
+                          onTap: () => context.go('/dashboard'),
+                          child: Image.asset(
+                            'assets/images/logo.png',
+                            height: 40,
+                            errorBuilder: (context, error, stackTrace) =>
+                                const FlutterLogo(size: 40),
+                          ),
                         ),
                         if (!isTablet)
                           IconButton(
@@ -140,12 +143,15 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                         Expanded(
                           child: Padding(
                             padding: const EdgeInsets.only(left: 16),
-                            child: Image.asset(
-                              'assets/images/logo.png',
-                              height: 40,
-                              fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  const FlutterLogo(size: 40),
+                            child: InkWell(
+                              onTap: () => context.go('/dashboard'),
+                              child: Image.asset(
+                                'assets/images/logo.png',
+                                height: 40,
+                                fit: BoxFit.contain,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    const FlutterLogo(size: 40),
+                              ),
                             ),
                           ),
                         ),
@@ -358,11 +364,17 @@ class _DashboardLayoutState extends State<DashboardLayout> {
           children: [
             const SizedBox(height: 24),
             // Logo
-            Image.asset(
-              'assets/images/logo.png',
-              height: 40,
-              errorBuilder: (context, error, stackTrace) =>
-                  const FlutterLogo(size: 40),
+            InkWell(
+              onTap: () {
+                context.go('/dashboard');
+                Navigator.pop(context);
+              },
+              child: Image.asset(
+                'assets/images/logo.png',
+                height: 40,
+                errorBuilder: (context, error, stackTrace) =>
+                    const FlutterLogo(size: 40),
+              ),
             ),
             const SizedBox(height: 32),
             // Navigation Items

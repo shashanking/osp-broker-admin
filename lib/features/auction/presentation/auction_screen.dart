@@ -1,11 +1,14 @@
 import 'dart:convert';
+import 'dart:io';
+import 'dart:math';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:osp_broker_admin/core/utils/csv_export.dart';
+
 import '../application/auction_notifier.dart';
 import 'auction_detail_screen.dart';
-import 'dart:io';
-import 'dart:math';
 
 class AuctionScreen extends ConsumerStatefulWidget {
   const AuctionScreen({Key? key}) : super(key: key);
@@ -30,8 +33,6 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(auctionNotifierProvider);
-
     return DefaultTabController(
       length: 2,
       child: Scaffold(
@@ -47,6 +48,45 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
             IconButton(
               icon: const Icon(Icons.refresh),
               onPressed: _loadData,
+            ),
+            PopupMenuButton<String>(
+              tooltip: 'Export CSV',
+              icon: const Icon(Icons.download),
+              onSelected: (value) async {
+                final state = ref.read(auctionNotifierProvider);
+                if (value == 'categories') {
+                  final rows = state.categories
+                      .map((c) =>
+                          (c.toJson()).map((k, v) => MapEntry(k, v as Object?)))
+                      .toList();
+                  await exportCsv(
+                    fileName: 'auction_categories.csv',
+                    rows: rows,
+                  );
+                  return;
+                }
+
+                if (value == 'auctions') {
+                  final rows = state.auctions
+                      .map((a) =>
+                          (a.toJson()).map((k, v) => MapEntry(k, v as Object?)))
+                      .toList();
+                  await exportCsv(
+                    fileName: 'auctions.csv',
+                    rows: rows,
+                  );
+                }
+              },
+              itemBuilder: (context) => const [
+                PopupMenuItem(
+                  value: 'categories',
+                  child: Text('Export Categories (CSV)'),
+                ),
+                PopupMenuItem(
+                  value: 'auctions',
+                  child: Text('Export Auctions (CSV)'),
+                ),
+              ],
             ),
           ],
         ),
@@ -261,7 +301,8 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (context) => AuctionDetailScreen(auctionId: auction.id),
+                                builder: (context) =>
+                                    AuctionDetailScreen(auctionId: auction.id),
                               ),
                             );
                           },
@@ -272,20 +313,25 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
                                 Expanded(child: Text(auction.title)),
                                 if (auction.isDeleted)
                                   const Chip(
-                                    label: Text('Soft Deleted', style: TextStyle(fontSize: 10)),
+                                    label: Text('Soft Deleted',
+                                        style: TextStyle(fontSize: 10)),
                                     backgroundColor: Colors.orange,
                                     labelStyle: TextStyle(color: Colors.white),
-                                    padding: EdgeInsets.symmetric(horizontal: 4),
+                                    padding:
+                                        EdgeInsets.symmetric(horizontal: 4),
                                     visualDensity: VisualDensity.compact,
                                   ),
                                 if (_isAuctionCompleted(auction))
                                   const Padding(
                                     padding: EdgeInsets.only(left: 4),
                                     child: Chip(
-                                      label: Text('Completed', style: TextStyle(fontSize: 10)),
+                                      label: Text('Completed',
+                                          style: TextStyle(fontSize: 10)),
                                       backgroundColor: Colors.grey,
-                                      labelStyle: TextStyle(color: Colors.white),
-                                      padding: EdgeInsets.symmetric(horizontal: 4),
+                                      labelStyle:
+                                          TextStyle(color: Colors.white),
+                                      padding:
+                                          EdgeInsets.symmetric(horizontal: 4),
                                       visualDensity: VisualDensity.compact,
                                     ),
                                   ),
@@ -295,7 +341,8 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  _getPlainTextFromDescription(auction.description),
+                                  _getPlainTextFromDescription(
+                                      auction.description),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -330,8 +377,8 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
                                     tooltip: 'Approve',
                                   ),
                                 IconButton(
-                                  icon:
-                                      const Icon(Icons.delete, color: Colors.red),
+                                  icon: const Icon(Icons.delete,
+                                      color: Colors.red),
                                   onPressed: () {
                                     _showDeleteAuctionDialog(auction);
                                   },
@@ -396,8 +443,8 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
                 } catch (e) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                        content: Text(
-                            'Error creating category: ${e.toString()}')),
+                        content:
+                            Text('Error creating category: ${e.toString()}')),
                   );
                 }
               }
@@ -457,8 +504,8 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
                 } catch (e) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                        content: Text(
-                            'Error creating category: ${e.toString()}')),
+                        content:
+                            Text('Error creating category: ${e.toString()}')),
                   );
                 }
               }
@@ -496,8 +543,8 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                      content: Text(
-                          'Error deleting category: ${e.toString()}')),
+                      content:
+                          Text('Error deleting category: ${e.toString()}')),
                 );
               }
             },
@@ -814,9 +861,7 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(
-                'Error approving auction: ${e.toString()}')),
+        SnackBar(content: Text('Error approving auction: ${e.toString()}')),
       );
     }
   }
@@ -856,14 +901,15 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
                     .softDeleteAuction(auction.id);
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Auction soft deleted successfully')),
+                  const SnackBar(
+                      content: Text('Auction soft deleted successfully')),
                 );
               } catch (e) {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                      content: Text(
-                          'Error soft deleting auction: ${e.toString()}')),
+                      content:
+                          Text('Error soft deleting auction: ${e.toString()}')),
                 );
               }
             },
@@ -884,8 +930,7 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                      content: Text(
-                          'Error deleting auction: ${e.toString()}')),
+                      content: Text('Error deleting auction: ${e.toString()}')),
                 );
               }
             },
@@ -903,17 +948,17 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
     if (auction.timeFrame.isBefore(DateTime.now())) {
       return true;
     }
-    
+
     // Check if a winner has been selected by loading bids for this auction
     // Note: This is a simplified check. For better performance, consider adding
     // a 'hasWinner' field to the Auction model from the backend
     final state = ref.read(auctionNotifierProvider);
-    
+
     // If we have the selected auction and its bids loaded, check for matched bids
     if (state.selectedAuction?.id == auction.id) {
       return state.bids.any((bid) => bid.matched);
     }
-    
+
     // Default to time-based completion only
     return false;
   }

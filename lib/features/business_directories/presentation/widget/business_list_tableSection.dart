@@ -1,12 +1,18 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:osp_broker_admin/features/business_directories/domain/business_directories_model.dart';
-import 'dart:math' as math;
-import '../../domain/business_list_model.dart';
+
 import '../../application/business_directories_notifier.dart';
+import '../../domain/business_list_model.dart';
 
 class BusinessListTableSection extends ConsumerStatefulWidget {
-  const BusinessListTableSection({super.key});
+  final String searchQuery;
+  const BusinessListTableSection({
+    super.key,
+    this.searchQuery = '',
+  });
 
   @override
   ConsumerState<BusinessListTableSection> createState() =>
@@ -67,6 +73,27 @@ class _BusinessListTableSectionState
         _colServingAreas +
         _colWebsite +
         _colStatus;
+  }
+
+  bool _matchesQuery(BusinessModel business, String query) {
+    if (query.isEmpty) return true;
+    final q = query.toLowerCase();
+
+    bool contains(String? v) => (v ?? '').toLowerCase().contains(q);
+
+    if (contains(business.businessName)) return true;
+    if (contains(business.accountOwnerUsername)) return true;
+    if (contains(business.industry)) return true;
+    if (contains(business.companyType)) return true;
+    if (contains(business.slogan)) return true;
+    if (contains(business.hqLocation.city)) return true;
+    if (contains(business.hqLocation.country)) return true;
+    if (contains(business.hqLocation.address)) return true;
+    if (business.products.any((p) => contains(p))) return true;
+    if (business.services.any((s) => contains(s))) return true;
+    if (business.servingAreas.any((a) => contains(a))) return true;
+
+    return false;
   }
 
   String _previewList(List<String> items) {
@@ -372,6 +399,11 @@ class _BusinessListTableSectionState
     final Map<String, String> categoryIdToName = {
       for (final c in _categories) c.id: c.name
     };
+
+    final filteredBusinesses = _businesses
+        .where((b) => _matchesQuery(b, widget.searchQuery.trim()))
+        .toList();
+
     return Container(
       margin: const EdgeInsets.only(top: 20),
       decoration: BoxDecoration(
@@ -397,8 +429,14 @@ class _BusinessListTableSectionState
               ? const Center(child: CircularProgressIndicator())
               : _error != null
                   ? Center(child: Text('Error: $_error'))
-                  : _businesses.isEmpty
-                      ? const Center(child: Text('No businesses found'))
+                  : filteredBusinesses.isEmpty
+                      ? Center(
+                          child: Text(
+                            widget.searchQuery.trim().isEmpty
+                                ? 'No businesses found'
+                                : 'No businesses match "${widget.searchQuery.trim()}"',
+                          ),
+                        )
                       : Row(
                           children: [
                             Expanded(
@@ -414,10 +452,10 @@ class _BusinessListTableSectionState
                                     ),
                                     child: ListView.builder(
                                       controller: _verticalLeftController,
-                                      itemCount: _businesses.length,
+                                      itemCount: filteredBusinesses.length,
                                       itemBuilder: (context, index) {
                                         return _buildLeftRow(
-                                          _businesses[index],
+                                          filteredBusinesses[index],
                                           categoryIdToName,
                                           index: index,
                                         );
@@ -431,10 +469,10 @@ class _BusinessListTableSectionState
                               width: actionsWidth,
                               child: ListView.builder(
                                 controller: _verticalRightController,
-                                itemCount: _businesses.length,
+                                itemCount: filteredBusinesses.length,
                                 itemBuilder: (context, index) {
                                   return _buildActionsRow(
-                                    _businesses[index],
+                                    filteredBusinesses[index],
                                     categoryIdToName,
                                   );
                                 },

@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:osp_broker_admin/core/constants/app_colors.dart';
+import 'package:osp_broker_admin/core/utils/csv_export.dart';
 import 'package:osp_broker_admin/core/widgets/layout/top_bar.dart';
 import 'package:osp_broker_admin/features/forums/presentation/widgets/hover_action_cards.dart';
-import '../widgets/forum_tabs.dart';
-import '../widgets/forum_categories_table.dart';
-import '../widgets/forum_forums_table.dart';
+
 import '../../application/forum_admin_notifier.dart';
-import '../widgets/forum_topics_table.dart';
 import '../widgets/add_category_dialog.dart';
 import '../widgets/add_forum_dialog.dart';
 import '../widgets/announcements_dialog.dart';
-import '../widgets/polls_dialog.dart';
 import '../widgets/events_dialog.dart';
+import '../widgets/forum_categories_table.dart';
+import '../widgets/forum_forums_table.dart';
+import '../widgets/forum_tabs.dart';
+import '../widgets/forum_topics_table.dart';
+import '../widgets/polls_dialog.dart';
 
 class ForumsPage extends ConsumerStatefulWidget {
   const ForumsPage({super.key});
@@ -72,7 +73,8 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
         Expanded(
           child: SingleChildScrollView(
             child: Container(
-              padding: EdgeInsets.all(MediaQuery.of(context).size.width < 768 ? 12.0 : 24.0),
+              padding: EdgeInsets.all(
+                  MediaQuery.of(context).size.width < 768 ? 12.0 : 24.0),
               decoration: BoxDecoration(
                 color: AppColors.backgroundLight,
               ),
@@ -83,7 +85,8 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
                   Text(
                     'Forum Listing and Management',
                     style: TextStyle(
-                      fontSize: MediaQuery.of(context).size.width < 768 ? 20 : 24,
+                      fontSize:
+                          MediaQuery.of(context).size.width < 768 ? 20 : 24,
                       fontWeight: FontWeight.bold,
                       color: Colors.black,
                     ),
@@ -114,6 +117,102 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
                               forumState.topics.length.toString(),
                             ],
                           ),
+                          const Spacer(),
+                          PopupMenuButton<String>(
+                            tooltip: 'Export CSV',
+                            icon: const Icon(Icons.download),
+                            onSelected: (value) async {
+                              final state =
+                                  ref.read(forumAdminNotifierProvider);
+                              if (value == 'categories') {
+                                final rows = state.categories
+                                    .map(
+                                      (c) => <String, Object?>{
+                                        'id': c.id,
+                                        'name': c.name,
+                                        'description': c.description,
+                                        'moderatorId': c.moderatorId,
+                                        'icon': c.icon,
+                                        'membershipAccess': c.membershipAccess,
+                                        'createdAt': c.createdAt,
+                                        'updatedAt': c.updatedAt,
+                                        'isActive': c.isActive,
+                                        'count': c.count,
+                                      },
+                                    )
+                                    .toList();
+                                await exportCsv(
+                                  fileName: 'forum_categories.csv',
+                                  rows: rows,
+                                );
+                                return;
+                              }
+
+                              if (value == 'forums') {
+                                final rows = state.forums
+                                    .map(
+                                      (f) => <String, Object?>{
+                                        'id': f.id,
+                                        'title': f.title,
+                                        'description': f.description,
+                                        'categoryId': f.categoryId,
+                                        'userId': f.userId,
+                                        'author': f.author,
+                                        'comments': f.comments,
+                                        'isDeleted': f.isDeleted,
+                                        'createdAt': f.createdAt,
+                                        'updatedAt': f.updatedAt,
+                                        'topics': f.topics,
+                                        'count': f.count,
+                                      },
+                                    )
+                                    .toList();
+                                await exportCsv(
+                                  fileName: 'forums.csv',
+                                  rows: rows,
+                                );
+                                return;
+                              }
+
+                              if (value == 'topics') {
+                                final rows = state.topics
+                                    .map(
+                                      (t) => <String, Object?>{
+                                        'id': t.id,
+                                        'title': t.title,
+                                        'content': t.content,
+                                        'author': t.author,
+                                        'views': t.views,
+                                        'forumId': t.forumId,
+                                        'createdAt': t.createdAt,
+                                        'updatedAt': t.updatedAt,
+                                        'comments': t.comments,
+                                        'isClosed': t.isClosed,
+                                        'attachments': t.attachments,
+                                      },
+                                    )
+                                    .toList();
+                                await exportCsv(
+                                  fileName: 'forum_topics.csv',
+                                  rows: rows,
+                                );
+                              }
+                            },
+                            itemBuilder: (context) => const [
+                              PopupMenuItem(
+                                value: 'categories',
+                                child: Text('Export Categories (CSV)'),
+                              ),
+                              PopupMenuItem(
+                                value: 'forums',
+                                child: Text('Export Forums (CSV)'),
+                              ),
+                              PopupMenuItem(
+                                value: 'topics',
+                                child: Text('Export Topics (CSV)'),
+                              ),
+                            ],
+                          ),
                           // (You can add search/sort/filter bar here if needed)
                         ],
                       ),
@@ -137,7 +236,8 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
                                         ? const Center(
                                             child: CircularProgressIndicator())
                                         : error != null
-                                            ? Center(child: Text('Error: $error'))
+                                            ? Center(
+                                                child: Text('Error: $error'))
                                             : ForumTopicsTable(
                                                 topics: forumState.topics,
                                                 forums: forums)
@@ -145,7 +245,8 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
                                         ? const Center(
                                             child: CircularProgressIndicator())
                                         : error != null
-                                            ? Center(child: Text('Error: $error'))
+                                            ? Center(
+                                                child: Text('Error: $error'))
                                             : Container(),
                       )
                     ],
@@ -162,18 +263,19 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
   Widget _buildResponsiveTable(Widget table) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 768;
-    
+
     if (isMobile) {
       // Wrap table in horizontal scroll for mobile with proper constraints
       return SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: SizedBox(
-          width: screenWidth * 1.5, // Give table 1.5x screen width for scrolling
+          width:
+              screenWidth * 1.5, // Give table 1.5x screen width for scrolling
           child: table,
         ),
       );
     }
-    
+
     return table;
   }
 
@@ -181,11 +283,11 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 768;
     final isTablet = screenWidth >= 768 && screenWidth < 1024;
-    
+
     // Determine grid layout based on screen size
     int crossAxisCount;
     double childAspectRatio;
-    
+
     if (isMobile) {
       crossAxisCount = 2; // 2 columns on mobile
       childAspectRatio = 1.5;
@@ -196,7 +298,7 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
       crossAxisCount = 4; // 4 columns on desktop
       childAspectRatio = 2.8;
     }
-    
+
     // Define gradients for each card
     final gradients = [
       {

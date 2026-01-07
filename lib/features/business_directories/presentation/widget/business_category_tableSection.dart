@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:osp_broker_admin/features/business_directories/presentation/widget/add_business_category_dialog.dart';
+
 import '../../application/business_directories_notifier.dart';
 import '../../domain/business_directories_model.dart';
 
 class BusinessCategoryTableSection extends ConsumerStatefulWidget {
-  const BusinessCategoryTableSection({Key? key}) : super(key: key);
+  final List<BusinessCategory>? categories;
+  const BusinessCategoryTableSection({Key? key, this.categories})
+      : super(key: key);
 
   @override
   ConsumerState<BusinessCategoryTableSection> createState() =>
@@ -33,7 +36,7 @@ class _BusinessCategoryTableSectionState
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(businessDirectoriesNotifierProvider);
-    final categories = state.filteredCategories; // Use filtered categories
+    final categories = widget.categories ?? state.filteredCategories;
 
     if (state.isLoading) {
       return const Center(child: CircularProgressIndicator());

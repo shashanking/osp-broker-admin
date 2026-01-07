@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-import 'business_category_tableSection.dart';
-import 'business_list_tableSection.dart';
-import 'business_category_filters.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:osp_broker_admin/core/utils/csv_export.dart';
 import 'package:osp_broker_admin/features/business_directories/application/business_directories_notifier.dart';
 import 'package:osp_broker_admin/features/business_directories/domain/business_directories_model.dart';
+
+import 'business_category_filters.dart';
+import 'business_category_tableSection.dart';
+import 'business_list_tableSection.dart';
 
 class BusinessDirectoriesTableSection extends ConsumerStatefulWidget {
   const BusinessDirectoriesTableSection({super.key});
@@ -133,6 +135,9 @@ class _BusinessDirectoriesTableSectionState
 
   // Show sort options dialog
   Future<void> _showSortOptions() async {
+    final currentSortValue = _sortBy == 'count'
+        ? (_sortAscending ? 'count_asc' : 'count_desc')
+        : 'name';
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (context) => AlertDialog(
@@ -143,7 +148,7 @@ class _BusinessDirectoriesTableSectionState
             RadioListTile<String>(
               title: const Text('Name (A-Z)'),
               value: 'name',
-              groupValue: _sortBy,
+              groupValue: currentSortValue,
               onChanged: (value) {
                 setState(() {
                   _sortBy = value!;
@@ -154,27 +159,28 @@ class _BusinessDirectoriesTableSectionState
             ),
             RadioListTile<String>(
               title: const Text('Business Count (Low to High)'),
-              value: 'count',
-              groupValue: _sortBy,
+              value: 'count_asc',
+              groupValue: currentSortValue,
               onChanged: (value) {
                 setState(() {
-                  _sortBy = value!;
+                  _sortBy = 'count';
                   _sortAscending = true;
                 });
-                Navigator.of(context).pop({'sortBy': value, 'ascending': true});
+                Navigator.of(context)
+                    .pop({'sortBy': 'count', 'ascending': true});
               },
             ),
             RadioListTile<String>(
               title: const Text('Business Count (High to Low)'),
-              value: 'count',
-              groupValue: _sortBy,
+              value: 'count_desc',
+              groupValue: currentSortValue,
               onChanged: (value) {
                 setState(() {
-                  _sortBy = value!;
+                  _sortBy = 'count';
                   _sortAscending = false;
                 });
                 Navigator.of(context)
-                    .pop({'sortBy': value, 'ascending': false});
+                    .pop({'sortBy': 'count', 'ascending': false});
               },
             ),
           ],
@@ -232,7 +238,8 @@ class _BusinessDirectoriesTableSectionState
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(businessDirectoriesNotifierProvider);
-    final categories = _getFilteredAndSortedCategories(state.categories);
+    final categories =
+        _getFilteredAndSortedCategories(state.filteredCategories);
 
     return Container(
       width: double.infinity,
@@ -290,22 +297,24 @@ class _BusinessDirectoriesTableSectionState
                         ),
                         child: TextField(
                           controller: _searchController,
+                          textAlignVertical: TextAlignVertical.center,
                           onChanged: (value) {
                             setState(() {
                               _searchQuery = value;
                             });
                           },
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
+                            isDense: true,
                             hintText: 'Search for Business Categories...',
-                            hintStyle: TextStyle(
+                            hintStyle: const TextStyle(
                               color: Color(0xFF333333),
                               fontSize: 14,
                             ),
-                            prefixIcon: Icon(Icons.search,
+                            prefixIcon: const Icon(Icons.search,
                                 size: 16, color: Color(0xFF333333)),
                             border: InputBorder.none,
                             contentPadding: EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 10),
+                                horizontal: 16, vertical: 0),
                           ),
                         ),
                       ),
@@ -368,6 +377,50 @@ class _BusinessDirectoriesTableSectionState
 
                     const SizedBox(width: 12),
 
+                    PopupMenuButton<String>(
+                      tooltip: 'Export CSV',
+                      icon: const Icon(Icons.download),
+                      onSelected: (value) async {
+                        if (value == 'categories') {
+                          final current = categories;
+                          final rows = current
+                              .map((c) => (c.toJson())
+                                  .map((k, v) => MapEntry(k, v as Object?)))
+                              .toList();
+                          await exportCsv(
+                            fileName: 'business_categories.csv',
+                            rows: rows,
+                          );
+                          return;
+                        }
+
+                        if (value == 'businesses') {
+                          final businesses = await ref
+                              .read(
+                                  businessDirectoriesNotifierProvider.notifier)
+                              .fetchAllBusinesses();
+                          final rows = businesses
+                              .map((b) => (b.toJson())
+                                  .map((k, v) => MapEntry(k, v as Object?)))
+                              .toList();
+                          await exportCsv(
+                            fileName: 'businesses.csv',
+                            rows: rows,
+                          );
+                        }
+                      },
+                      itemBuilder: (context) => const [
+                        PopupMenuItem(
+                          value: 'categories',
+                          child: Text('Export Categories (CSV)'),
+                        ),
+                        PopupMenuItem(
+                          value: 'businesses',
+                          child: Text('Export Businesses (CSV)'),
+                        ),
+                      ],
+                    ),
+
                     // Delete button (only show if items are selected)
                     if (_selectedCategories.isNotEmpty)
                       Container(
@@ -412,8 +465,16 @@ class _BusinessDirectoriesTableSectionState
             SizedBox(
               height: 400, // Fixed height for content area
               child: isBusinessCategory
-                  ? const BusinessCategoryTableSection()
-                  : const BusinessListTableSection(),
+                  ? (categories.isEmpty
+                      ? Center(
+                          child: Text(
+                            _searchQuery.trim().isEmpty
+                                ? 'No categories found'
+                                : 'No categories match "${_searchQuery.trim()}"',
+                          ),
+                        )
+                      : BusinessCategoryTableSection(categories: categories))
+                  : BusinessListTableSection(searchQuery: _searchQuery),
             ),
         ],
       ),

@@ -9,6 +9,7 @@ class StatCard extends StatelessWidget {
   final IconData icon;
   final Color iconBgColor;
   final Color iconColor;
+  final VoidCallback? onViewTap;
 
   const StatCard({
     super.key,
@@ -19,6 +20,7 @@ class StatCard extends StatelessWidget {
     required this.icon,
     this.iconBgColor = AppColors.primary,
     this.iconColor = Colors.white,
+    this.onViewTap,
   });
 
   @override
@@ -89,7 +91,9 @@ class StatCard extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            isPositive ? Icons.arrow_upward : Icons.arrow_downward,
+                            isPositive
+                                ? Icons.arrow_upward
+                                : Icons.arrow_downward,
                             size: 14,
                             color: isPositive
                                 ? AppColors.success
@@ -110,18 +114,33 @@ class StatCard extends StatelessWidget {
                       ),
                     ),
                     const Spacer(),
-                    Text(
-                      'View',
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
+                    InkWell(
+                      onTap: onViewTap,
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 4,
+                        ),
+                        child: Row(
+                          children: const [
+                            Text(
+                              'View',
+                              style: TextStyle(
+                                color: AppColors.primary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            SizedBox(width: 4),
+                            Icon(
+                              Icons.arrow_forward_ios,
+                              size: 12,
+                              color: AppColors.primary,
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    const Icon(
-                      Icons.arrow_forward_ios,
-                      size: 12,
-                      color: AppColors.primary,
                     ),
                   ],
                 ),
