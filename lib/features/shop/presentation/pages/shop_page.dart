@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:osp_broker_admin/core/widgets/layout/top_bar.dart';
 
-import '../../application/shop_pin_notifier.dart';
-import '../../application/shop_badge_notifier.dart';
-import '../../application/shop_kudo_coin_notifier.dart';
+import 'shop_items_page.dart';
 
 final GoRoute goRouteShop = GoRoute(
   path: ShopPage.routePath,
@@ -16,15 +13,22 @@ final GoRoute goRouteShop = GoRoute(
   ),
 );
 
-class ShopPage extends ConsumerStatefulWidget {
+class ShopPage extends ConsumerWidget {
   const ShopPage({super.key});
 
   static const String routeName = 'shop';
   static const String routePath = '/shop';
 
   @override
-  ConsumerState<ShopPage> createState() => _ShopPageState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    return const ShopItemsPage();
+  }
 }
+
+/*
+
+ LEGACY SHOP (Pins / Badges / Kudo Coins)
+ Kept commented as requested.
 
 class _AddKudoCoinDialog extends ConsumerStatefulWidget {
   const _AddKudoCoinDialog();
@@ -1380,3 +1384,5 @@ class _AddPinDialogState extends ConsumerState<_AddPinDialog> {
     );
   }
 }
+
+*/
