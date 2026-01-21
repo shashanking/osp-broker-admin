@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:osp_broker_admin/core/constants/app_colors.dart';
@@ -59,6 +60,10 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
   double? _minPrice;
   double? _maxPrice;
 
+  final Set<String> _selectedIds = {};
+  final Map<String, bool> _activeOverrideByItemId = {};
+  final Map<String, PlatformFile?> _imageOverrideByItemId = {};
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -76,6 +81,34 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
         DateTime.fromMillisecondsSinceEpoch(0);
   }
 
+  String _formatShortDate(DateTime d) {
+    final dd = d.day.toString().padLeft(2, '0');
+    final mm = d.month.toString().padLeft(2, '0');
+    final yy = (d.year % 100).toString().padLeft(2, '0');
+    return '$dd-$mm-$yy';
+  }
+
+  double _nameColumnMaxWidth(BuildContext context) {
+    final w = MediaQuery.of(context).size.width;
+    // Keep Name column readable but prevent it from stretching the whole table.
+    // Tuned for the current layout with sidebar + horizontal table scroll.
+    return (w * 0.05).clamp(100.0, 300.0);
+  }
+
+  bool _isActiveFor(ShopItemModel item) {
+    return _activeOverrideByItemId[item.id] ?? true;
+  }
+
+  String _categoryFirstWord(
+    ShopItemModel item,
+    Map<String, String> categoryNameById,
+  ) {
+    final raw =
+        (item.category?.name ?? categoryNameById[item.categoryId] ?? '').trim();
+    if (raw.isEmpty) return '';
+    return raw.split(RegExp(r'\s+')).first.toLowerCase();
+  }
+
   bool get _hasActiveFilters {
     return _filterCategoryId != null ||
         _stockFilter != _StockFilter.any ||
@@ -83,20 +116,27 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
         _maxPrice != null;
   }
 
-  List<ShopItemModel> _applyFilters(List<ShopItemModel> items) {
+  List<ShopItemModel> _applyFilters(
+    List<ShopItemModel> items,
+    Map<String, String> categoryNameById,
+  ) {
     final query = _searchController.text.trim().toLowerCase();
 
     Iterable<ShopItemModel> filtered = items;
 
     if (_selectedTab != ShopItemsTab.all) {
-      final categoryName = switch (_selectedTab) {
-        ShopItemsTab.platform => 'Platform',
-        ShopItemsTab.product => 'Product',
-        ShopItemsTab.service => 'Service',
-        ShopItemsTab.all => 'All',
+      final expected = switch (_selectedTab) {
+        ShopItemsTab.platform => 'platform',
+        ShopItemsTab.product => 'product',
+        ShopItemsTab.service => 'service',
+        ShopItemsTab.all => '',
       };
+
+      // Match by first word of category name, case-insensitive.
+      // Examples: "Product Shop" -> product, "service shop" -> service.
       filtered = filtered.where(
-          (e) => e.category?.name.toLowerCase() == categoryName.toLowerCase());
+        (e) => _categoryFirstWord(e, categoryNameById) == expected,
+      );
     }
 
     if (query.isNotEmpty) {
@@ -281,19 +321,19 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      DropdownButtonFormField<String>(
+                      DropdownButtonFormField<String?>(
                         value: categoryId,
                         decoration: const InputDecoration(
                           labelText: 'Category',
                           border: OutlineInputBorder(),
                         ),
                         items: [
-                          const DropdownMenuItem<String>(
+                          const DropdownMenuItem<String?>(
                             value: null,
                             child: Text('All categories'),
                           ),
                           ...categories.map(
-                            (c) => DropdownMenuItem<String>(
+                            (c) => DropdownMenuItem<String?>(
                               value: c.id,
                               child: Text(c.name),
                             ),
@@ -425,14 +465,24 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
     return max(1, (totalItems / _rowsPerPage).ceil());
   }
 
-  String _getCategoryName(ShopItemModel item) {
-    return item.category?.name ?? 'Unknown';
+  String _getCategoryName(
+    ShopItemModel item,
+    Map<String, String> categoryNameById,
+  ) {
+    final fromIncluded = item.category?.name;
+    if (fromIncluded != null && fromIncluded.trim().isNotEmpty) {
+      return fromIncluded;
+    }
+    return categoryNameById[item.categoryId] ?? 'Unknown';
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(shopItemsNotifierProvider);
-    final allItems = _applyFilters(state.items);
+    final categoryNameById = <String, String>{
+      for (final c in state.categories) c.id: c.name,
+    };
+    final allItems = _applyFilters(state.items, categoryNameById);
     final pagedItems = _paged(allItems);
     final totalPages = _totalPages(allItems.length);
 
@@ -460,7 +510,7 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
                             (e) => <String, Object?>{
                               'name': e.name,
                               'id': e.id,
-                              'category': _getCategoryName(e),
+                              'category': _getCategoryName(e, categoryNameById),
                               'price': e.price,
                               'description': e.description,
                               'stock': e.stock,
@@ -485,7 +535,7 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
                             );
                             if (result != null && mounted) {
                               try {
-                                await ref
+                                final created = await ref
                                     .read(shopItemsNotifierProvider.notifier)
                                     .createItem(
                                       name: result.name,
@@ -494,6 +544,13 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
                                       stock: result.stock,
                                       categoryId: result.categoryId,
                                     );
+                                if (!mounted) return;
+                                setState(() {
+                                  _activeOverrideByItemId[created.id] =
+                                      result.isActive;
+                                  _imageOverrideByItemId[created.id] =
+                                      result.imageFile;
+                                });
                               } catch (e) {
                                 if (mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
@@ -701,17 +758,33 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
                               dataRowMinHeight: 56,
                               dataRowMaxHeight: 56,
                               columns: const [
+                                DataColumn(label: SizedBox(width: 24)),
                                 DataColumn(label: Text('Name')),
                                 DataColumn(label: Text('ID')),
                                 DataColumn(label: Text('Price')),
-                                DataColumn(label: Text('Stock')),
                                 DataColumn(label: Text('Category')),
+                                DataColumn(label: Text('Last Update')),
+                                DataColumn(label: Text('Status')),
                                 DataColumn(label: Text('Actions')),
                               ],
                               rows: pagedItems
                                   .map(
                                     (e) => DataRow(
                                       cells: [
+                                        DataCell(
+                                          Checkbox(
+                                            value: _selectedIds.contains(e.id),
+                                            onChanged: (v) {
+                                              setState(() {
+                                                if (v == true) {
+                                                  _selectedIds.add(e.id);
+                                                } else {
+                                                  _selectedIds.remove(e.id);
+                                                }
+                                              });
+                                            },
+                                          ),
+                                        ),
                                         DataCell(
                                           Row(
                                             children: [
@@ -722,15 +795,21 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
                                                   color:
                                                       const Color(0xFF2563EB),
                                                   borderRadius:
-                                                      BorderRadius.circular(
-                                                          999),
+                                                      BorderRadius.circular(99),
                                                 ),
                                               ),
                                               const SizedBox(width: 10),
-                                              Text(
-                                                e.name,
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.w700,
+                                              SizedBox(
+                                                width: _nameColumnMaxWidth(
+                                                    context),
+                                                child: Text(
+                                                  e.name,
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: const TextStyle(
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
                                                 ),
                                               ),
                                             ],
@@ -742,24 +821,103 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
                                           Text(
                                             '\$${e.price.toStringAsFixed(2)}',
                                             style: const TextStyle(
-                                              fontWeight: FontWeight.w800,
+                                                fontWeight: FontWeight.w700),
+                                          ),
+                                        ),
+                                        DataCell(
+                                          DropdownButtonHideUnderline(
+                                            child: Container(
+                                              height: 32,
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 10,
+                                                vertical: 0,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFFE5E7EB),
+                                                borderRadius:
+                                                    BorderRadius.circular(999),
+                                              ),
+                                              child: DropdownButton<String>(
+                                                isDense: true,
+                                                value: state.categories.any(
+                                                        (c) =>
+                                                            c.id ==
+                                                            e.categoryId)
+                                                    ? e.categoryId
+                                                    : null,
+                                                hint: Text(
+                                                  _getCategoryName(
+                                                      e, categoryNameById),
+                                                  style: const TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                      fontSize: 12),
+                                                ),
+                                                icon: const Icon(
+                                                  Icons
+                                                      .keyboard_arrow_down_rounded,
+                                                  size: 18,
+                                                ),
+                                                items: state.categories
+                                                    .map(
+                                                      (c) => DropdownMenuItem(
+                                                        value: c.id,
+                                                        child: Text(
+                                                          c.name,
+                                                          style:
+                                                              const TextStyle(
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w700,
+                                                                  fontSize: 12),
+                                                        ),
+                                                      ),
+                                                    )
+                                                    .toList(),
+                                                onChanged: (v) async {
+                                                  if (v == null ||
+                                                      v == e.categoryId) {
+                                                    return;
+                                                  }
+                                                  try {
+                                                    await ref
+                                                        .read(
+                                                            shopItemsNotifierProvider
+                                                                .notifier)
+                                                        .updateItem(
+                                                          id: e.id,
+                                                          categoryId: v,
+                                                        );
+                                                  } catch (_) {
+                                                    if (!mounted) return;
+                                                    ScaffoldMessenger.of(
+                                                            context)
+                                                        .showSnackBar(
+                                                      const SnackBar(
+                                                          content: Text(
+                                                              'Failed to update category')),
+                                                    );
+                                                  }
+                                                },
+                                              ),
                                             ),
                                           ),
                                         ),
                                         DataCell(
                                           Text(
-                                            '${e.stock}',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                              color: e.stock < 10
-                                                  ? Colors.red
-                                                  : Colors.black,
+                                            _formatShortDate(_safeUpdatedAt(e)),
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w700,
                                             ),
                                           ),
                                         ),
                                         DataCell(
-                                          _CategoryPill(
-                                            label: _getCategoryName(e),
+                                          _StatusTag(
+                                            label: _isActiveFor(e)
+                                                ? 'Active'
+                                                : 'Hidden',
+                                            isActive: _isActiveFor(e),
                                           ),
                                         ),
                                         DataCell(
@@ -775,13 +933,15 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
                                                     builder: (context) =>
                                                         _AddShopItemDialog(
                                                       initialItem: e,
+                                                      initialIsActive:
+                                                          _isActiveFor(e),
                                                     ),
                                                   );
 
                                                   if (result == null ||
                                                       !mounted) return;
                                                   try {
-                                                    await ref
+                                                    final updated = await ref
                                                         .read(
                                                             shopItemsNotifierProvider
                                                                 .notifier)
@@ -795,14 +955,24 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
                                                           categoryId:
                                                               result.categoryId,
                                                         );
-                                                  } catch (err) {
+
+                                                    if (!mounted) return;
+                                                    setState(() {
+                                                      _activeOverrideByItemId[
+                                                              updated.id] =
+                                                          result.isActive;
+                                                      _imageOverrideByItemId[
+                                                              updated.id] =
+                                                          result.imageFile;
+                                                    });
+                                                  } catch (e) {
                                                     if (mounted) {
                                                       ScaffoldMessenger.of(
                                                               context)
                                                           .showSnackBar(
                                                         SnackBar(
                                                             content: Text(
-                                                                'Error: $err')),
+                                                                'Error: $e')),
                                                       );
                                                     }
                                                   }
@@ -832,15 +1002,6 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
                                                                 'Cancel'),
                                                           ),
                                                           ElevatedButton(
-                                                            style:
-                                                                ElevatedButton
-                                                                    .styleFrom(
-                                                              backgroundColor:
-                                                                  const Color(
-                                                                      0xFFDC2626),
-                                                              foregroundColor:
-                                                                  Colors.white,
-                                                            ),
                                                             onPressed: () =>
                                                                 Navigator.of(
                                                                         context)
@@ -853,22 +1014,21 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
                                                     },
                                                   );
 
-                                                  if (confirm != true ||
-                                                      !mounted) return;
+                                                  if (confirm != true) return;
                                                   try {
                                                     await ref
                                                         .read(
                                                             shopItemsNotifierProvider
                                                                 .notifier)
                                                         .softDeleteItem(e.id);
-                                                  } catch (err) {
+                                                  } catch (e) {
                                                     if (mounted) {
                                                       ScaffoldMessenger.of(
                                                               context)
                                                           .showSnackBar(
                                                         SnackBar(
                                                             content: Text(
-                                                                'Error: $err')),
+                                                                'Error: $e')),
                                                       );
                                                     }
                                                   }
@@ -876,6 +1036,7 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
                                                 icon: Icons.delete,
                                                 background:
                                                     const Color(0xFFDC2626),
+                                                foreground: Colors.white,
                                               ),
                                             ],
                                           ),
@@ -915,6 +1076,8 @@ class _ShopItemDialogResult {
   final double price;
   final int stock;
   final String categoryId;
+  final bool isActive;
+  final PlatformFile? imageFile;
 
   _ShopItemDialogResult({
     required this.name,
@@ -922,6 +1085,8 @@ class _ShopItemDialogResult {
     required this.price,
     required this.stock,
     required this.categoryId,
+    required this.isActive,
+    required this.imageFile,
   });
 }
 
@@ -1191,11 +1356,13 @@ class _CircleIconButton extends StatelessWidget {
   final VoidCallback onPressed;
   final IconData icon;
   final Color background;
+  final Color foreground;
 
   const _CircleIconButton({
     required this.onPressed,
     required this.icon,
     required this.background,
+    required this.foreground,
   });
 
   @override
@@ -1240,6 +1407,38 @@ class _ManagePillButton extends StatelessWidget {
             fontWeight: FontWeight.w800,
             fontSize: 12,
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StatusTag extends StatelessWidget {
+  final String label;
+  final bool isActive;
+
+  const _StatusTag({
+    required this.label,
+    required this.isActive,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = isActive ? const Color(0xFFDFF2C2) : const Color(0xFFE9D5B5);
+    final fg = isActive ? const Color(0xFF3B6A1A) : const Color(0xFF7C5B1B);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: fg,
+          fontWeight: FontWeight.w800,
+          fontSize: 12,
         ),
       ),
     );
@@ -1432,9 +1631,11 @@ class _PaginationBar extends StatelessWidget {
 
 class _AddShopItemDialog extends ConsumerStatefulWidget {
   final ShopItemModel? initialItem;
+  final bool initialIsActive;
 
   const _AddShopItemDialog({
     this.initialItem,
+    this.initialIsActive = true,
   });
 
   @override
@@ -1450,6 +1651,8 @@ class _AddShopItemDialogState extends ConsumerState<_AddShopItemDialog> {
   final _descriptionController = TextEditingController();
 
   String? _categoryId;
+  bool _isActive = true;
+  PlatformFile? _pickedImage;
   bool _isCreatingCategory = false;
   final _categoryNameController = TextEditingController();
   final _categoryDescController = TextEditingController();
@@ -1464,6 +1667,27 @@ class _AddShopItemDialogState extends ConsumerState<_AddShopItemDialog> {
       _stockController.text = initial.stock.toString();
       _descriptionController.text = initial.description;
       _categoryId = initial.categoryId;
+    }
+
+    _isActive = widget.initialIsActive;
+  }
+
+  Future<void> _pickImage() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        withData: true,
+      );
+      if (!mounted) return;
+      if (result == null || result.files.isEmpty) return;
+      setState(() {
+        _pickedImage = result.files.first;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to pick image: $e')),
+      );
     }
   }
 
@@ -1549,6 +1773,108 @@ class _AddShopItemDialogState extends ConsumerState<_AddShopItemDialog> {
                     validator: (v) => (v == null || v.trim().isEmpty)
                         ? 'Please enter item name'
                         : null,
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'Image',
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                      ElevatedButton.icon(
+                        onPressed: _pickImage,
+                        icon: const Icon(Icons.file_upload_outlined, size: 18),
+                        label: const Text('Upload Image'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFD19A1A),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 12),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (_pickedImage != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        _pickedImage!.name,
+                        style: TextStyle(
+                          color: Colors.grey.shade700,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      const Text(
+                        'Visibility',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      const Spacer(),
+                      Container(
+                        height: 44,
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF2F2F2F),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Row(
+                          children: [
+                            InkWell(
+                              onTap: () => setState(() => _isActive = true),
+                              borderRadius: BorderRadius.circular(999),
+                              child: Container(
+                                width: 110,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: _isActive
+                                      ? const Color(0xFF76B82A)
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: Text(
+                                  'Active',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w900,
+                                    color: _isActive
+                                        ? const Color(0xFF1F2937)
+                                        : const Color(0xFF9CA3AF),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            InkWell(
+                              onTap: () => setState(() => _isActive = false),
+                              borderRadius: BorderRadius.circular(999),
+                              child: Container(
+                                width: 110,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: !_isActive
+                                      ? const Color(0xFF76B82A)
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: Text(
+                                  'Inactive',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w900,
+                                    color: !_isActive
+                                        ? const Color(0xFF1F2937)
+                                        : const Color(0xFF9CA3AF),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 12),
                   if (_isCreatingCategory) ...[
@@ -1746,6 +2072,8 @@ class _AddShopItemDialogState extends ConsumerState<_AddShopItemDialog> {
                               price: double.parse(_priceController.text.trim()),
                               stock: int.parse(_stockController.text.trim()),
                               categoryId: _categoryId!,
+                              isActive: _isActive,
+                              imageFile: _pickedImage,
                             );
                             Navigator.of(context).pop(result);
                           },
