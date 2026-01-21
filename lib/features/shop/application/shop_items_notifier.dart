@@ -110,6 +110,8 @@ class ShopItemsNotifier extends StateNotifier<ShopItemsState> {
     required double price,
     required int stock,
     required String categoryId,
+    required bool active,
+    required String image,
   }) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
@@ -121,6 +123,8 @@ class ShopItemsNotifier extends StateNotifier<ShopItemsState> {
           'price': price,
           'stock': stock,
           'categoryId': categoryId,
+          'active': active,
+          'image': image,
         },
       );
 
@@ -144,6 +148,8 @@ class ShopItemsNotifier extends StateNotifier<ShopItemsState> {
     double? price,
     int? stock,
     String? categoryId,
+    bool? active,
+    String? image,
   }) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
@@ -153,6 +159,8 @@ class ShopItemsNotifier extends StateNotifier<ShopItemsState> {
       if (price != null) updateData['price'] = price;
       if (stock != null) updateData['stock'] = stock;
       if (categoryId != null) updateData['categoryId'] = categoryId;
+      if (active != null) updateData['active'] = active;
+      if (image != null) updateData['image'] = image;
 
       final response = await _apiService.put(
         '${ApiUrls.shopItems}/$id',

@@ -12,6 +12,8 @@ class ShopItemModel with _$ShopItemModel {
     required double price,
     @Default(0) int stock,
     required String categoryId,
+    @Default(true) bool active,
+    @Default('') String image,
     ShopCategoryModel? category,
     @Default(false) bool isDeleted,
     DateTime? createdAt,

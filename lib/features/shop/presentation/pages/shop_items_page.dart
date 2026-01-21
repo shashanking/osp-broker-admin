@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:file_picker/file_picker.dart';
@@ -92,11 +93,20 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
     final w = MediaQuery.of(context).size.width;
     // Keep Name column readable but prevent it from stretching the whole table.
     // Tuned for the current layout with sidebar + horizontal table scroll.
-    return (w * 0.05).clamp(100.0, 300.0);
+    return (w * 0.08).clamp(100.0, 300.0);
+  }
+
+  String _imageToApiString(PlatformFile? file) {
+    if (file == null) return '';
+    // Backend expects a string. For web we can send base64 (bytes available because we pick withData: true).
+    // If bytes are not available, fall back to empty string to satisfy required field.
+    final bytes = file.bytes;
+    if (bytes == null || bytes.isEmpty) return '';
+    return base64Encode(bytes);
   }
 
   bool _isActiveFor(ShopItemModel item) {
-    return _activeOverrideByItemId[item.id] ?? true;
+    return _activeOverrideByItemId[item.id] ?? item.active;
   }
 
   String _categoryFirstWord(
@@ -543,6 +553,9 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
                                       price: result.price,
                                       stock: result.stock,
                                       categoryId: result.categoryId,
+                                      active: result.isActive,
+                                      image:
+                                          _imageToApiString(result.imageFile),
                                     );
                                 if (!mounted) return;
                                 setState(() {
@@ -788,17 +801,17 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
                                         DataCell(
                                           Row(
                                             children: [
-                                              Container(
-                                                width: 8,
-                                                height: 8,
-                                                decoration: BoxDecoration(
-                                                  color:
-                                                      const Color(0xFF2563EB),
-                                                  borderRadius:
-                                                      BorderRadius.circular(99),
-                                                ),
-                                              ),
-                                              const SizedBox(width: 10),
+                                              // Container(
+                                              //   width: 8,
+                                              //   height: 8,
+                                              //   decoration: BoxDecoration(
+                                              //     color:
+                                              //         const Color(0xFF2563EB),
+                                              //     borderRadius:
+                                              //         BorderRadius.circular(99),
+                                              //   ),
+                                              // ),
+                                              // const SizedBox(width: 10),
                                               SizedBox(
                                                 width: _nameColumnMaxWidth(
                                                     context),
@@ -888,6 +901,11 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
                                                         .updateItem(
                                                           id: e.id,
                                                           categoryId: v,
+                                                          active:
+                                                              _isActiveFor(e),
+                                                          image: _imageToApiString(
+                                                              _imageOverrideByItemId[
+                                                                  e.id]),
                                                         );
                                                   } catch (_) {
                                                     if (!mounted) return;
@@ -954,6 +972,12 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
                                                           stock: result.stock,
                                                           categoryId:
                                                               result.categoryId,
+                                                          active:
+                                                              result.isActive,
+                                                          image:
+                                                              _imageToApiString(
+                                                                  result
+                                                                      .imageFile),
                                                         );
 
                                                     if (!mounted) return;
