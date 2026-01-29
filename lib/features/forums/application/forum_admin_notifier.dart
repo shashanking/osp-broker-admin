@@ -3,12 +3,11 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:osp_broker_admin/core/infrastructure/base_api_service.dart';
 import 'package:osp_broker_admin/features/forums/data/repositories/forum_repository.dart';
 import 'package:osp_broker_admin/features/forums/domain/forum_models.dart';
+import 'package:osp_broker_admin/features/forums/domain/poll_analytics_model.dart';
 import 'package:osp_broker_admin/features/membership/application/membership_notifier.dart';
 import 'package:osp_broker_admin/features/membership/data/models/membership_plan_model.dart';
 import 'package:osp_broker_admin/features/users/application/user_notifier.dart';
-
 import 'package:osp_broker_admin/features/users/data/models/moderator_model.dart';
-import 'package:osp_broker_admin/features/forums/domain/poll_analytics_model.dart';
 
 part 'forum_admin_notifier.freezed.dart';
 
@@ -193,6 +192,15 @@ class ForumAdminNotifier extends StateNotifier<ForumAdminState> {
       state = state.copyWith(topics: topics, isLoading: false);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<Topic?> fetchTopicById(String topicId) async {
+    try {
+      return await _repository.fetchTopicById(topicId);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+      return null;
     }
   }
 
@@ -468,8 +476,8 @@ class ForumAdminNotifier extends StateNotifier<ForumAdminState> {
 
   // Comments
   Future<void> fetchCommentsForTopic(String topicId) async {
+    state = state.copyWith(isLoadingComments: true, error: null);
     try {
-      state = state.copyWith(isLoadingComments: true, error: null);
       final comments = await _repository.fetchCommentsForTopic(topicId);
       state = state.copyWith(
         comments: comments,
@@ -480,7 +488,6 @@ class ForumAdminNotifier extends StateNotifier<ForumAdminState> {
         error: e.toString(),
         isLoadingComments: false,
       );
-      rethrow;
     }
   }
 
@@ -489,7 +496,8 @@ class ForumAdminNotifier extends StateNotifier<ForumAdminState> {
       state = state.copyWith(isLoading: true);
       await _repository.deleteComment(commentId);
       // Remove comment from state
-      final updatedComments = state.comments.where((c) => c.id != commentId).toList();
+      final updatedComments =
+          state.comments.where((c) => c.id != commentId).toList();
       state = state.copyWith(
         comments: updatedComments,
         isLoading: false,

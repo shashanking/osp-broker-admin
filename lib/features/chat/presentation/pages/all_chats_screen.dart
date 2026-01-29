@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:timeago/timeago.dart' as timeago;
+import 'package:osp_broker_admin/features/auth/application/auth_notifier.dart';
 import 'package:osp_broker_admin/features/chat/application/all_chats_provider.dart';
 import 'package:osp_broker_admin/features/chat/presentation/pages/conversation_detail_screen.dart';
+import 'package:timeago/timeago.dart' as timeago;
 
 class AllChatsScreen extends ConsumerStatefulWidget {
   const AllChatsScreen({super.key});
@@ -25,6 +26,7 @@ class _AllChatsScreenState extends ConsumerState<AllChatsScreen> {
   @override
   Widget build(BuildContext context) {
     final allChatsState = ref.watch(allChatsProvider);
+    final authState = ref.watch(authNotifierProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -46,25 +48,67 @@ class _AllChatsScreenState extends ConsumerState<AllChatsScreen> {
             child: allChatsState.isLoading && allChatsState.chats.isEmpty
                 ? const Center(child: CircularProgressIndicator())
                 : allChatsState.error != null && allChatsState.chats.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.error_outline,
-                              size: 48,
-                              color: Colors.red,
+                    ? (() {
+                        // Show a clean placeholder for MODERATOR on 403
+                        final isModerator = authState.maybeWhen(
+                          authenticated: (_, user) =>
+                              user['role']?.toString() == 'MODERATOR',
+                          orElse: () => false,
+                        );
+                        if (isModerator &&
+                            allChatsState.error.toString().contains('403')) {
+                          return const Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.lock_outline,
+                                  size: 64,
+                                  color: Colors.grey,
+                                ),
+                                SizedBox(height: 16),
+                                Text(
+                                  'Access Restricted',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                                SizedBox(height: 8),
+                                Text(
+                                  'Only administrators can view all individual chats.',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 16),
-                            Text('Error: ${allChatsState.error}'),
-                            const SizedBox(height: 16),
-                            ElevatedButton(
-                              onPressed: _refresh,
-                              child: const Text('Retry'),
-                            ),
-                          ],
-                        ),
-                      )
+                          );
+                        }
+                        // Fallback to normal error display for ADMIN or other errors
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.error_outline,
+                                size: 48,
+                                color: Colors.red,
+                              ),
+                              const SizedBox(height: 16),
+                              Text('Error: ${allChatsState.error}'),
+                              const SizedBox(height: 16),
+                              ElevatedButton(
+                                onPressed: _refresh,
+                                child: const Text('Retry'),
+                              ),
+                            ],
+                          ),
+                        );
+                      })()
                     : allChatsState.chats.isEmpty
                         ? const Center(
                             child: Column(
@@ -187,7 +231,8 @@ class _AllChatsScreenState extends ConsumerState<AllChatsScreen> {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (context) => ConversationDetailScreen(
+                                        builder: (context) =>
+                                            ConversationDetailScreen(
                                           user1Id: chat.user1Id,
                                           user2Id: chat.user2Id,
                                           user1Name: chat.user1Name ?? 'User 1',

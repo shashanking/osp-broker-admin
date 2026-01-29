@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:osp_broker_admin/features/forums/application/forum_admin_notifier.dart';
-import 'package:osp_broker_admin/features/forums/domain/forum_models.dart';
 
 class CategorySelectionDialog extends ConsumerStatefulWidget {
   final String userId;
@@ -20,7 +19,7 @@ class CategorySelectionDialog extends ConsumerStatefulWidget {
 
 class _CategorySelectionDialogState
     extends ConsumerState<CategorySelectionDialog> {
-  Category? selectedCategory;
+  final Set<String> _selectedCategoryIds = {};
   bool isLoading = false;
 
   @override
@@ -47,7 +46,7 @@ class _CategorySelectionDialogState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Select a category to assign ${widget.userName} as moderator:',
+              'Select categories to assign ${widget.userName} as moderator:',
               style: const TextStyle(fontSize: 14, color: Colors.grey),
             ),
             const SizedBox(height: 16),
@@ -77,15 +76,19 @@ class _CategorySelectionDialogState
                   itemCount: categories.length,
                   itemBuilder: (context, index) {
                     final category = categories[index];
-                    final isSelected = selectedCategory?.id == category.id;
+                    final isSelected =
+                        _selectedCategoryIds.contains(category.id);
 
                     return ListTile(
-                      leading: Radio<Category>(
-                        value: category,
-                        groupValue: selectedCategory,
-                        onChanged: (Category? value) {
+                      leading: Checkbox(
+                        value: isSelected,
+                        onChanged: (value) {
                           setState(() {
-                            selectedCategory = value;
+                            if (value == true) {
+                              _selectedCategoryIds.add(category.id);
+                            } else {
+                              _selectedCategoryIds.remove(category.id);
+                            }
                           });
                         },
                       ),
@@ -104,7 +107,11 @@ class _CategorySelectionDialogState
                       ),
                       onTap: () {
                         setState(() {
-                          selectedCategory = category;
+                          if (_selectedCategoryIds.contains(category.id)) {
+                            _selectedCategoryIds.remove(category.id);
+                          } else {
+                            _selectedCategoryIds.add(category.id);
+                          }
                         });
                       },
                       tileColor: isSelected ? Colors.blue.shade50 : null,
@@ -121,7 +128,7 @@ class _CategorySelectionDialogState
           child: const Text('Cancel'),
         ),
         ElevatedButton(
-          onPressed: (selectedCategory == null || isLoading)
+          onPressed: (_selectedCategoryIds.isEmpty || isLoading)
               ? null
               : () async {
                   setState(() {
@@ -129,8 +136,11 @@ class _CategorySelectionDialogState
                   });
 
                   try {
-                    // Return the selected category to the caller
-                    Navigator.of(context).pop(selectedCategory);
+                    // Return the selected categories to the caller
+                    final selected = categories
+                        .where((c) => _selectedCategoryIds.contains(c.id))
+                        .toList();
+                    Navigator.of(context).pop(selected);
                   } catch (e) {
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(

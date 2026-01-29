@@ -1,7 +1,8 @@
 import 'package:osp_broker_admin/core/infrastructure/base_api_service.dart';
-import '../models/user_model.dart';
-import '../models/user_membership_model.dart';
+
 import '../models/moderator_model.dart';
+import '../models/user_membership_model.dart';
+import '../models/user_model.dart';
 
 class UserRepository {
   final BaseApiService apiService;
@@ -69,8 +70,20 @@ class UserRepository {
 
   Future<void> assignModerator(String userId, {String? categoryId}) async {
     final data = categoryId != null ? {'categoryId': categoryId} : null;
-    await apiService.post('/admin/assignModerator/$userId',
-        requireAuth: true, data: data);
+    await apiService.post(
+      '/admin/assignModerator/$userId',
+      requireAuth: true,
+      data: data,
+    );
+  }
+
+  Future<void> assignModeratorToCategories(
+    String userId, {
+    required List<String> categoryIds,
+  }) async {
+    for (final categoryId in categoryIds) {
+      await assignModerator(userId, categoryId: categoryId);
+    }
   }
 
   Future<void> removeModerator(String userId) async {

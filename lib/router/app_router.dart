@@ -4,23 +4,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:osp_broker_admin/core/utils/go_router_refresh_stream.dart';
+import 'package:osp_broker_admin/core/widgets/layout/dashboard_layout.dart';
+import 'package:osp_broker_admin/features/auction/presentation/auction_screen.dart';
 import 'package:osp_broker_admin/features/auth/application/auth_notifier.dart';
 import 'package:osp_broker_admin/features/auth/domain/auth_state.dart';
 import 'package:osp_broker_admin/features/auth/presentation/login_page.dart';
-import 'package:osp_broker_admin/core/widgets/layout/dashboard_layout.dart';
-import 'package:osp_broker_admin/features/dashboard/presentation/dashboard_page.dart';
-import 'package:osp_broker_admin/features/forums/presentation/pages/forums_page.dart';
-import 'package:osp_broker_admin/features/settings/presentation/settings_page.dart';
-import 'package:osp_broker_admin/features/splash/presentation/splash_page.dart';
-import 'package:osp_broker_admin/features/membership/presentation/pages/membership_page.dart';
-import 'package:osp_broker_admin/features/users/presentation/pages/users_page.dart';
-import 'package:osp_broker_admin/features/users/presentation/pages/memberships_page.dart';
 import 'package:osp_broker_admin/features/business_directories/presentation/pages/business_directories.dart';
-import 'package:osp_broker_admin/features/auction/presentation/auction_screen.dart';
+import 'package:osp_broker_admin/features/chat/presentation/pages/all_chats_screen.dart';
 import 'package:osp_broker_admin/features/chat/presentation/pages/chat_list_screen.dart';
 import 'package:osp_broker_admin/features/chat/presentation/pages/chat_screen.dart';
-import 'package:osp_broker_admin/features/chat/presentation/pages/all_chats_screen.dart';
+import 'package:osp_broker_admin/features/dashboard/presentation/dashboard_page.dart';
+import 'package:osp_broker_admin/features/forums/presentation/pages/forums_page.dart';
+import 'package:osp_broker_admin/features/membership/presentation/pages/membership_page.dart';
+import 'package:osp_broker_admin/features/settings/presentation/settings_page.dart';
 import 'package:osp_broker_admin/features/shop/presentation/pages/shop_page.dart';
+import 'package:osp_broker_admin/features/splash/presentation/splash_page.dart';
+import 'package:osp_broker_admin/features/users/presentation/pages/memberships_page.dart';
+import 'package:osp_broker_admin/features/users/presentation/pages/users_page.dart';
 
 enum AppRoute {
   splash('/splash'),
@@ -212,6 +212,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isLogin = state.matchedLocation == AppRoute.login.path;
       final isAuthenticatedRoute =
           state.matchedLocation.startsWith('/dashboard') ||
+              state.matchedLocation.startsWith('/forums') ||
               state.matchedLocation.startsWith('/users') ||
               state.matchedLocation.startsWith('/business-directories') ||
               state.matchedLocation.startsWith('/auctions') ||

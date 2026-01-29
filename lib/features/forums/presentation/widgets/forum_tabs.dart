@@ -4,7 +4,11 @@ class ForumTabs extends StatelessWidget {
   final int selectedTab;
   final void Function(int) onTabSelected;
   final List<String> badges;
-  const ForumTabs({super.key, required this.selectedTab, required this.onTabSelected, required this.badges});
+  const ForumTabs(
+      {super.key,
+      required this.selectedTab,
+      required this.onTabSelected,
+      required this.badges});
 
   @override
   Widget build(BuildContext context) {
@@ -21,6 +25,8 @@ class ForumTabs extends StatelessWidget {
           _buildPillTab('Forums List', 1),
           const SizedBox(width: 8),
           _buildPillTab('Topics List', 2),
+          const SizedBox(width: 8),
+          _buildPillTab('Reports', 3),
         ],
       ),
     );
@@ -36,7 +42,12 @@ class ForumTabs extends StatelessWidget {
           color: isSelected ? Colors.white : Colors.transparent,
           borderRadius: BorderRadius.circular(24),
           boxShadow: isSelected
-              ? [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 4, offset: const Offset(0, 2))]
+              ? [
+                  BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2))
+                ]
               : [],
         ),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),

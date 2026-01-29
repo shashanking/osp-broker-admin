@@ -1,4 +1,5 @@
 import 'package:osp_broker_admin/core/infrastructure/base_api_service.dart';
+
 import '../../domain/forum_models.dart';
 import '../../domain/poll_analytics_model.dart';
 
@@ -41,7 +42,8 @@ class ForumRepository {
       final categories = [Category.fromJson(categoriesData)];
       return categories;
     } else {
-      throw Exception('Unexpected categories data type: ${categoriesData.runtimeType}');
+      throw Exception(
+          'Unexpected categories data type: ${categoriesData.runtimeType}');
     }
   }
 
@@ -53,7 +55,8 @@ class ForumRepository {
     // Handle the nested structure: { pinnedTopics: [...], remainingTopics: [...] }
     if (topicsData is Map<String, dynamic>) {
       final pinnedTopics = topicsData['pinnedTopics'] as List<dynamic>? ?? [];
-      final remainingTopics = topicsData['remainingTopics'] as List<dynamic>? ?? [];
+      final remainingTopics =
+          topicsData['remainingTopics'] as List<dynamic>? ?? [];
 
       // Combine both lists
       final allTopics = [...pinnedTopics, ...remainingTopics];
@@ -87,6 +90,17 @@ class ForumRepository {
     }
   }
 
+  Future<Topic?> fetchTopicById(String topicId) async {
+    final response = await _apiService.get('/forum/topic/$topicId');
+    final raw = response.data;
+    final data = (raw is Map) ? raw['data'] : null;
+    final topicPayload = (data is Map) ? data['topic'] : null;
+    if (topicPayload is Map) {
+      return Topic.fromJson(Map<String, dynamic>.from(topicPayload));
+    }
+    return null;
+  }
+
   // Announcements
   Future<List<Announcement>> fetchAllAnnouncements() async {
     final response = await _apiService.get('/announcement');
@@ -101,7 +115,8 @@ class ForumRepository {
       // If it's a single announcement object, wrap it in a list
       return [Announcement.fromJson(announcementsData)];
     } else {
-      throw Exception('Unexpected announcements data type: ${announcementsData.runtimeType}');
+      throw Exception(
+          'Unexpected announcements data type: ${announcementsData.runtimeType}');
     }
   }
 

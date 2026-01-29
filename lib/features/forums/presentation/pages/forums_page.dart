@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:osp_broker_admin/core/constants/app_colors.dart';
 import 'package:osp_broker_admin/core/utils/csv_export.dart';
 import 'package:osp_broker_admin/core/widgets/layout/top_bar.dart';
+import 'package:osp_broker_admin/features/auth/application/auth_notifier.dart';
 import 'package:osp_broker_admin/features/forums/presentation/widgets/hover_action_cards.dart';
+import 'package:osp_broker_admin/features/reports/application/reports_notifier.dart';
+import 'package:osp_broker_admin/features/reports/presentation/widgets/reports_table.dart';
 
 import '../../application/forum_admin_notifier.dart';
 import '../widgets/add_category_dialog.dart';
@@ -31,6 +34,13 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final notifier = ref.read(forumAdminNotifierProvider.notifier);
+      final reportsNotifier = ref.read(reportsNotifierProvider.notifier);
+
+      final authState = ref.read(authNotifierProvider);
+      final shouldLoadReports = authState.maybeWhen(
+        authenticated: (_, user) => (user['role']?.toString() == 'MODERATOR'),
+        orElse: () => false,
+      );
 
       // Load all required data in parallel
       await Future.wait([
@@ -38,6 +48,7 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
         notifier.loadCategories(),
         notifier.loadModerators(),
         notifier.loadMembershipPlans(),
+        if (shouldLoadReports) reportsNotifier.loadReports(),
       ]);
 
       // Fetch topics for the first forum if available
@@ -56,6 +67,12 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
     final forums = forumState.forums;
     final isLoading = forumState.isLoading;
     final error = forumState.error;
+
+    final authState = ref.watch(authNotifierProvider);
+    final canViewReports = authState.maybeWhen(
+      authenticated: (_, user) => (user['role']?.toString() == 'MODERATOR'),
+      orElse: () => false,
+    );
 
     // Load forums on first build
     // Call in initState instead of here
@@ -115,6 +132,13 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
                               '', // No badge for categories
                               forums.length.toString(),
                               forumState.topics.length.toString(),
+                              canViewReports
+                                  ? ref
+                                      .watch(reportsNotifierProvider)
+                                      .reports
+                                      .length
+                                      .toString()
+                                  : '',
                             ],
                           ),
                           const Spacer(),
@@ -241,13 +265,13 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
                                             : ForumTopicsTable(
                                                 topics: forumState.topics,
                                                 forums: forums)
-                                    : isLoading
-                                        ? const Center(
-                                            child: CircularProgressIndicator())
-                                        : error != null
-                                            ? Center(
-                                                child: Text('Error: $error'))
-                                            : Container(),
+                                    : _selectedTab == 3
+                                        ? (canViewReports
+                                            ? const ReportsTable()
+                                            : const Center(
+                                                child: Text(
+                                                    'Reports are available to MODERATOR accounts only.')))
+                                        : Container(),
                       )
                     ],
                   ),

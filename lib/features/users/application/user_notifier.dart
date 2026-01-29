@@ -1,9 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:osp_broker_admin/core/infrastructure/base_api_service.dart';
-import '../data/repositories/user_repository.dart';
-import '../data/models/user_model.dart';
-import '../data/models/user_membership_model.dart';
+
 import '../data/models/moderator_model.dart';
+import '../data/models/user_membership_model.dart';
+import '../data/models/user_model.dart';
+import '../data/repositories/user_repository.dart';
 
 class UserState {
   final List<UserModel> users;
@@ -68,6 +69,47 @@ class UserNotifier extends StateNotifier<UserState> {
       }
     } catch (e) {
       state = state.copyWith(error: e.toString());
+    }
+  }
+
+  Future<void> assignModeratorToCategories(
+    String userId, {
+    required List<String> categoryIds,
+  }) async {
+    state = state.copyWith(updatingUserIds: {...state.updatingUserIds, userId});
+    try {
+      // Optimistically update the user role in the list
+      final updatedUsers = state.users
+          .map((u) => u.id == userId
+              ? UserModel(
+                  id: u.id,
+                  fullName: u.fullName,
+                  email: u.email,
+                  role: 'moderator'.toUpperCase(),
+                  phone: u.phone,
+                  isBanned: u.isBanned,
+                  createdAt: u.createdAt,
+                  updatedAt: u.updatedAt,
+                )
+              : u)
+          .toList();
+      state = state.copyWith(users: updatedUsers);
+
+      await repository.assignModeratorToCategories(
+        userId,
+        categoryIds: categoryIds,
+      );
+
+      // Refresh both users and moderators lists
+      await Future.wait([
+        fetchUsers(),
+        fetchModerators(),
+      ]);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    } finally {
+      final newSet = {...state.updatingUserIds}..remove(userId);
+      state = state.copyWith(updatingUserIds: newSet);
     }
   }
 
