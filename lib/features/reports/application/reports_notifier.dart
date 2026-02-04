@@ -54,6 +54,17 @@ class ReportsNotifier extends StateNotifier<ReportsState> {
     }
   }
 
+  Future<void> loadCommentReports() async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final items = await _repository.fetchCommentReports();
+      items.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      state = state.copyWith(isLoading: false, reports: items);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
   Future<FlaggedContentReport?> loadReportById(String id) async {
     state = state.copyWith(isLoading: true, error: null);
     try {

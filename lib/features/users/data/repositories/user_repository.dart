@@ -1,22 +1,28 @@
 import 'package:osp_broker_admin/core/infrastructure/base_api_service.dart';
 
 import '../models/moderator_model.dart';
+import '../models/pin_model.dart';
 import '../models/user_membership_model.dart';
 import '../models/user_model.dart';
+import '../models/user_pin_model.dart';
 
 class UserRepository {
   final BaseApiService apiService;
   UserRepository(this.apiService);
 
   Future<UserModel> banUser(String userId) async {
-    final response =
-        await apiService.post('/moderator/banUser/$userId', requireAuth: true);
+    final response = await apiService.post(
+      '/moderator/banUser/$userId',
+      requireAuth: true,
+    );
     return UserModel.fromJson(response.data['data']);
   }
 
   Future<bool> deleteUser(String userId) async {
-    final response =
-        await apiService.delete('/user/$userId', requireAuth: true);
+    final response = await apiService.delete(
+      '/user/$userId',
+      requireAuth: true,
+    );
     return response.data['success'] == true;
   }
 
@@ -46,10 +52,13 @@ class UserRepository {
 
   Future<Map<String, dynamic>?> fetchUserProfileDetails(String userId) async {
     try {
-      final response =
-          await apiService.get('/user/userProfile/$userId', requireAuth: true);
+      final response = await apiService.get(
+        '/user/userProfile/$userId',
+        requireAuth: true,
+      );
       print(
-          'DEBUG User profile details response for $userId: ${response.data}');
+        'DEBUG User profile details response for $userId: ${response.data}',
+      );
 
       if (response.data['success'] == true) {
         return response.data['data'] as Map<String, dynamic>;
@@ -87,8 +96,10 @@ class UserRepository {
   }
 
   Future<void> removeModerator(String userId) async {
-    await apiService.delete('/admin/removeModerator/$userId',
-        requireAuth: true);
+    await apiService.delete(
+      '/admin/removeModerator/$userId',
+      requireAuth: true,
+    );
   }
 
   // Membership related methods
@@ -108,9 +119,11 @@ class UserRepository {
 
     print('DEBUG getUserMemberships: Requested userId: $userId');
     print(
-        'DEBUG getUserMemberships: Total memberships from API: ${memberships.length}');
+      'DEBUG getUserMemberships: Total memberships from API: ${memberships.length}',
+    );
     print(
-        'DEBUG getUserMemberships: Filtered memberships: ${filteredMemberships.length}');
+      'DEBUG getUserMemberships: Filtered memberships: ${filteredMemberships.length}',
+    );
 
     return filteredMemberships;
   }
@@ -144,8 +157,9 @@ class UserRepository {
     return UserMembershipModel.fromJson(response.data['data']);
   }
 
-  Future<List<UserMembershipModel>> getAllUserMemberships(
-      {bool forceRefresh = false}) async {
+  Future<List<UserMembershipModel>> getAllUserMemberships({
+    bool forceRefresh = false,
+  }) async {
     final response = await apiService.get(
       '/membership/userMemberships',
       requireAuth: true,
@@ -182,5 +196,86 @@ class UserRepository {
       requireAuth: true,
     );
     return response.data['success'] == true;
+  }
+
+  Future<List<PinModel>> fetchAllPins() async {
+    try {
+      final response = await apiService.get('/shop/pin', requireAuth: true);
+      print('DEBUG fetchAllPins response: ${response.data}');
+
+      final data = response.data['data'];
+      final pins = data['pins'] as List? ?? data as List;
+      return pins.map((e) => PinModel.fromJson(e)).toList();
+    } catch (e, stackTrace) {
+      print('Error fetching pins: $e');
+      print('Stack trace: $stackTrace');
+      return [];
+    }
+  }
+
+  Future<List<UserPinModel>> fetchUserPins(String userId) async {
+    try {
+      final authUserId = apiService.userId;
+      if (authUserId != null && authUserId != userId) {
+        throw Exception(
+          'Backend does not support fetching pins for other users. Requested userId=$userId, authenticated userId=$authUserId',
+        );
+      }
+      final response = await apiService.get(
+        '/shop/userPins',
+        requireAuth: true,
+      );
+      print('DEBUG fetchUserPins response for $userId: ${response.data}');
+
+      final root = response.data;
+      final data = root is Map<String, dynamic> ? root['data'] : null;
+      final userPins = data is Map<String, dynamic>
+          ? (data['userPin'] ?? data['userPins'] ?? [])
+          : [];
+
+      if (userPins is List) {
+        return userPins
+            .whereType<Map<String, dynamic>>()
+            .map((e) => UserPinModel.fromJson(e))
+            .toList();
+      }
+
+      return [];
+    } catch (e, stackTrace) {
+      print('Error fetching user pins for $userId: $e');
+      print('Stack trace: $stackTrace');
+      return [];
+    }
+  }
+
+  Future<UserPinModel> assignPinToUser({
+    required String userId,
+    required String pinId,
+    required int count,
+    required double totalCost,
+  }) async {
+    final authUserId = apiService.userId;
+    if (authUserId != null && authUserId != userId) {
+      throw Exception(
+        'Backend buyPin assigns to the authenticated user only. Cannot assign to userId=$userId while authenticated as userId=$authUserId',
+      );
+    }
+    final response = await apiService.post(
+      '/shop/pin/buy/$pinId',
+      requireAuth: true,
+      data: {'count': count, 'totalCost': totalCost},
+    );
+
+    final root = response.data;
+    final data = root is Map<String, dynamic> ? root['data'] : null;
+
+    if (data is Map<String, dynamic>) {
+      final payload = (data['userPin'] is Map<String, dynamic>)
+          ? (data['userPin'] as Map<String, dynamic>)
+          : data;
+      return UserPinModel.fromJson(payload);
+    }
+
+    throw Exception('Invalid response while assigning pin');
   }
 }

@@ -4,6 +4,7 @@ import 'package:osp_broker_admin/features/users/data/models/user_model.dart';
 import 'package:osp_broker_admin/features/users/data/models/user_membership_model.dart';
 import 'package:osp_broker_admin/features/users/application/user_notifier.dart';
 import 'package:osp_broker_admin/features/chat/presentation/pages/chat_screen.dart';
+import 'package:osp_broker_admin/features/users/presentation/widgets/user_pins_section.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 class UserDetailPage extends ConsumerStatefulWidget {
@@ -44,7 +45,7 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
       final profile = await ref
           .read(userNotifierProvider.notifier)
           .fetchUserProfile(widget.userId);
-      
+
       final memberships = await ref
           .read(userNotifierProvider.notifier)
           .getUserMemberships(widget.userId);
@@ -100,52 +101,58 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.error_outline,
-                          size: 64, color: Colors.red),
-                      const SizedBox(height: 16),
-                      Text('Error: $_error'),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _loadUserData,
-                        child: const Text('Retry'),
-                      ),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text('Error: $_error'),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _loadUserData,
+                    child: const Text('Retry'),
                   ),
-                )
-              : _userProfile == null
-                  ? const Center(child: Text('User not found'))
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // User Profile Card
-                          _buildProfileCard(),
-                          const SizedBox(height: 24),
+                ],
+              ),
+            )
+          : _userProfile == null
+          ? const Center(child: Text('User not found'))
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // User Profile Card
+                  _buildProfileCard(),
+                  const SizedBox(height: 24),
 
-                          // Account Information
-                          _buildAccountInfoCard(),
-                          const SizedBox(height: 24),
+                  // Account Information
+                  _buildAccountInfoCard(),
+                  const SizedBox(height: 24),
 
-                          // Profile Details Section
-                          if (_profileDetails != null) ...[
-                            _buildProfileDetailsSection(),
-                            const SizedBox(height: 24),
-                          ],
+                  // Profile Details Section
+                  if (_profileDetails != null) ...[
+                    _buildProfileDetailsSection(),
+                    const SizedBox(height: 24),
+                  ],
 
-                          // Memberships Section
-                          _buildMembershipsSection(),
-                          const SizedBox(height: 24),
+                  // Memberships Section
+                  _buildMembershipsSection(),
+                  const SizedBox(height: 24),
 
-                          // Actions Section
-                          _buildActionsCard(),
-                        ],
-                      ),
-                    ),
+                  // Pins Section
+                  UserPinsSection(
+                    userId: widget.userId,
+                    userName: widget.userName,
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Actions Section
+                  _buildActionsCard(),
+                ],
+              ),
+            ),
     );
   }
 
@@ -207,10 +214,7 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
                     const SizedBox(width: 6),
                     Text(
                       _userProfile!.email,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[700],
-                      ),
+                      style: TextStyle(fontSize: 16, color: Colors.grey[700]),
                     ),
                   ],
                 ),
@@ -221,10 +225,7 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
                     const SizedBox(width: 6),
                     Text(
                       _userProfile!.phone,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[700],
-                      ),
+                      style: TextStyle(fontSize: 16, color: Colors.grey[700]),
                     ),
                   ],
                 ),
@@ -240,16 +241,22 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: _userProfile!.isBanned ? Colors.red.shade50 : Colors.green.shade50,
+        color: _userProfile!.isBanned
+            ? Colors.red.shade50
+            : Colors.green.shade50,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: _userProfile!.isBanned ? Colors.red.shade200 : Colors.green.shade200,
+          color: _userProfile!.isBanned
+              ? Colors.red.shade200
+              : Colors.green.shade200,
         ),
       ),
       child: Text(
         _userProfile!.isBanned ? 'BANNED' : 'ACTIVE',
         style: TextStyle(
-          color: _userProfile!.isBanned ? Colors.red.shade700 : Colors.green.shade700,
+          color: _userProfile!.isBanned
+              ? Colors.red.shade700
+              : Colors.green.shade700,
           fontWeight: FontWeight.w700,
           fontSize: 12,
         ),
@@ -321,10 +328,7 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Colors.black87,
-            ),
+            style: const TextStyle(fontSize: 14, color: Colors.black87),
           ),
         ),
       ],
@@ -367,10 +371,7 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
               const Spacer(),
               Text(
                 '${_memberships.length} active',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
               ),
             ],
           ),
@@ -391,17 +392,16 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
                     const SizedBox(height: 16),
                     Text(
                       'No memberships found',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                     ),
                   ],
                 ),
               ),
             )
           else
-            ..._memberships.map((membership) => _buildMembershipCard(membership)),
+            ..._memberships.map(
+              (membership) => _buildMembershipCard(membership),
+            ),
         ],
       ),
     );
@@ -409,7 +409,7 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
 
   Widget _buildMembershipCard(UserMembershipModel membership) {
     final isActive = membership.status.toLowerCase() == 'active';
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -571,10 +571,13 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
                   icon: Icon(
                     _userProfile!.isBanned ? Icons.check_circle : Icons.block,
                   ),
-                  label: Text(_userProfile!.isBanned ? 'Unban User' : 'Ban User'),
+                  label: Text(
+                    _userProfile!.isBanned ? 'Unban User' : 'Ban User',
+                  ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                        _userProfile!.isBanned ? Colors.green : Colors.red,
+                    backgroundColor: _userProfile!.isBanned
+                        ? Colors.green
+                        : Colors.red,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
@@ -611,15 +614,19 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
   }
 
   Widget _buildProfileDetailsSection() {
-    final userProfile = _profileDetails?['userProfile'] as Map<String, dynamic>?;
+    final userProfile =
+        _profileDetails?['userProfile'] as Map<String, dynamic>?;
     if (userProfile == null) return const SizedBox.shrink();
 
     final headline = userProfile['headLine'] as String? ?? '';
     final location = userProfile['location'] as String? ?? '';
     final about = userProfile['about'] as String? ?? '';
     final skills = (userProfile['skills'] as List?)?.cast<String>() ?? [];
-    final education = (userProfile['education'] as List?)?.cast<Map<String, dynamic>>() ?? [];
-    final experience = (userProfile['experience'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    final education =
+        (userProfile['education'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    final experience =
+        (userProfile['experience'] as List?)?.cast<Map<String, dynamic>>() ??
+        [];
     final profileImageUrl = userProfile['profileImageUrl'] as String?;
 
     return Container(
@@ -690,10 +697,7 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
             const SizedBox(height: 6),
             Text(
               about,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.black87,
-              ),
+              style: const TextStyle(fontSize: 14, color: Colors.black87),
             ),
             const SizedBox(height: 12),
           ],
@@ -712,11 +716,15 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: skills.map((skill) => Chip(
-                label: Text(skill),
-                backgroundColor: Colors.blue.shade50,
-                labelStyle: TextStyle(color: Colors.blue.shade700),
-              )).toList(),
+              children: skills
+                  .map(
+                    (skill) => Chip(
+                      label: Text(skill),
+                      backgroundColor: Colors.blue.shade50,
+                      labelStyle: TextStyle(color: Colors.blue.shade700),
+                    ),
+                  )
+                  .toList(),
             ),
             const SizedBox(height: 12),
           ],
@@ -732,36 +740,38 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
               ),
             ),
             const SizedBox(height: 8),
-            ...education.map((edu) => Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    edu['degree'] ?? '',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
+            ...education.map(
+              (edu) => Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      edu['degree'] ?? '',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${edu['school']} - ${edu['fieldOfStudy']}',
-                    style: TextStyle(color: Colors.grey[700], fontSize: 13),
-                  ),
-                  Text(
-                    '${edu['startYear']} - ${edu['endYear']} | Grade: ${edu['grade']}',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                  ),
-                ],
+                    const SizedBox(height: 4),
+                    Text(
+                      '${edu['school']} - ${edu['fieldOfStudy']}',
+                      style: TextStyle(color: Colors.grey[700], fontSize: 13),
+                    ),
+                    Text(
+                      '${edu['startYear']} - ${edu['endYear']} | Grade: ${edu['grade']}',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                    ),
+                  ],
+                ),
               ),
-            )),
+            ),
           ],
 
           // Experience
@@ -775,40 +785,46 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
               ),
             ),
             const SizedBox(height: 8),
-            ...experience.map((exp) => Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    exp['title'] ?? '',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${exp['company']} - ${exp['location']}',
-                    style: TextStyle(color: Colors.grey[700], fontSize: 13),
-                  ),
-                  if (exp['description'] != null && exp['description'].toString().isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        exp['description'],
-                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
+            ...experience.map(
+              (exp) => Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      exp['title'] ?? '',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
                       ),
                     ),
-                ],
+                    const SizedBox(height: 4),
+                    Text(
+                      '${exp['company']} - ${exp['location']}',
+                      style: TextStyle(color: Colors.grey[700], fontSize: 13),
+                    ),
+                    if (exp['description'] != null &&
+                        exp['description'].toString().isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          exp['description'],
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
-            )),
+            ),
           ],
         ],
       ),

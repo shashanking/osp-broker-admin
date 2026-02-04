@@ -48,7 +48,10 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
         notifier.loadCategories(),
         notifier.loadModerators(),
         notifier.loadMembershipPlans(),
-        if (shouldLoadReports) reportsNotifier.loadReports(),
+        if (shouldLoadReports) ...[
+          reportsNotifier.loadReports(),
+          reportsNotifier.loadCommentReports(),
+        ],
       ]);
 
       // Fetch topics for the first forum if available
@@ -132,6 +135,13 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
                               '', // No badge for categories
                               forums.length.toString(),
                               forumState.topics.length.toString(),
+                              canViewReports
+                                  ? ref
+                                      .watch(reportsNotifierProvider)
+                                      .reports
+                                      .length
+                                      .toString()
+                                  : '',
                               canViewReports
                                   ? ref
                                       .watch(reportsNotifierProvider)
@@ -271,7 +281,13 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
                                             : const Center(
                                                 child: Text(
                                                     'Reports are available to MODERATOR accounts only.')))
-                                        : Container(),
+                                        : _selectedTab == 4
+                                            ? (canViewReports
+                                                ? const ReportsTable()
+                                                : const Center(
+                                                    child: Text(
+                                                        'Comment reports are available to MODERATOR accounts only.')))
+                                            : Container(),
                       )
                     ],
                   ),

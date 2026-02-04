@@ -36,6 +36,56 @@ class ReportsRepository {
     }
   }
 
+  Future<List<FlaggedContentReport>> fetchCommentReports() async {
+    try {
+      final response = await _apiService.get('/flag/topic/:topicId/comments',
+          requireAuth: true);
+      final data = response.data;
+      final raw = (data is Map) ? data['data'] : null;
+
+      if (raw is List) {
+        return raw
+            .map((e) => FlaggedContentReport.fromJson(
+                Map<String, dynamic>.from(e as Map)))
+            .toList();
+      }
+
+      if (raw is Map) {
+        return [FlaggedContentReport.fromJson(Map<String, dynamic>.from(raw))];
+      }
+
+      return const <FlaggedContentReport>[];
+    } on DioException catch (e) {
+      throw Exception('Failed to fetch comment reports: ${e.message}');
+    }
+  }
+
+  Future<List<FlaggedContentReport>> fetchCommentReportsForTopic(
+      String topicId) async {
+    try {
+      final response = await _apiService.get('/flag/topic/$topicId/comments',
+          requireAuth: true);
+      final data = response.data;
+      final raw = (data is Map) ? data['data'] : null;
+
+      if (raw is List) {
+        return raw
+            .map((e) => FlaggedContentReport.fromJson(
+                Map<String, dynamic>.from(e as Map)))
+            .toList();
+      }
+
+      if (raw is Map) {
+        return [FlaggedContentReport.fromJson(Map<String, dynamic>.from(raw))];
+      }
+
+      return const <FlaggedContentReport>[];
+    } on DioException catch (e) {
+      throw Exception(
+          'Failed to fetch comment reports for topic: ${e.message}');
+    }
+  }
+
   Future<FlaggedContentReport> fetchReportById(String id) async {
     try {
       final response = await _apiService.get('/flag/$id', requireAuth: true);

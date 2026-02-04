@@ -27,6 +27,8 @@ class ForumTabs extends StatelessWidget {
           _buildPillTab('Topics List', 2),
           const SizedBox(width: 8),
           _buildPillTab('Reports', 3),
+          const SizedBox(width: 8),
+          _buildPillTab('Comment Reports', 4),
         ],
       ),
     );
