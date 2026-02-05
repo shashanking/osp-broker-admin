@@ -215,32 +215,38 @@ class UserRepository {
 
   Future<List<UserPinModel>> fetchUserPins(String userId) async {
     try {
-      final authUserId = apiService.userId;
-      if (authUserId != null && authUserId != userId) {
-        throw Exception(
-          'Backend does not support fetching pins for other users. Requested userId=$userId, authenticated userId=$authUserId',
-        );
-      }
       final response = await apiService.get(
-        '/shop/userPins',
+        '/shop/pin/admin-userPins/$userId',
         requireAuth: true,
       );
       print('DEBUG fetchUserPins response for $userId: ${response.data}');
 
       final root = response.data;
       final data = root is Map<String, dynamic> ? root['data'] : null;
-      final userPins = data is Map<String, dynamic>
-          ? (data['userPin'] ?? data['userPins'] ?? [])
-          : [];
+
+      dynamic userPins;
+      if (data is List) {
+        userPins = data;
+      } else if (data is Map<String, dynamic>) {
+        userPins = data['userPin'] ?? data['userPins'] ?? data['pins'] ?? [];
+      } else {
+        userPins = [];
+      }
 
       if (userPins is List) {
         return userPins
-            .whereType<Map<String, dynamic>>()
-            .map((e) => UserPinModel.fromJson(e))
+            .whereType<Map>()
+            .map((e) => UserPinModel.fromJson(Map<String, dynamic>.from(e)))
             .toList();
       }
 
-      return [];
+      if (userPins is Map) {
+        return [
+          UserPinModel.fromJson(Map<String, dynamic>.from(userPins)),
+        ];
+      }
+
+      return const <UserPinModel>[];
     } catch (e, stackTrace) {
       print('Error fetching user pins for $userId: $e');
       print('Stack trace: $stackTrace');
@@ -254,16 +260,14 @@ class UserRepository {
     required int count,
     required double totalCost,
   }) async {
-    final authUserId = apiService.userId;
-    if (authUserId != null && authUserId != userId) {
-      throw Exception(
-        'Backend buyPin assigns to the authenticated user only. Cannot assign to userId=$userId while authenticated as userId=$authUserId',
-      );
-    }
     final response = await apiService.post(
-      '/shop/pin/buy/$pinId',
+      '/shop/pin/admin-assign/$pinId',
       requireAuth: true,
-      data: {'count': count, 'totalCost': totalCost},
+      data: {
+        'userId': userId,
+        'count': count,
+        'totalCost': totalCost,
+      },
     );
 
     final root = response.data;
@@ -273,9 +277,21 @@ class UserRepository {
       final payload = (data['userPin'] is Map<String, dynamic>)
           ? (data['userPin'] as Map<String, dynamic>)
           : data;
-      return UserPinModel.fromJson(payload);
+
+      // If backend returns a full userPin object, use it.
+      final hasId = (payload['id'] ?? payload['_id']) != null;
+      if (hasId) {
+        return UserPinModel.fromJson(payload);
+      }
     }
 
-    throw Exception('Invalid response while assigning pin');
+    // Some implementations return a minimal payload only. Re-fetch to get the
+    // created record for display.
+    final pins = await fetchUserPins(userId);
+    if (pins.isEmpty) {
+      throw Exception('Pin assigned but unable to load assigned pins');
+    }
+    pins.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return pins.first;
   }
 }

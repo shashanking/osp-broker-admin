@@ -16,6 +16,8 @@ import 'package:osp_broker_admin/features/chat/presentation/pages/chat_screen.da
 import 'package:osp_broker_admin/features/dashboard/presentation/dashboard_page.dart';
 import 'package:osp_broker_admin/features/forums/presentation/pages/forums_page.dart';
 import 'package:osp_broker_admin/features/membership/presentation/pages/membership_page.dart';
+import 'package:osp_broker_admin/features/rfp/presentation/pages/rfp_detail_page.dart';
+import 'package:osp_broker_admin/features/rfp/presentation/pages/rfps_page.dart';
 import 'package:osp_broker_admin/features/settings/presentation/settings_page.dart';
 import 'package:osp_broker_admin/features/shop/presentation/pages/shop_page.dart';
 import 'package:osp_broker_admin/features/splash/presentation/splash_page.dart';
@@ -32,6 +34,7 @@ enum AppRoute {
   users('/users'),
   memberships('/memberships'),
   businessDirectories('/business-directories'),
+  rfps('/rfps'),
   settings('/settings');
 
   final String path;
@@ -48,6 +51,7 @@ class RoutePaths {
   static const String users = '/users';
   static const String memberships = '/memberships';
   static const String businessDirectories = '/business-directories';
+  static const String rfps = '/rfps';
   static const String settings = '/settings';
 }
 
@@ -82,6 +86,48 @@ final routerProvider = Provider<GoRouter>((ref) {
           key: state.pageKey,
           child: const LoginPage(),
         ),
+      ),
+
+      // RFPs (fallback top-level routes)
+      // Kept to prevent web hash routing / hot-reload mismatches causing "Page not found".
+      GoRoute(
+        path: AppRoute.rfps.path,
+        name: 'rfps-standalone',
+        pageBuilder: (context, state) => MaterialPage(
+          key: state.pageKey,
+          child: DashboardLayout(
+            currentRoute: state.uri.path,
+            title: state.uri.path,
+            onLogout: () async {
+              final container = ProviderScope.containerOf(context);
+              await container.read(authNotifierProvider.notifier).logout();
+            },
+            child: const RfpsPage(),
+          ),
+        ),
+        routes: [
+          GoRoute(
+            path: ':id',
+            name: 'rfp-detail-standalone',
+            pageBuilder: (context, state) {
+              final id = state.pathParameters['id'] ?? '';
+              return MaterialPage(
+                key: state.pageKey,
+                child: DashboardLayout(
+                  currentRoute: state.uri.path,
+                  title: state.uri.path,
+                  onLogout: () async {
+                    final container = ProviderScope.containerOf(context);
+                    await container
+                        .read(authNotifierProvider.notifier)
+                        .logout();
+                  },
+                  child: RfpDetailPage(rfpId: id),
+                ),
+              );
+            },
+          ),
+        ],
       ),
 
       // Dashboard shell with nested routes
@@ -192,6 +238,25 @@ final routerProvider = Provider<GoRouter>((ref) {
           // Shop section
           goRouteShop,
 
+          // RFPs section
+          GoRoute(
+            path: AppRoute.rfps.path,
+            name: AppRoute.rfps.name,
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: RfpsPage(),
+            ),
+            routes: [
+              GoRoute(
+                path: ':id',
+                name: 'rfp-detail',
+                pageBuilder: (context, state) {
+                  final id = state.pathParameters['id'] ?? '';
+                  return NoTransitionPage(child: RfpDetailPage(rfpId: id));
+                },
+              ),
+            ],
+          ),
+
           // Settings section
           GoRoute(
             path: AppRoute.settings.path,
@@ -218,6 +283,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               state.matchedLocation.startsWith('/auctions') ||
               state.matchedLocation.startsWith('/chat') ||
               state.matchedLocation.startsWith('/all-chats') ||
+              state.matchedLocation.startsWith('/rfps') ||
               state.matchedLocation.startsWith('/shop') ||
               state.matchedLocation.startsWith('/settings');
 

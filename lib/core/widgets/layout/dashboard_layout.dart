@@ -230,6 +230,14 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                         ),
                         _buildNavItem(
                           context,
+                          icon: Icons.description,
+                          label: 'RFPs',
+                          isSelected: widget.currentRoute.startsWith('/rfps'),
+                          onTap: () => context.go('/rfps'),
+                          isTablet: shouldCollapseSidebar,
+                        ),
+                        _buildNavItem(
+                          context,
                           icon: Icons.people,
                           label: 'Users',
                           isSelected: widget.currentRoute == '/users',
@@ -440,6 +448,16 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                     isSelected: widget.currentRoute.startsWith('/shop'),
                     onTap: () {
                       context.go('/shop');
+                      Navigator.pop(context);
+                    },
+                  ),
+                  _buildDrawerItem(
+                    context,
+                    icon: Icons.description,
+                    label: 'RFPs',
+                    isSelected: widget.currentRoute.startsWith('/rfps'),
+                    onTap: () {
+                      context.go('/rfps');
                       Navigator.pop(context);
                     },
                   ),
