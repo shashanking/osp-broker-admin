@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:osp_broker_admin/core/utils/role_utils.dart';
 import 'package:osp_broker_admin/features/auth/application/auth_notifier.dart';
 import 'package:osp_broker_admin/features/chat/application/all_chats_provider.dart';
 import 'package:osp_broker_admin/features/chat/presentation/pages/conversation_detail_screen.dart';
@@ -51,8 +52,8 @@ class _AllChatsScreenState extends ConsumerState<AllChatsScreen> {
                     ? (() {
                         // Show a clean placeholder for MODERATOR on 403
                         final isModerator = authState.maybeWhen(
-                          authenticated: (_, user) =>
-                              user['role']?.toString() == 'MODERATOR',
+                          authenticated: (_, user) => userHasRole(
+                              Map<String, dynamic>.from(user), 'MODERATOR'),
                           orElse: () => false,
                         );
                         if (isModerator &&

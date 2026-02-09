@@ -78,10 +78,12 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                     final users = userState.users;
                     final totalUsers = users.length;
                     final totalModerators = users
-                        .where((u) => u.role.toUpperCase() == 'MODERATOR')
+                        .where(
+                            (u) => u.role.toUpperCase().contains('MODERATOR'))
                         .length;
                     final totalRepresentatives = users
-                        .where((u) => u.role.toUpperCase() == 'REPRESENTATIVE')
+                        .where((u) =>
+                            u.role.toUpperCase().contains('REPRESENTATIVE'))
                         .length;
                     final now = DateTime.now();
                     final newUsers = users

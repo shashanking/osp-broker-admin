@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:osp_broker_admin/core/constants/app_colors.dart';
+import 'package:osp_broker_admin/core/utils/role_utils.dart';
 import 'package:osp_broker_admin/features/auth/application/auth_notifier.dart';
 
 class _AdminSearchItem {
@@ -140,7 +141,10 @@ class TopBar extends ConsumerWidget {
             : (email != null && email.trim().isNotEmpty)
                 ? email
                 : userName;
-        displayRole = user['role']?.toString() ?? userRole;
+        displayRole = formatUserRoles(
+          Map<String, dynamic>.from(user),
+          fallback: userRole,
+        );
       },
     );
 

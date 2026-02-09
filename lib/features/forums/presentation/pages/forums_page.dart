@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:osp_broker_admin/core/constants/app_colors.dart';
 import 'package:osp_broker_admin/core/utils/csv_export.dart';
+import 'package:osp_broker_admin/core/utils/role_utils.dart';
 import 'package:osp_broker_admin/core/widgets/layout/top_bar.dart';
 import 'package:osp_broker_admin/features/auth/application/auth_notifier.dart';
 import 'package:osp_broker_admin/features/forums/presentation/widgets/hover_action_cards.dart';
@@ -38,7 +39,8 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
 
       final authState = ref.read(authNotifierProvider);
       final shouldLoadReports = authState.maybeWhen(
-        authenticated: (_, user) => (user['role']?.toString() == 'MODERATOR'),
+        authenticated: (_, user) =>
+            userHasRole(Map<String, dynamic>.from(user), 'MODERATOR'),
         orElse: () => false,
       );
 
@@ -73,7 +75,8 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
 
     final authState = ref.watch(authNotifierProvider);
     final canViewReports = authState.maybeWhen(
-      authenticated: (_, user) => (user['role']?.toString() == 'MODERATOR'),
+      authenticated: (_, user) =>
+          userHasRole(Map<String, dynamic>.from(user), 'MODERATOR'),
       orElse: () => false,
     );
 

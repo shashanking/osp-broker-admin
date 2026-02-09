@@ -206,7 +206,9 @@ class _UserRow extends ConsumerWidget {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         );
                       }
-                      return user.role.trim().toLowerCase() == 'moderator'
+                      final isModerator =
+                          user.role.toUpperCase().contains('MODERATOR');
+                      return isModerator
                           ? Tooltip(
                               message: 'Remove Moderator',
                               child: OutlinedButton(

@@ -88,48 +88,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
 
-      // RFPs (fallback top-level routes)
-      // Kept to prevent web hash routing / hot-reload mismatches causing "Page not found".
-      GoRoute(
-        path: AppRoute.rfps.path,
-        name: 'rfps-standalone',
-        pageBuilder: (context, state) => MaterialPage(
-          key: state.pageKey,
-          child: DashboardLayout(
-            currentRoute: state.uri.path,
-            title: state.uri.path,
-            onLogout: () async {
-              final container = ProviderScope.containerOf(context);
-              await container.read(authNotifierProvider.notifier).logout();
-            },
-            child: const RfpsPage(),
-          ),
-        ),
-        routes: [
-          GoRoute(
-            path: ':id',
-            name: 'rfp-detail-standalone',
-            pageBuilder: (context, state) {
-              final id = state.pathParameters['id'] ?? '';
-              return MaterialPage(
-                key: state.pageKey,
-                child: DashboardLayout(
-                  currentRoute: state.uri.path,
-                  title: state.uri.path,
-                  onLogout: () async {
-                    final container = ProviderScope.containerOf(context);
-                    await container
-                        .read(authNotifierProvider.notifier)
-                        .logout();
-                  },
-                  child: RfpDetailPage(rfpId: id),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-
       // Dashboard shell with nested routes
       ShellRoute(
         pageBuilder: (context, state, child) {

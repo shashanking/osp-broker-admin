@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:osp_broker_admin/core/utils/role_utils.dart';
 import 'package:osp_broker_admin/core/widgets/layout/top_bar.dart';
 import 'package:osp_broker_admin/features/auth/application/auth_notifier.dart';
 import 'package:osp_broker_admin/features/business_directories/application/business_directories_notifier.dart';
-import 'package:osp_broker_admin/features/business_directories/presentation/widget/business_directories_topSection.dart';
 import 'package:osp_broker_admin/features/business_directories/presentation/widget/business_directories_header.dart';
+import 'package:osp_broker_admin/features/business_directories/presentation/widget/business_directories_topSection.dart';
 
 // GoRoute configuration for navigation
 final GoRoute goRouteBusinessDirectories = GoRoute(
@@ -30,16 +31,20 @@ class BusinessDirectoriesPage extends ConsumerStatefulWidget {
   }
 
   @override
-  ConsumerState<BusinessDirectoriesPage> createState() => _BusinessDirectoriesPageState();
+  ConsumerState<BusinessDirectoriesPage> createState() =>
+      _BusinessDirectoriesPageState();
 }
 
-class _BusinessDirectoriesPageState extends ConsumerState<BusinessDirectoriesPage> {
+class _BusinessDirectoriesPageState
+    extends ConsumerState<BusinessDirectoriesPage> {
   @override
   void initState() {
     super.initState();
     // Fetch business categories when the page initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(businessDirectoriesNotifierProvider.notifier).loadBusinessCategories();
+      ref
+          .read(businessDirectoriesNotifierProvider.notifier)
+          .loadBusinessCategories();
     });
   }
 
@@ -48,15 +53,18 @@ class _BusinessDirectoriesPageState extends ConsumerState<BusinessDirectoriesPag
     final authState = ref.watch(authNotifierProvider);
     String userName = 'User';
     String userRole = 'Admin';
-    
+
     // Extract user info from auth state if available
     authState.whenOrNull(
       authenticated: (token, user) {
         userName = user['name']?.toString() ?? 'User';
-        userRole = user['role']?.toString() ?? 'Admin';
+        userRole = formatUserRoles(
+          Map<String, dynamic>.from(user),
+          fallback: 'Admin',
+        );
       },
     );
-    
+
     return Scaffold(
       body: SingleChildScrollView(
         child: Column(
@@ -76,7 +84,7 @@ class _BusinessDirectoriesPageState extends ConsumerState<BusinessDirectoriesPag
             ),
             const BusinessDirectoriesTopSection(),
             // Use a Container with specific height instead of Expanded
-            Container(
+            SizedBox(
               height: 600, // Fixed height for table section
               child: const BusinessDirectoriesTableSection(),
             ),
@@ -85,6 +93,4 @@ class _BusinessDirectoriesPageState extends ConsumerState<BusinessDirectoriesPag
       ),
     );
   }
-
-
 }

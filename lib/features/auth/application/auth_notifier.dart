@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:osp_broker_admin/core/infrastructure/api_urls.dart';
 import 'package:osp_broker_admin/core/infrastructure/base_api_service.dart';
+import 'package:osp_broker_admin/core/utils/role_utils.dart';
 import 'package:osp_broker_admin/features/auth/domain/auth_state.dart';
 
 class AuthNotifier extends StateNotifier<AuthState> {
@@ -48,7 +49,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       // Since the /me endpoint returns 404, we'll assume the token is valid if it exists
       // and only clear it when we get an explicit 401
       final storedUser = _apiService.authUser;
-      if (storedUser != null && !_allowedRoles.contains(storedUser['role'])) {
+      if (storedUser != null && !userHasAnyRole(storedUser, _allowedRoles)) {
         await _apiService.clearAuthTokens();
         state = const AuthState.unauthenticated()..emit();
         return;
@@ -56,7 +57,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       state = AuthState.authenticated(
         token: token,
-        user: storedUser ?? {'email': 'admin@example.com', 'role': 'ADMIN'},
+        user: storedUser ??
+            {
+              'email': 'admin@example.com',
+              'role': ['ADMIN']
+            },
       );
       state.emit();
       print('AuthNotifier: Assuming token is valid');
@@ -74,14 +79,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
         // since we can't verify the token but we have one
         print('AuthNotifier: Non-auth error, assuming token is still valid');
         final storedUser = _apiService.authUser;
-        if (storedUser != null && !_allowedRoles.contains(storedUser['role'])) {
+        if (storedUser != null && !userHasAnyRole(storedUser, _allowedRoles)) {
           await _apiService.clearAuthTokens();
           state = const AuthState.unauthenticated();
           return;
         }
         state = AuthState.authenticated(
           token: token,
-          user: storedUser ?? {'email': 'admin@example.com', 'role': 'ADMIN'},
+          user: storedUser ??
+              {
+                'email': 'admin@example.com',
+                'role': ['ADMIN']
+              },
         );
         state.emit();
       }
@@ -90,14 +99,19 @@ class AuthNotifier extends StateNotifier<AuthState> {
       print('Stack trace: $stackTrace');
       // On any other error, assume the token is still valid
       final storedUser = _apiService.authUser;
-      if (storedUser != null && !_allowedRoles.contains(storedUser['role'])) {
+      if (storedUser != null && !userHasAnyRole(storedUser, _allowedRoles)) {
         await _apiService.clearAuthTokens();
         state = const AuthState.unauthenticated();
+        state.emit();
         return;
       }
       state = AuthState.authenticated(
         token: token,
-        user: storedUser ?? {'email': 'admin@example.com', 'role': 'ADMIN'},
+        user: storedUser ??
+            {
+              'email': 'admin@example.com',
+              'role': ['ADMIN']
+            },
       );
       state.emit();
     }
@@ -123,7 +137,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final user = responseData['user'];
 
       // Allow only ADMIN and MODERATOR roles to access the admin panel
-      if (!_allowedRoles.contains(user['role']?.toString())) {
+      if (!userHasAnyRole(Map<String, dynamic>.from(user), _allowedRoles)) {
         await _apiService.clearAuthTokens();
         throw Exception(
             'Access denied. Admin or Moderator privileges required.');
