@@ -120,34 +120,30 @@ class _MembershipsPageState extends ConsumerState<MembershipsPage> {
               ),
             ),
           if (_selectedUserIds.isNotEmpty) _buildBulkActionBar(),
-          SingleChildScrollView(
-            child: Expanded(
-              child: RefreshIndicator(
-                onRefresh: () {
-                  setState(() {
-                    _isRefreshing = true;
-                  });
-                  return _loadData();
-                },
-                child: isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : users.isEmpty
-                        ? const Center(child: Text('No users found'))
-                        : UserMembershipsTable(
-                            users: users,
-                            selectedUserIds: _selectedUserIds,
-                            onUserSelected: (userId, selected) {
-                              setState(() {
-                                if (selected) {
-                                  _selectedUserIds.add(userId);
-                                } else {
-                                  _selectedUserIds.remove(userId);
-                                }
-                              });
-                            },
-                          ),
-              ),
-            ),
+          RefreshIndicator(
+            onRefresh: () {
+              setState(() {
+                _isRefreshing = true;
+              });
+              return _loadData();
+            },
+            child: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : users.isEmpty
+                    ? const Center(child: Text('No users found'))
+                    : UserMembershipsTable(
+                        users: users,
+                        selectedUserIds: _selectedUserIds,
+                        onUserSelected: (userId, selected) {
+                          setState(() {
+                            if (selected) {
+                              _selectedUserIds.add(userId);
+                            } else {
+                              _selectedUserIds.remove(userId);
+                            }
+                          });
+                        },
+                      ),
           ),
         ],
       ),
