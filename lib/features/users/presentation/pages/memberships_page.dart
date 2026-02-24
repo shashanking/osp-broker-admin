@@ -91,43 +91,43 @@ class _MembershipsPageState extends ConsumerState<MembershipsPage> {
     }
 
     return Scaffold(
-      body: ListView(
-        children: [
-          TopBar(
-            userName: 'Admin',
-            userRole: 'Admin',
-            greeting: _selectedUserIds.isEmpty
-                ? 'User Memberships'
-                : '${_selectedUserIds.length} selected',
-            showBackButton: true,
-            onBackPressed: () {
-              if (_selectedUserIds.isNotEmpty) {
-                setState(() => _selectedUserIds.clear());
-              } else if (Navigator.canPop(context)) {
-                Navigator.pop(context);
-              } else {
-                context.go('/users');
-              }
-            },
-          ),
-          if (error != null)
-            Container(
-              padding: const EdgeInsets.all(8.0),
-              color: Colors.red[100],
-              child: Text(
-                error,
-                style: const TextStyle(color: Colors.red),
-              ),
+      body: RefreshIndicator(
+        onRefresh: () {
+          setState(() {
+            _isRefreshing = true;
+          });
+          return _loadData();
+        },
+        child: ListView(
+          children: [
+            TopBar(
+              userName: 'Admin',
+              userRole: 'Admin',
+              greeting: _selectedUserIds.isEmpty
+                  ? 'User Memberships'
+                  : '${_selectedUserIds.length} selected',
+              showBackButton: true,
+              onBackPressed: () {
+                if (_selectedUserIds.isNotEmpty) {
+                  setState(() => _selectedUserIds.clear());
+                } else if (Navigator.canPop(context)) {
+                  Navigator.pop(context);
+                } else {
+                  context.go('/users');
+                }
+              },
             ),
-          if (_selectedUserIds.isNotEmpty) _buildBulkActionBar(),
-          RefreshIndicator(
-            onRefresh: () {
-              setState(() {
-                _isRefreshing = true;
-              });
-              return _loadData();
-            },
-            child: isLoading
+            if (error != null)
+              Container(
+                padding: const EdgeInsets.all(8.0),
+                color: Colors.red[100],
+                child: Text(
+                  error,
+                  style: const TextStyle(color: Colors.red),
+                ),
+              ),
+            if (_selectedUserIds.isNotEmpty) _buildBulkActionBar(),
+            isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : users.isEmpty
                     ? const Center(child: Text('No users found'))
@@ -144,8 +144,8 @@ class _MembershipsPageState extends ConsumerState<MembershipsPage> {
                           });
                         },
                       ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

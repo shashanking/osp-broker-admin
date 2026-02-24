@@ -1,6 +1,9 @@
 class ApiUrls {
-  // static const String baseUrl = 'https://sayanchoudhuryofficial.in/api';
-  static const String baseUrl = 'https://api.myprimenetwork.com/api';
+  static const String baseUrl = 'https://sayanchoudhuryofficial.in/api';
+  // Prod url
+  // static const String baseUrl = 'https://api.myprimenetwork.com/api';
+  // local development
+  // static const String baseUrl = 'http://localhost:3001/api';
 
   static const String login = '/auth/login';
   static const String signup = '/auth/signup';
