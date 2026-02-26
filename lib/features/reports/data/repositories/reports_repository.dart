@@ -21,8 +21,11 @@ class ReportsRepository {
 
       if (raw is List) {
         return raw
-            .map((e) => FlaggedContentReport.fromJson(
-                Map<String, dynamic>.from(e as Map)))
+            .map(
+              (e) => FlaggedContentReport.fromJson(
+                Map<String, dynamic>.from(e as Map),
+              ),
+            )
             .toList();
       }
 
@@ -36,42 +39,26 @@ class ReportsRepository {
     }
   }
 
-  Future<List<FlaggedContentReport>> fetchCommentReports() async {
-    try {
-      final response = await _apiService.get('/flag/topic/:topicId/comments',
-          requireAuth: true);
-      final data = response.data;
-      final raw = (data is Map) ? data['data'] : null;
-
-      if (raw is List) {
-        return raw
-            .map((e) => FlaggedContentReport.fromJson(
-                Map<String, dynamic>.from(e as Map)))
-            .toList();
-      }
-
-      if (raw is Map) {
-        return [FlaggedContentReport.fromJson(Map<String, dynamic>.from(raw))];
-      }
-
-      return const <FlaggedContentReport>[];
-    } on DioException catch (e) {
-      throw Exception('Failed to fetch comment reports: ${e.message}');
-    }
-  }
+  // Removed fetchCommentReports() - use fetchReports() instead which fetches all flagged content
 
   Future<List<FlaggedContentReport>> fetchCommentReportsForTopic(
-      String topicId) async {
+    String topicId,
+  ) async {
     try {
-      final response = await _apiService.get('/flag/topic/$topicId/comments',
-          requireAuth: true);
+      final response = await _apiService.get(
+        '/flag/topic/$topicId/comments',
+        requireAuth: true,
+      );
       final data = response.data;
       final raw = (data is Map) ? data['data'] : null;
 
       if (raw is List) {
         return raw
-            .map((e) => FlaggedContentReport.fromJson(
-                Map<String, dynamic>.from(e as Map)))
+            .map(
+              (e) => FlaggedContentReport.fromJson(
+                Map<String, dynamic>.from(e as Map),
+              ),
+            )
             .toList();
       }
 
@@ -82,7 +69,8 @@ class ReportsRepository {
       return const <FlaggedContentReport>[];
     } on DioException catch (e) {
       throw Exception(
-          'Failed to fetch comment reports for topic: ${e.message}');
+        'Failed to fetch comment reports for topic: ${e.message}',
+      );
     }
   }
 

@@ -52,7 +52,7 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
         notifier.loadMembershipPlans(),
         if (shouldLoadReports) ...[
           reportsNotifier.loadReports(),
-          reportsNotifier.loadCommentReports(),
+          // reportsNotifier.loadCommentReports(),
         ],
       ]);
 

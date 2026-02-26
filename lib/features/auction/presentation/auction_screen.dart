@@ -6,6 +6,10 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:osp_broker_admin/core/utils/csv_export.dart';
+import 'package:osp_broker_admin/core/utils/role_utils.dart';
+import 'package:osp_broker_admin/features/auth/application/auth_notifier.dart';
+import 'package:osp_broker_admin/features/reports/application/reports_notifier.dart';
+import 'package:osp_broker_admin/features/reports/presentation/widgets/reports_table.dart';
 
 import '../application/auction_notifier.dart';
 import 'auction_detail_screen.dart';
@@ -24,17 +28,38 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(auctionNotifierProvider.notifier).loadCategories();
       ref.read(auctionNotifierProvider.notifier).loadAuctions();
+
+      final authState = ref.read(authNotifierProvider);
+      final shouldLoadReports = authState.maybeWhen(
+        authenticated: (_, user) =>
+            userHasRole(Map<String, dynamic>.from(user), 'MODERATOR'),
+        orElse: () => false,
+      );
+      if (shouldLoadReports) {
+        ref.read(reportsNotifierProvider.notifier).loadReports();
+      }
     });
   }
 
   Future<void> _loadData() async {
-    await ref.read(auctionNotifierProvider.notifier).refreshData();
+    await ref.read(auctionNotifierProvider.notifier).loadCategories();
+    await ref.read(auctionNotifierProvider.notifier).loadAuctions();
+
+    final authState = ref.read(authNotifierProvider);
+    final shouldLoadReports = authState.maybeWhen(
+      authenticated: (_, user) =>
+          userHasRole(Map<String, dynamic>.from(user), 'MODERATOR'),
+      orElse: () => false,
+    );
+    if (shouldLoadReports) {
+      await ref.read(reportsNotifierProvider.notifier).loadReports();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Auctions'),
@@ -42,13 +67,11 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
             tabs: [
               Tab(text: 'Categories'),
               Tab(text: 'Auctions'),
+              Tab(text: 'Reports'),
             ],
           ),
           actions: [
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: _loadData,
-            ),
+            IconButton(icon: const Icon(Icons.refresh), onPressed: _loadData),
             PopupMenuButton<String>(
               tooltip: 'Export CSV',
               icon: const Icon(Icons.download),
@@ -56,8 +79,11 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
                 final state = ref.read(auctionNotifierProvider);
                 if (value == 'categories') {
                   final rows = state.categories
-                      .map((c) =>
-                          (c.toJson()).map((k, v) => MapEntry(k, v as Object?)))
+                      .map(
+                        (c) => (c.toJson()).map(
+                          (k, v) => MapEntry(k, v as Object?),
+                        ),
+                      )
                       .toList();
                   await exportCsv(
                     fileName: 'auction_categories.csv',
@@ -68,13 +94,13 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
 
                 if (value == 'auctions') {
                   final rows = state.auctions
-                      .map((a) =>
-                          (a.toJson()).map((k, v) => MapEntry(k, v as Object?)))
+                      .map(
+                        (a) => (a.toJson()).map(
+                          (k, v) => MapEntry(k, v as Object?),
+                        ),
+                      )
                       .toList();
-                  await exportCsv(
-                    fileName: 'auctions.csv',
-                    rows: rows,
-                  );
+                  await exportCsv(fileName: 'auctions.csv', rows: rows);
                 }
               },
               itemBuilder: (context) => const [
@@ -94,8 +120,34 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
           children: [
             _buildCategoriesTab(),
             _buildAuctionsTab(),
+            _buildReportsTab(),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildReportsTab() {
+    final authState = ref.watch(authNotifierProvider);
+    final canViewReports = authState.maybeWhen(
+      authenticated: (_, user) =>
+          userHasRole(Map<String, dynamic>.from(user), 'MODERATOR'),
+      orElse: () => false,
+    );
+
+    if (!canViewReports) {
+      return const Center(
+        child: Text('Reports are available to MODERATOR accounts only.'),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadData,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: const [
+          ReportsTable(allowedTargetKinds: {'AUCTION', 'AUCTION_BID'}),
+        ],
       ),
     );
   }
@@ -115,8 +167,7 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
     final categoryCount = categories.length;
 
     return RefreshIndicator(
-      onRefresh: () =>
-          ref.read(auctionNotifierProvider.notifier).loadCategories(),
+      onRefresh: _loadData,
       child: Column(
         children: [
           Padding(
@@ -127,8 +178,8 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
                 Text(
                   'Total Categories: $categoryCount',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 ElevatedButton.icon(
                   onPressed: () {
@@ -146,38 +197,48 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
                 return SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      minWidth: constraints.maxWidth,
-                    ),
+                    constraints: BoxConstraints(minWidth: constraints.maxWidth),
                     child: DataTable(
                       columnSpacing: 20,
                       dataRowHeight: 60,
                       headingRowHeight: 40,
                       columns: const [
                         DataColumn(
-                            label: SizedBox(
-                          width: 120,
-                          child: Text('Name',
-                              style: TextStyle(fontWeight: FontWeight.bold)),
-                        )),
+                          label: SizedBox(
+                            width: 120,
+                            child: Text(
+                              'Name',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
                         DataColumn(
-                            label: SizedBox(
-                          width: 200,
-                          child: Text('Description',
-                              style: TextStyle(fontWeight: FontWeight.bold)),
-                        )),
+                          label: SizedBox(
+                            width: 200,
+                            child: Text(
+                              'Description',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
                         DataColumn(
-                            label: SizedBox(
-                          width: 100,
-                          child: Text('Created',
-                              style: TextStyle(fontWeight: FontWeight.bold)),
-                        )),
+                          label: SizedBox(
+                            width: 100,
+                            child: Text(
+                              'Created',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
                         DataColumn(
-                            label: SizedBox(
-                          width: 120,
-                          child: Text('Actions',
-                              style: TextStyle(fontWeight: FontWeight.bold)),
-                        )),
+                          label: SizedBox(
+                            width: 120,
+                            child: Text(
+                              'Actions',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
                       ],
                       rows: categories.map((category) {
                         return DataRow(
@@ -262,8 +323,7 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
     final auctionCount = auctions.length;
 
     return RefreshIndicator(
-      onRefresh: () =>
-          ref.read(auctionNotifierProvider.notifier).loadAuctions(),
+      onRefresh: _loadData,
       child: Column(
         children: [
           Padding(
@@ -274,8 +334,8 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
                 Text(
                   'Total Auctions: $auctionCount',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 ElevatedButton.icon(
                   onPressed: () {
@@ -296,7 +356,9 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
                       final auction = auctions[index];
                       return Card(
                         margin: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
                         child: InkWell(
                           onTap: () {
                             Navigator.of(context).push(
@@ -313,25 +375,32 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
                                 Expanded(child: Text(auction.title)),
                                 if (auction.isDeleted)
                                   const Chip(
-                                    label: Text('Soft Deleted',
-                                        style: TextStyle(fontSize: 10)),
+                                    label: Text(
+                                      'Soft Deleted',
+                                      style: TextStyle(fontSize: 10),
+                                    ),
                                     backgroundColor: Colors.orange,
                                     labelStyle: TextStyle(color: Colors.white),
-                                    padding:
-                                        EdgeInsets.symmetric(horizontal: 4),
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 4,
+                                    ),
                                     visualDensity: VisualDensity.compact,
                                   ),
                                 if (_isAuctionCompleted(auction))
                                   const Padding(
                                     padding: EdgeInsets.only(left: 4),
                                     child: Chip(
-                                      label: Text('Completed',
-                                          style: TextStyle(fontSize: 10)),
+                                      label: Text(
+                                        'Completed',
+                                        style: TextStyle(fontSize: 10),
+                                      ),
                                       backgroundColor: Colors.grey,
-                                      labelStyle:
-                                          TextStyle(color: Colors.white),
-                                      padding:
-                                          EdgeInsets.symmetric(horizontal: 4),
+                                      labelStyle: TextStyle(
+                                        color: Colors.white,
+                                      ),
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: 4,
+                                      ),
                                       visualDensity: VisualDensity.compact,
                                     ),
                                   ),
@@ -342,7 +411,8 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
                               children: [
                                 Text(
                                   _getPlainTextFromDescription(
-                                      auction.description),
+                                    auction.description,
+                                  ),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -353,9 +423,7 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
                                 ),
                                 Text(
                                   'Approved: ${auction.approved ? 'Yes' : 'No'}',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
+                                  style: Theme.of(context).textTheme.bodySmall
                                       ?.copyWith(
                                         color: auction.approved
                                             ? Colors.green
@@ -369,16 +437,20 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
                               children: [
                                 if (!auction.approved)
                                   IconButton(
-                                    icon: const Icon(Icons.check,
-                                        color: Colors.green),
+                                    icon: const Icon(
+                                      Icons.check,
+                                      color: Colors.green,
+                                    ),
                                     onPressed: () {
                                       _approveAuction(auction);
                                     },
                                     tooltip: 'Approve',
                                   ),
                                 IconButton(
-                                  icon: const Icon(Icons.delete,
-                                      color: Colors.red),
+                                  icon: const Icon(
+                                    Icons.delete,
+                                    color: Colors.red,
+                                  ),
                                   onPressed: () {
                                     _showDeleteAuctionDialog(auction);
                                   },
@@ -438,13 +510,14 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                        content: Text('Category created successfully')),
+                      content: Text('Category created successfully'),
+                    ),
                   );
                 } catch (e) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                        content:
-                            Text('Error creating category: ${e.toString()}')),
+                      content: Text('Error creating category: ${e.toString()}'),
+                    ),
                   );
                 }
               }
@@ -458,8 +531,9 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
 
   void _showEditCategoryDialog(category) {
     final nameController = TextEditingController(text: category.name);
-    final descriptionController =
-        TextEditingController(text: category.description);
+    final descriptionController = TextEditingController(
+      text: category.description,
+    );
 
     showDialog(
       context: context,
@@ -499,13 +573,14 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                        content: Text('Category updated successfully')),
+                      content: Text('Category updated successfully'),
+                    ),
                   );
                 } catch (e) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                        content:
-                            Text('Error creating category: ${e.toString()}')),
+                      content: Text('Error creating category: ${e.toString()}'),
+                    ),
                   );
                 }
               }
@@ -537,14 +612,15 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                      content: Text('Category deleted successfully')),
+                    content: Text('Category deleted successfully'),
+                  ),
                 );
               } catch (e) {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                      content:
-                          Text('Error deleting category: ${e.toString()}')),
+                    content: Text('Error deleting category: ${e.toString()}'),
+                  ),
                 );
               }
             },
@@ -602,8 +678,10 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
                     keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 16),
-                  const Text('Select Categories:',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  const Text(
+                    'Select Categories:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 8),
                   Consumer(
                     builder: (context, ref, child) {
@@ -630,8 +708,9 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
                                           if (selected) {
                                             selectedCategories.add(category.id);
                                           } else {
-                                            selectedCategories
-                                                .remove(category.id);
+                                            selectedCategories.remove(
+                                              category.id,
+                                            );
                                           }
                                         });
                                       },
@@ -643,8 +722,10 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  const Text('Auction End Date & Time:',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  const Text(
+                    'Auction End Date & Time:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 8),
                   ElevatedButton.icon(
                     onPressed: () async {
@@ -678,8 +759,10 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text('Media Files:',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  const Text(
+                    'Media Files:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 8),
                   ElevatedButton.icon(
                     onPressed: () async {
@@ -689,8 +772,9 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
                       );
                       if (result != null) {
                         setState(() {
-                          selectedImages
-                              .addAll(result.files.map((file) => file));
+                          selectedImages.addAll(
+                            result.files.map((file) => file),
+                          );
                         });
                       }
                     },
@@ -731,13 +815,18 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
                                         height: 80,
                                         decoration: BoxDecoration(
                                           color: Colors.grey[300],
-                                          border:
-                                              Border.all(color: Colors.grey),
-                                          borderRadius:
-                                              BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color: Colors.grey,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                         ),
-                                        child: const Icon(Icons.image,
-                                            size: 40, color: Colors.grey),
+                                        child: const Icon(
+                                          Icons.image,
+                                          size: 40,
+                                          color: Colors.grey,
+                                        ),
                                       )
                                     else
                                       Container(
@@ -745,21 +834,25 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
                                         height: 80,
                                         decoration: BoxDecoration(
                                           color: Colors.grey[300],
-                                          border:
-                                              Border.all(color: Colors.grey),
-                                          borderRadius:
-                                              BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color: Colors.grey,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                         ),
                                         child: Center(
                                           child: Text(
                                             (file.name ?? 'File').substring(
-                                                0,
-                                                min<int>(
-                                                    10,
-                                                    (file.name ?? 'File')
-                                                        .length)),
-                                            style:
-                                                const TextStyle(fontSize: 10),
+                                              0,
+                                              min<int>(
+                                                10,
+                                                (file.name ?? 'File').length,
+                                              ),
+                                            ),
+                                            style: const TextStyle(
+                                              fontSize: 10,
+                                            ),
                                           ),
                                         ),
                                       ),
@@ -767,8 +860,10 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
                                       top: 0,
                                       right: 0,
                                       child: IconButton(
-                                        icon: const Icon(Icons.remove_circle,
-                                            color: Colors.red),
+                                        icon: const Icon(
+                                          Icons.remove_circle,
+                                          color: Colors.red,
+                                        ),
                                         onPressed: () {
                                           setState(() {
                                             selectedImages.removeAt(index);
@@ -794,8 +889,8 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
               child: const Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: selectedCategories.isEmpty ||
-                      titleController.text.isEmpty
+              onPressed:
+                  selectedCategories.isEmpty || titleController.text.isEmpty
                   ? null
                   : () async {
                       if (titleController.text.isNotEmpty &&
@@ -803,35 +898,37 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
                           selectedCategories.isNotEmpty &&
                           startingBidController.text.isNotEmpty) {
                         try {
-                          // TODO: Upload images to AWS S3 and get URLs
-                          final imageUrls =
-                              await _uploadImagesToS3(selectedImages);
-
                           await ref
                               .read(auctionNotifierProvider.notifier)
                               .createAuction(
                                 title: titleController.text,
                                 description: descriptionController.text,
                                 categoryIds: selectedCategories.toList(),
-                                timeFrame: selectedDateTime
+                                timeFrame:
+                                    selectedDateTime
                                         .toUtc()
                                         .toIso8601String()
                                         .split('.')[0] +
                                     'Z', // ISO format without milliseconds for Prisma
-                                files: imageUrls,
-                                startingBid:
-                                    int.parse(startingBidController.text),
+                                files:
+                                    selectedImages, // Pass PlatformFile objects directly
+                                startingBid: int.parse(
+                                  startingBidController.text,
+                                ),
                               );
                           Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                                content: Text('Auction created successfully')),
+                              content: Text('Auction created successfully'),
+                            ),
                           );
                         } catch (e) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                                content: Text(
-                                    'Error creating auction: ${e.toString()}')),
+                              content: Text(
+                                'Error creating auction: ${e.toString()}',
+                              ),
+                            ),
                           );
                         }
                       }
@@ -902,14 +999,17 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                      content: Text('Auction soft deleted successfully')),
+                    content: Text('Auction soft deleted successfully'),
+                  ),
                 );
               } catch (e) {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                      content:
-                          Text('Error soft deleting auction: ${e.toString()}')),
+                    content: Text(
+                      'Error soft deleting auction: ${e.toString()}',
+                    ),
+                  ),
                 );
               }
             },
@@ -930,7 +1030,8 @@ class _AuctionScreenState extends ConsumerState<AuctionScreen> {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                      content: Text('Error deleting auction: ${e.toString()}')),
+                    content: Text('Error deleting auction: ${e.toString()}'),
+                  ),
                 );
               }
             },

@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart' show FormData, MultipartFile;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:osp_broker_admin/core/infrastructure/api_urls.dart';
 import 'package:osp_broker_admin/core/infrastructure/base_api_service.dart';
@@ -8,9 +9,9 @@ import 'package:osp_broker_admin/features/auction/domain/bid.dart';
 
 final auctionNotifierProvider =
     StateNotifierProvider<AuctionNotifier, AuctionState>((ref) {
-  final apiService = ref.watch(baseApiServiceProvider);
-  return AuctionNotifier(apiService);
-});
+      final apiService = ref.watch(baseApiServiceProvider);
+      return AuctionNotifier(apiService);
+    });
 
 class AuctionNotifier extends StateNotifier<AuctionState> {
   final BaseApiService _apiService;
@@ -29,13 +30,12 @@ class AuctionNotifier extends StateNotifier<AuctionState> {
       final categories = (data['categories'] as List<dynamic>? ?? [])
           .map((json) => AuctionCategory.fromJson(json))
           .toList();
-      state =
-          state.copyWith(categories: categories, isLoadingCategories: false);
-    } catch (e) {
       state = state.copyWith(
+        categories: categories,
         isLoadingCategories: false,
-        error: e.toString(),
       );
+    } catch (e) {
+      state = state.copyWith(isLoadingCategories: false, error: e.toString());
       rethrow;
     }
   }
@@ -48,23 +48,32 @@ class AuctionNotifier extends StateNotifier<AuctionState> {
       final data = response.data['data'] as Map<String, dynamic>;
       final auctionsData = data['auctions'] as Map<String, dynamic>;
 
-      final auctions = (auctionsData['allAuctions'] as List<dynamic>? ?? [])
+      final allAuctions = (auctionsData['allAuctions'] as List<dynamic>? ?? [])
           .map((json) => Auction.fromJson(json))
           .toList();
       final pinnedAuctions =
           (auctionsData['pinnedAuctions'] as List<dynamic>? ?? [])
               .map((json) => Auction.fromJson(json))
               .toList();
+
+      // Combine all auctions (pinned + unpinned) and remove duplicates
+      final allAuctionIds = <String>{};
+      final combinedAuctions = <Auction>[];
+
+      for (final auction in [...pinnedAuctions, ...allAuctions]) {
+        if (!allAuctionIds.contains(auction.id)) {
+          allAuctionIds.add(auction.id);
+          combinedAuctions.add(auction);
+        }
+      }
+
       state = state.copyWith(
-        auctions: auctions,
+        auctions: combinedAuctions,
         pinnedAuctions: pinnedAuctions,
         isLoadingAuctions: false,
       );
     } catch (e) {
-      state = state.copyWith(
-        isLoadingAuctions: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isLoadingAuctions: false, error: e.toString());
       rethrow;
     }
   }
@@ -78,23 +87,18 @@ class AuctionNotifier extends StateNotifier<AuctionState> {
     try {
       final response = await _apiService.post(
         ApiUrls.auctionCategories,
-        data: {
-          'name': name,
-          'description': description,
-        },
+        data: {'name': name, 'description': description},
       );
-      final newCategory =
-          AuctionCategory.fromJson(response.data['data']['category']);
+      final newCategory = AuctionCategory.fromJson(
+        response.data['data']['category'],
+      );
       state = state.copyWith(
         categories: [...state.categories, newCategory],
         isLoadingCategories: false,
       );
       return newCategory;
     } catch (e) {
-      state = state.copyWith(
-        isLoadingCategories: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isLoadingCategories: false, error: e.toString());
       rethrow;
     }
   }
@@ -109,13 +113,11 @@ class AuctionNotifier extends StateNotifier<AuctionState> {
     try {
       final response = await _apiService.put(
         '${ApiUrls.auctionCategories}/$id',
-        data: {
-          'name': name,
-          'description': description,
-        },
+        data: {'name': name, 'description': description},
       );
-      final updatedCategory =
-          AuctionCategory.fromJson(response.data['data']['category']);
+      final updatedCategory = AuctionCategory.fromJson(
+        response.data['data']['category'],
+      );
       final updatedCategories = state.categories.map((category) {
         return category.id == id ? updatedCategory : category;
       }).toList();
@@ -125,10 +127,7 @@ class AuctionNotifier extends StateNotifier<AuctionState> {
       );
       return updatedCategory;
     } catch (e) {
-      state = state.copyWith(
-        isLoadingCategories: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isLoadingCategories: false, error: e.toString());
       rethrow;
     }
   }
@@ -138,17 +137,15 @@ class AuctionNotifier extends StateNotifier<AuctionState> {
     state = state.copyWith(isLoadingCategories: true, error: null);
     try {
       await _apiService.delete('${ApiUrls.auctionCategories}/$id');
-      final updatedCategories =
-          state.categories.where((category) => category.id != id).toList();
+      final updatedCategories = state.categories
+          .where((category) => category.id != id)
+          .toList();
       state = state.copyWith(
         categories: updatedCategories,
         isLoadingCategories: false,
       );
     } catch (e) {
-      state = state.copyWith(
-        isLoadingCategories: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isLoadingCategories: false, error: e.toString());
       rethrow;
     }
   }
@@ -171,10 +168,7 @@ class AuctionNotifier extends StateNotifier<AuctionState> {
       );
       return updatedAuction;
     } catch (e) {
-      state = state.copyWith(
-        isLoadingAuctions: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isLoadingAuctions: false, error: e.toString());
       rethrow;
     }
   }
@@ -185,34 +179,47 @@ class AuctionNotifier extends StateNotifier<AuctionState> {
     required String description,
     required List<String> categoryIds,
     required String timeFrame,
-    List<String>? files, // File paths or URLs for uploaded files
+    List<dynamic>? files, // PlatformFile objects for file upload
     int? startingBid,
   }) async {
     state = state.copyWith(isLoadingAuctions: true, error: null);
     try {
-      // Prepare the request data
-      final Map<String, dynamic> data = {
-        'title': title,
-        'description': description,
-        'categoryIds': categoryIds,
-        'timeFrame': timeFrame, // Already in ISO-8601 format from frontend
-        'userId': '68bf065c6edb628ff134c460', // TODO: Get from auth
-      };
+      // Use FormData for multipart upload
+      final formData = FormData();
 
-      // Add files if provided (for future implementation)
-      if (files != null && files.isNotEmpty) {
-        data['files'] = files;
+      // Add individual form fields
+      formData.fields.add(MapEntry('title', title));
+      formData.fields.add(MapEntry('description', description));
+      formData.fields.add(MapEntry('timeFrame', timeFrame));
+
+      // Add categoryIds
+      if (categoryIds.length == 1) {
+        formData.fields.add(MapEntry('categoryIds[]', categoryIds.first));
+      } else {
+        for (final categoryId in categoryIds) {
+          formData.fields.add(MapEntry('categoryIds', categoryId));
+        }
       }
 
       // Add starting bid if provided
       if (startingBid != null) {
-        data['starting_bid'] = startingBid;
+        formData.fields.add(MapEntry('starting_bid', startingBid.toString()));
       }
 
-      final response = await _apiService.post(
-        ApiUrls.auctions,
-        data: data,
-      );
+      // Add files if provided - files should be PlatformFile objects
+      if (files != null && files.isNotEmpty) {
+        for (final file in files) {
+          if (file.bytes != null) {
+            formData.files.add(
+              MapEntry(
+                'files',
+                MultipartFile.fromBytes(file.bytes!, filename: file.name),
+              ),
+            );
+          }
+        }
+      }
+      final response = await _apiService.post(ApiUrls.auctions, data: formData);
 
       final newAuction = Auction.fromJson(response.data['data']['auction']);
       state = state.copyWith(
@@ -221,10 +228,7 @@ class AuctionNotifier extends StateNotifier<AuctionState> {
       );
       return newAuction;
     } catch (e) {
-      state = state.copyWith(
-        isLoadingAuctions: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isLoadingAuctions: false, error: e.toString());
       rethrow;
     }
   }
@@ -233,16 +237,11 @@ class AuctionNotifier extends StateNotifier<AuctionState> {
   Future<void> softDeleteAuction(String id) async {
     state = state.copyWith(isLoadingAuctions: true, error: null);
     try {
-      await _apiService.post(
-        '${ApiUrls.auctions}/softDelete/$id',
-      );
+      await _apiService.post('${ApiUrls.auctions}/softDelete/$id');
       // Reload auctions to reflect the change
       await loadAuctions();
     } catch (e) {
-      state = state.copyWith(
-        isLoadingAuctions: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isLoadingAuctions: false, error: e.toString());
       rethrow;
     }
   }
@@ -252,17 +251,15 @@ class AuctionNotifier extends StateNotifier<AuctionState> {
     state = state.copyWith(isLoadingAuctions: true, error: null);
     try {
       await _apiService.delete('${ApiUrls.auctions}/$id');
-      final updatedAuctions =
-          state.auctions.where((auction) => auction.id != id).toList();
+      final updatedAuctions = state.auctions
+          .where((auction) => auction.id != id)
+          .toList();
       state = state.copyWith(
         auctions: updatedAuctions,
         isLoadingAuctions: false,
       );
     } catch (e) {
-      state = state.copyWith(
-        isLoadingAuctions: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isLoadingAuctions: false, error: e.toString());
       rethrow;
     }
   }
@@ -279,10 +276,7 @@ class AuctionNotifier extends StateNotifier<AuctionState> {
       );
       return auction;
     } catch (e) {
-      state = state.copyWith(
-        isLoadingAuctions: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isLoadingAuctions: false, error: e.toString());
       return null;
     }
   }
@@ -321,9 +315,7 @@ class AuctionNotifier extends StateNotifier<AuctionState> {
     try {
       final result = await _apiService.put(
         '/auction/bid/$auctionId/select-winner/$bidId',
-        data: {
-          'userId': userId,
-        },
+        data: {'userId': userId},
       );
 
       // Reload bids after selecting winner to update matched status

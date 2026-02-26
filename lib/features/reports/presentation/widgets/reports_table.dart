@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:osp_broker_admin/features/auction/presentation/auction_detail_screen.dart';
 import 'package:osp_broker_admin/features/forums/application/forum_admin_notifier.dart';
 import 'package:osp_broker_admin/features/forums/domain/forum_models.dart';
 import 'package:osp_broker_admin/features/forums/presentation/pages/topic_detail_page.dart';
@@ -60,9 +61,9 @@ Future<void> openReportTarget(
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to open topic: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to open topic: $e')));
       }
     }
     return;
@@ -71,7 +72,8 @@ Future<void> openReportTarget(
   if (kind == 'COMMENT') {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-          content: Text('Comment management view is not available yet')),
+        content: Text('Comment management view is not available yet'),
+      ),
     );
     return;
   }
@@ -81,9 +83,18 @@ Future<void> openReportTarget(
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('User profile fetched (open Users page to manage)')),
+          content: Text('User profile fetched (open Users page to manage)'),
+        ),
       );
     }
+    return;
+  }
+
+  if (kind == 'AUCTION') {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => AuctionDetailScreen(auctionId: id)),
+    );
     return;
   }
 
@@ -95,12 +106,18 @@ Future<void> openReportTarget(
 }
 
 class ReportsTable extends ConsumerWidget {
-  const ReportsTable({super.key});
+  final Set<String>? allowedTargetKinds;
+
+  const ReportsTable({super.key, this.allowedTargetKinds});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(reportsNotifierProvider);
-    final reports = state.reports;
+    final reports = allowedTargetKinds == null
+        ? state.reports
+        : state.reports
+              .where((r) => allowedTargetKinds!.contains(r.targetKind))
+              .toList(growable: false);
 
     return Container(
       decoration: BoxDecoration(
@@ -130,34 +147,54 @@ class ReportsTable extends ConsumerWidget {
               children: const [
                 Expanded(
                   flex: 2,
-                  child: Text('Type',
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold, color: Colors.black87)),
+                  child: Text(
+                    'Type',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
                 ),
                 Expanded(
                   flex: 3,
-                  child: Text('Reason',
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold, color: Colors.black87)),
+                  child: Text(
+                    'Reason',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
                 ),
                 Expanded(
                   flex: 3,
-                  child: Text('Target',
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold, color: Colors.black87)),
+                  child: Text(
+                    'Target',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
                 ),
                 Expanded(
                   flex: 2,
-                  child: Text('Created',
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold, color: Colors.black87)),
+                  child: Text(
+                    'Created',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
                 ),
                 SizedBox(
                   width: 92,
-                  child: Text('Actions',
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold, color: Colors.black87),
-                      textAlign: TextAlign.center),
+                  child: Text(
+                    'Actions',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ],
             ),
@@ -260,7 +297,8 @@ class _ReportRow extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(16),
                             onTap: () async {
                               await Clipboard.setData(
-                                  ClipboardData(text: targetId));
+                                ClipboardData(text: targetId),
+                              );
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
@@ -296,10 +334,12 @@ class _ReportRow extends ConsumerWidget {
                         child: InkWell(
                           borderRadius: BorderRadius.circular(16),
                           onTap: () async {
-                            final notifier =
-                                ref.read(reportsNotifierProvider.notifier);
-                            final loaded =
-                                await notifier.loadReportById(report.id);
+                            final notifier = ref.read(
+                              reportsNotifierProvider.notifier,
+                            );
+                            final loaded = await notifier.loadReportById(
+                              report.id,
+                            );
                             if (context.mounted && loaded != null) {
                               await showDialog<void>(
                                 context: context,
@@ -365,39 +405,37 @@ class _ReportDetailDialog extends ConsumerWidget {
         child: state.isLoading && report == null
             ? const Center(child: CircularProgressIndicator())
             : report == null
-                ? const Text('No report data')
-                : Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _kv(context, 'Report ID', idLabel, copy: true),
-                      _kv(context, 'Type', report.contentType),
-                      _kv(context, 'Reason', report.reason),
-                      _kv(context, 'Flagged By', report.flaggedBy, copy: true),
-                      _kv(context, 'Target Kind', report.targetKind),
-                      _kv(context, 'Target ID', report.targetId, copy: true),
-                      _kv(context, 'Category ID', report.categoryId ?? ''),
-                      _kv(
-                          context,
-                          'Created',
-                          report.createdAt
-                              .toIso8601String()
-                              .replaceFirst('T', ' ')),
-                      _kv(
-                          context,
-                          'Updated',
-                          report.updatedAt
-                              .toIso8601String()
-                              .replaceFirst('T', ' ')),
-                      if (state.error != null) ...[
-                        const SizedBox(height: 12),
-                        Text(
-                          'Error: ${state.error}',
-                          style: const TextStyle(color: Colors.red),
-                        ),
-                      ]
-                    ],
+            ? const Text('No report data')
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _kv(context, 'Report ID', idLabel, copy: true),
+                  _kv(context, 'Type', report.contentType),
+                  _kv(context, 'Reason', report.reason),
+                  _kv(context, 'Flagged By', report.flaggedBy, copy: true),
+                  _kv(context, 'Target Kind', report.targetKind),
+                  _kv(context, 'Target ID', report.targetId, copy: true),
+                  _kv(context, 'Category ID', report.categoryId ?? ''),
+                  _kv(
+                    context,
+                    'Created',
+                    report.createdAt.toIso8601String().replaceFirst('T', ' '),
                   ),
+                  _kv(
+                    context,
+                    'Updated',
+                    report.updatedAt.toIso8601String().replaceFirst('T', ' '),
+                  ),
+                  if (state.error != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      'Error: ${state.error}',
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  ],
+                ],
+              ),
       ),
       actions: [
         TextButton(
@@ -425,14 +463,9 @@ class _ReportDetailDialog extends ConsumerWidget {
         children: [
           SizedBox(
             width: 110,
-            child: Text(
-              k,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
+            child: Text(k, style: const TextStyle(fontWeight: FontWeight.w600)),
           ),
-          Expanded(
-            child: SelectableText(v),
-          ),
+          Expanded(child: SelectableText(v)),
           if (copy)
             Tooltip(
               message: 'Copy',
