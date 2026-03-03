@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:osp_broker_admin/core/constants/app_colors.dart';
+import 'package:osp_broker_admin/core/widgets/layout/top_bar.dart';
 
+import '../../application/shop_badge_notifier.dart';
+import '../../application/shop_kudo_coin_notifier.dart';
+import '../../application/shop_pin_notifier.dart';
 import 'shop_items_page.dart';
 
 final GoRoute goRouteShop = GoRoute(
   path: ShopPage.routePath,
   name: ShopPage.routeName,
-  pageBuilder: (context, state) => MaterialPage(
-    key: state.pageKey,
-    child: const ShopPage(),
-  ),
+  pageBuilder: (context, state) =>
+      MaterialPage(key: state.pageKey, child: const ShopPage()),
 );
 
 class ShopPage extends ConsumerWidget {
@@ -21,14 +24,19 @@ class ShopPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return const ShopItemsPage();
+    return const _ShopPage();
   }
 }
 
-/*
+class _ShopPage extends ConsumerStatefulWidget {
+  const _ShopPage();
 
- LEGACY SHOP (Pins / Badges / Kudo Coins)
- Kept commented as requested.
+  @override
+  ConsumerState<_ShopPage> createState() => _ShopPageState();
+}
+
+// LEGACY SHOP (Pins / Badges / Kudo Coins)
+// Restored for kudo coins and badges management
 
 class _AddKudoCoinDialog extends ConsumerStatefulWidget {
   const _AddKudoCoinDialog();
@@ -278,9 +286,9 @@ class _AddBadgeDialogState extends ConsumerState<_AddBadgeDialog> {
       if (mounted) Navigator.of(context).pop();
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to create badge')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Failed to create badge')));
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -402,9 +410,9 @@ class _EditBadgeDialogState extends ConsumerState<_EditBadgeDialog> {
       if (mounted) Navigator.of(context).pop();
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to update badge')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Failed to update badge')));
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -467,7 +475,7 @@ class _EditBadgeDialogState extends ConsumerState<_EditBadgeDialog> {
   }
 }
 
-class _ShopPageState extends ConsumerState<ShopPage> {
+class _ShopPageState extends ConsumerState<_ShopPage> {
   @override
   void initState() {
     super.initState();
@@ -479,8 +487,9 @@ class _ShopPageState extends ConsumerState<ShopPage> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
+        backgroundColor: AppColors.background,
         body: Column(
           children: [
             TopBar(
@@ -489,21 +498,22 @@ class _ShopPageState extends ConsumerState<ShopPage> {
               notificationCount: '5',
             ),
             const SizedBox(height: 16),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Shop',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                ),
-              ),
-            ),
+            // const Padding(
+            //   padding: EdgeInsets.symmetric(horizontal: 16.0),
+            //   child: Align(
+            //     alignment: Alignment.centerLeft,
+            //     child: Text(
+            //       'Shop',
+            //       style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+            //     ),
+            //   ),
+            // ),
             const SizedBox(height: 12),
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.0),
               child: TabBar(
                 tabs: [
+                  Tab(text: 'Products'),
                   Tab(text: 'Pins'),
                   Tab(text: 'Badges'),
                   Tab(text: 'Kudo Coins'),
@@ -514,6 +524,7 @@ class _ShopPageState extends ConsumerState<ShopPage> {
             const Expanded(
               child: TabBarView(
                 children: [
+                  ShopItemsPage(),
                   _PinsTab(),
                   _BadgesTab(),
                   _KudoCoinsTab(),
@@ -593,8 +604,10 @@ class _KudoCoinsTabState extends ConsumerState<_KudoCoinsTab> {
               }
 
               return ListView.separated(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 itemCount: state.kudoCoins.length,
                 separatorBuilder: (_, __) => const SizedBox(height: 8),
                 itemBuilder: (context, index) {
@@ -627,10 +640,12 @@ class _KudoCoinsTabState extends ConsumerState<_KudoCoinsTab> {
                                     final confirmed = await showDialog<bool>(
                                       context: context,
                                       builder: (ctx) => AlertDialog(
-                                        title:
-                                            const Text('Soft delete kudo coin'),
+                                        title: const Text(
+                                          'Soft delete kudo coin',
+                                        ),
                                         content: const Text(
-                                            'Are you sure you want to soft delete this kudo coin?'),
+                                          'Are you sure you want to soft delete this kudo coin?',
+                                        ),
                                         actions: [
                                           TextButton(
                                             onPressed: () =>
@@ -647,13 +662,17 @@ class _KudoCoinsTabState extends ConsumerState<_KudoCoinsTab> {
                                     );
                                     if (confirmed == true) {
                                       await ref
-                                          .read(shopKudoCoinNotifierProvider
-                                              .notifier)
+                                          .read(
+                                            shopKudoCoinNotifierProvider
+                                                .notifier,
+                                          )
                                           .softDeleteKudoCoin(coin.id);
                                     }
                                   },
-                            icon: const Icon(Icons.remove_circle_outline,
-                                size: 18),
+                            icon: const Icon(
+                              Icons.remove_circle_outline,
+                              size: 18,
+                            ),
                           ),
                           IconButton(
                             tooltip: 'Delete',
@@ -663,7 +682,8 @@ class _KudoCoinsTabState extends ConsumerState<_KudoCoinsTab> {
                                 builder: (ctx) => AlertDialog(
                                   title: const Text('Delete kudo coin'),
                                   content: const Text(
-                                      'Are you sure you want to permanently delete this kudo coin?'),
+                                    'Are you sure you want to permanently delete this kudo coin?',
+                                  ),
                                   actions: [
                                     TextButton(
                                       onPressed: () =>
@@ -747,7 +767,8 @@ class _BadgesTabState extends ConsumerState<_BadgesTab> {
                     builder: (ctx) => AlertDialog(
                       title: const Text('Delete all badges'),
                       content: const Text(
-                          'Are you sure you want to delete all badges?'),
+                        'Are you sure you want to delete all badges?',
+                      ),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.of(ctx).pop(false),
@@ -810,8 +831,10 @@ class _BadgesTabState extends ConsumerState<_BadgesTab> {
               }
 
               return ListView.separated(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 itemCount: state.badges.length,
                 separatorBuilder: (_, __) => const SizedBox(height: 8),
                 itemBuilder: (context, index) {
@@ -846,7 +869,8 @@ class _BadgesTabState extends ConsumerState<_BadgesTab> {
                                       builder: (ctx) => AlertDialog(
                                         title: const Text('Soft delete badge'),
                                         content: const Text(
-                                            'Are you sure you want to soft delete this badge?'),
+                                          'Are you sure you want to soft delete this badge?',
+                                        ),
                                         actions: [
                                           TextButton(
                                             onPressed: () =>
@@ -863,13 +887,16 @@ class _BadgesTabState extends ConsumerState<_BadgesTab> {
                                     );
                                     if (confirmed == true) {
                                       await ref
-                                          .read(shopBadgeNotifierProvider
-                                              .notifier)
+                                          .read(
+                                            shopBadgeNotifierProvider.notifier,
+                                          )
                                           .softDeleteBadge(badge.id);
                                     }
                                   },
-                            icon: const Icon(Icons.remove_circle_outline,
-                                size: 18),
+                            icon: const Icon(
+                              Icons.remove_circle_outline,
+                              size: 18,
+                            ),
                           ),
                           IconButton(
                             tooltip: 'Delete',
@@ -879,7 +906,8 @@ class _BadgesTabState extends ConsumerState<_BadgesTab> {
                                 builder: (ctx) => AlertDialog(
                                   title: const Text('Delete badge'),
                                   content: const Text(
-                                      'Are you sure you want to permanently delete this badge?'),
+                                    'Are you sure you want to permanently delete this badge?',
+                                  ),
                                   actions: [
                                     TextButton(
                                       onPressed: () =>
@@ -973,8 +1001,10 @@ class _PinsTab extends ConsumerWidget {
               }
 
               return ListView.separated(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 itemCount: state.pins.length,
                 separatorBuilder: (_, __) => const SizedBox(height: 8),
                 itemBuilder: (context, index) {
@@ -1021,7 +1051,8 @@ class _PinsTab extends ConsumerWidget {
                                       builder: (ctx) => AlertDialog(
                                         title: const Text('Soft delete pin'),
                                         content: const Text(
-                                            'Are you sure you want to soft delete this pin?'),
+                                          'Are you sure you want to soft delete this pin?',
+                                        ),
                                         actions: [
                                           TextButton(
                                             onPressed: () =>
@@ -1040,12 +1071,15 @@ class _PinsTab extends ConsumerWidget {
                                     if (confirmed == true) {
                                       await ref
                                           .read(
-                                              shopPinNotifierProvider.notifier)
+                                            shopPinNotifierProvider.notifier,
+                                          )
                                           .softDeletePin(pin.id);
                                     }
                                   },
-                            icon: const Icon(Icons.remove_circle_outline,
-                                size: 18),
+                            icon: const Icon(
+                              Icons.remove_circle_outline,
+                              size: 18,
+                            ),
                           ),
                           IconButton(
                             tooltip: 'Delete',
@@ -1055,7 +1089,8 @@ class _PinsTab extends ConsumerWidget {
                                 builder: (ctx) => AlertDialog(
                                   title: const Text('Delete pin'),
                                   content: const Text(
-                                      'Are you sure you want to permanently delete this pin?'),
+                                    'Are you sure you want to permanently delete this pin?',
+                                  ),
                                   actions: [
                                     TextButton(
                                       onPressed: () =>
@@ -1185,9 +1220,9 @@ class _EditPinDialogState extends ConsumerState<_EditPinDialog> {
       if (mounted) Navigator.of(context).pop();
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to update pin')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Failed to update pin')));
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -1302,9 +1337,9 @@ class _AddPinDialogState extends ConsumerState<_AddPinDialog> {
       if (mounted) Navigator.of(context).pop();
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to create pin')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Failed to create pin')));
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -1384,5 +1419,3 @@ class _AddPinDialogState extends ConsumerState<_AddPinDialog> {
     );
   }
 }
-
-*/

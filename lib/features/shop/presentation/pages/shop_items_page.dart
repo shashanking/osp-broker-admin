@@ -6,37 +6,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:osp_broker_admin/core/constants/app_colors.dart';
 import 'package:osp_broker_admin/core/utils/csv_export.dart';
-import 'package:osp_broker_admin/core/widgets/layout/top_bar.dart';
 import 'package:osp_broker_admin/features/shop/application/shop_items_notifier.dart';
 import 'package:osp_broker_admin/features/shop/domain/shop_item_model.dart';
 
-enum _ShopRange {
-  day,
-  sevenDays,
-  thirtyDays,
-  yearly,
-}
+enum _ShopRange { day, sevenDays, thirtyDays, yearly }
 
-enum ShopItemsTab {
-  all,
-  platform,
-  product,
-  service,
-}
+enum ShopItemsTab { all, platform, product, service }
 
-enum _ShopSortField {
-  name,
-  price,
-  stock,
-  updatedAt,
-}
+enum _ShopSortField { name, price, stock, updatedAt }
 
-enum _StockFilter {
-  any,
-  inStock,
-  outOfStock,
-  lowStock,
-}
+enum _StockFilter { any, inStock, outOfStock, lowStock }
 
 class ShopItemsPage extends ConsumerStatefulWidget {
   const ShopItemsPage({super.key});
@@ -238,7 +217,10 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
                 children: [
                   const Text(
                     'Sort',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   ..._ShopSortField.values.map(
@@ -274,8 +256,9 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: () => Navigator.of(context)
-                              .pop((field: field, asc: asc)),
+                          onPressed: () => Navigator.of(
+                            context,
+                          ).pop((field: field, asc: asc)),
                           child: const Text('Apply'),
                         ),
                       ),
@@ -298,10 +281,12 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
   }
 
   Future<void> _openFilterDialog(List<ShopCategoryModel> categories) async {
-    final minController =
-        TextEditingController(text: _minPrice?.toString() ?? '');
-    final maxController =
-        TextEditingController(text: _maxPrice?.toString() ?? '');
+    final minController = TextEditingController(
+      text: _minPrice?.toString() ?? '',
+    );
+    final maxController = TextEditingController(
+      text: _maxPrice?.toString() ?? '',
+    );
 
     final result = await showDialog<
         ({
@@ -360,16 +345,21 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
                         ),
                         items: const [
                           DropdownMenuItem(
-                              value: _StockFilter.any, child: Text('Any')),
+                            value: _StockFilter.any,
+                            child: Text('Any'),
+                          ),
                           DropdownMenuItem(
-                              value: _StockFilter.inStock,
-                              child: Text('In stock')),
+                            value: _StockFilter.inStock,
+                            child: Text('In stock'),
+                          ),
                           DropdownMenuItem(
-                              value: _StockFilter.lowStock,
-                              child: Text('Low stock (<10)')),
+                            value: _StockFilter.lowStock,
+                            child: Text('Low stock (<10)'),
+                          ),
                           DropdownMenuItem(
-                              value: _StockFilter.outOfStock,
-                              child: Text('Out of stock')),
+                            value: _StockFilter.outOfStock,
+                            child: Text('Out of stock'),
+                          ),
                         ],
                         onChanged: (v) {
                           if (v == null) return;
@@ -384,7 +374,8 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
                               controller: minController,
                               keyboardType:
                                   const TextInputType.numberWithOptions(
-                                      decimal: true),
+                                decimal: true,
+                              ),
                               decoration: const InputDecoration(
                                 labelText: 'Min Price',
                                 border: OutlineInputBorder(),
@@ -398,7 +389,8 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
                               controller: maxController,
                               keyboardType:
                                   const TextInputType.numberWithOptions(
-                                      decimal: true),
+                                decimal: true,
+                              ),
                               decoration: const InputDecoration(
                                 labelText: 'Max Price',
                                 border: OutlineInputBorder(),
@@ -500,11 +492,7 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
       backgroundColor: AppColors.background,
       body: Column(
         children: [
-          TopBar(
-            userName: 'Admin',
-            userRole: 'Admin',
-            notificationCount: '5',
-          ),
+          // TopBar(userName: 'Admin', userRole: 'Admin', notificationCount: '5'),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -554,8 +542,9 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
                                       stock: result.stock,
                                       categoryId: result.categoryId,
                                       active: result.isActive,
-                                      image:
-                                          _imageToApiString(result.imageFile),
+                                      image: _imageToApiString(
+                                        result.imageFile,
+                                      ),
                                     );
                                 if (!mounted) return;
                                 setState(() {
@@ -662,8 +651,9 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
                                 color: Colors.grey.shade300,
                               ),
                             ),
-                            contentPadding:
-                                const EdgeInsets.symmetric(vertical: 12),
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 12,
+                            ),
                           ),
                         ),
                       );
@@ -708,13 +698,7 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
                         );
                       }
 
-                      return Row(
-                        children: [
-                          search,
-                          const Spacer(),
-                          actions,
-                        ],
-                      );
+                      return Row(children: [search, const Spacer(), actions]);
                     },
                   ),
                   const SizedBox(height: 16),
@@ -814,7 +798,8 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
                                               // const SizedBox(width: 10),
                                               SizedBox(
                                                 width: _nameColumnMaxWidth(
-                                                    context),
+                                                  context,
+                                                ),
                                                 child: Text(
                                                   e.name,
                                                   maxLines: 1,
@@ -828,13 +813,17 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
                                             ],
                                           ),
                                         ),
-                                        DataCell(Text(
-                                            '#${e.id.substring(0, min(8, e.id.length))}')),
+                                        DataCell(
+                                          Text(
+                                            '#${e.id.substring(0, min(8, e.id.length))}',
+                                          ),
+                                        ),
                                         DataCell(
                                           Text(
                                             '\$${e.price.toStringAsFixed(2)}',
                                             style: const TextStyle(
-                                                fontWeight: FontWeight.w700),
+                                              fontWeight: FontWeight.w700,
+                                            ),
                                           ),
                                         ),
                                         DataCell(
@@ -854,18 +843,19 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
                                               child: DropdownButton<String>(
                                                 isDense: true,
                                                 value: state.categories.any(
-                                                        (c) =>
-                                                            c.id ==
-                                                            e.categoryId)
+                                                  (c) => c.id == e.categoryId,
+                                                )
                                                     ? e.categoryId
                                                     : null,
                                                 hint: Text(
                                                   _getCategoryName(
-                                                      e, categoryNameById),
+                                                    e,
+                                                    categoryNameById,
+                                                  ),
                                                   style: const TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.w700,
-                                                      fontSize: 12),
+                                                    fontWeight: FontWeight.w700,
+                                                    fontSize: 12,
+                                                  ),
                                                 ),
                                                 icon: const Icon(
                                                   Icons
@@ -880,10 +870,10 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
                                                           c.name,
                                                           style:
                                                               const TextStyle(
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w700,
-                                                                  fontSize: 12),
+                                                            fontWeight:
+                                                                FontWeight.w700,
+                                                            fontSize: 12,
+                                                          ),
                                                         ),
                                                       ),
                                                     )
@@ -896,25 +886,31 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
                                                   try {
                                                     await ref
                                                         .read(
-                                                            shopItemsNotifierProvider
-                                                                .notifier)
+                                                          shopItemsNotifierProvider
+                                                              .notifier,
+                                                        )
                                                         .updateItem(
                                                           id: e.id,
                                                           categoryId: v,
-                                                          active:
-                                                              _isActiveFor(e),
-                                                          image: _imageToApiString(
-                                                              _imageOverrideByItemId[
-                                                                  e.id]),
+                                                          active: _isActiveFor(
+                                                            e,
+                                                          ),
+                                                          image:
+                                                              _imageToApiString(
+                                                            _imageOverrideByItemId[
+                                                                e.id],
+                                                          ),
                                                         );
                                                   } catch (_) {
                                                     if (!mounted) return;
                                                     ScaffoldMessenger.of(
-                                                            context)
-                                                        .showSnackBar(
+                                                      context,
+                                                    ).showSnackBar(
                                                       const SnackBar(
-                                                          content: Text(
-                                                              'Failed to update category')),
+                                                        content: Text(
+                                                          'Failed to update category',
+                                                        ),
+                                                      ),
                                                     );
                                                   }
                                                 },
@@ -952,7 +948,9 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
                                                         _AddShopItemDialog(
                                                       initialItem: e,
                                                       initialIsActive:
-                                                          _isActiveFor(e),
+                                                          _isActiveFor(
+                                                        e,
+                                                      ),
                                                     ),
                                                   );
 
@@ -961,8 +959,9 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
                                                   try {
                                                     final updated = await ref
                                                         .read(
-                                                            shopItemsNotifierProvider
-                                                                .notifier)
+                                                          shopItemsNotifierProvider
+                                                              .notifier,
+                                                        )
                                                         .updateItem(
                                                           id: e.id,
                                                           name: result.name,
@@ -976,8 +975,8 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
                                                               result.isActive,
                                                           image:
                                                               _imageToApiString(
-                                                                  result
-                                                                      .imageFile),
+                                                            result.imageFile,
+                                                          ),
                                                         );
 
                                                     if (!mounted) return;
@@ -992,11 +991,13 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
                                                   } catch (e) {
                                                     if (mounted) {
                                                       ScaffoldMessenger.of(
-                                                              context)
-                                                          .showSnackBar(
+                                                        context,
+                                                      ).showSnackBar(
                                                         SnackBar(
-                                                            content: Text(
-                                                                'Error: $e')),
+                                                          content: Text(
+                                                            'Error: $e',
+                                                          ),
+                                                        ),
                                                       );
                                                     }
                                                   }
@@ -1012,7 +1013,8 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
                                                     builder: (context) {
                                                       return AlertDialog(
                                                         title: const Text(
-                                                            'Delete item'),
+                                                          'Delete item',
+                                                        ),
                                                         content: Text(
                                                           'Are you sure you want to delete "${e.name}"?',
                                                         ),
@@ -1020,18 +1022,22 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
                                                           TextButton(
                                                             onPressed: () =>
                                                                 Navigator.of(
-                                                                        context)
-                                                                    .pop(false),
+                                                              context,
+                                                            ).pop(
+                                                              false,
+                                                            ),
                                                             child: const Text(
-                                                                'Cancel'),
+                                                              'Cancel',
+                                                            ),
                                                           ),
                                                           ElevatedButton(
                                                             onPressed: () =>
                                                                 Navigator.of(
-                                                                        context)
-                                                                    .pop(true),
+                                                              context,
+                                                            ).pop(true),
                                                             child: const Text(
-                                                                'Delete'),
+                                                              'Delete',
+                                                            ),
                                                           ),
                                                         ],
                                                       );
@@ -1042,24 +1048,28 @@ class _ShopItemsPageState extends ConsumerState<ShopItemsPage> {
                                                   try {
                                                     await ref
                                                         .read(
-                                                            shopItemsNotifierProvider
-                                                                .notifier)
+                                                          shopItemsNotifierProvider
+                                                              .notifier,
+                                                        )
                                                         .softDeleteItem(e.id);
                                                   } catch (e) {
                                                     if (mounted) {
                                                       ScaffoldMessenger.of(
-                                                              context)
-                                                          .showSnackBar(
+                                                        context,
+                                                      ).showSnackBar(
                                                         SnackBar(
-                                                            content: Text(
-                                                                'Error: $e')),
+                                                          content: Text(
+                                                            'Error: $e',
+                                                          ),
+                                                        ),
                                                       );
                                                     }
                                                   }
                                                 },
                                                 icon: Icons.delete,
-                                                background:
-                                                    const Color(0xFFDC2626),
+                                                background: const Color(
+                                                  0xFFDC2626,
+                                                ),
                                                 foreground: Colors.white,
                                               ),
                                             ],
@@ -1118,10 +1128,7 @@ class _TabsBar extends StatelessWidget {
   final ShopItemsTab selected;
   final ValueChanged<ShopItemsTab> onChanged;
 
-  const _TabsBar({
-    required this.selected,
-    required this.onChanged,
-  });
+  const _TabsBar({required this.selected, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -1214,8 +1221,10 @@ class _ShopManagementHeader extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF1E3A8A),
                 foregroundColor: Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(999),
                 ),
@@ -1238,7 +1247,7 @@ class _ShopManagementHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Shop Management',
+                'Product Management',
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
               ),
               const SizedBox(height: 12),
@@ -1250,7 +1259,7 @@ class _ShopManagementHeader extends StatelessWidget {
         return Row(
           children: [
             const Text(
-              'Shop Management',
+              'Product Management',
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
             ),
             const Spacer(),
@@ -1275,10 +1284,7 @@ class _AddNewShopItemCard extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF1E3A8A),
-            Color(0xFF0891B2),
-          ],
+          colors: [Color(0xFF1E3A8A), Color(0xFF0891B2)],
         ),
         borderRadius: BorderRadius.circular(14),
       ),
@@ -1296,7 +1302,7 @@ class _AddNewShopItemCard extends StatelessWidget {
           const SizedBox(width: 14),
           const Expanded(
             child: Text(
-              'Add New\nShop Item',
+              'Add New\nProduct',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 18,
@@ -1441,10 +1447,7 @@ class _StatusTag extends StatelessWidget {
   final String label;
   final bool isActive;
 
-  const _StatusTag({
-    required this.label,
-    required this.isActive,
-  });
+  const _StatusTag({required this.label, required this.isActive});
 
   @override
   Widget build(BuildContext context) {
@@ -1459,11 +1462,7 @@ class _StatusTag extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(
-          color: fg,
-          fontWeight: FontWeight.w800,
-          fontSize: 12,
-        ),
+        style: TextStyle(color: fg, fontWeight: FontWeight.w800, fontSize: 12),
       ),
     );
   }
@@ -1657,10 +1656,7 @@ class _AddShopItemDialog extends ConsumerStatefulWidget {
   final ShopItemModel? initialItem;
   final bool initialIsActive;
 
-  const _AddShopItemDialog({
-    this.initialItem,
-    this.initialIsActive = true,
-  });
+  const _AddShopItemDialog({this.initialItem, this.initialIsActive = true});
 
   @override
   ConsumerState<_AddShopItemDialog> createState() => _AddShopItemDialogState();
@@ -1709,9 +1705,9 @@ class _AddShopItemDialogState extends ConsumerState<_AddShopItemDialog> {
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to pick image: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to pick image: $e')));
     }
   }
 
@@ -1732,17 +1728,16 @@ class _AddShopItemDialogState extends ConsumerState<_AddShopItemDialog> {
     if (name.isEmpty || desc.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('Please fill category name and description')),
+          content: Text('Please fill category name and description'),
+        ),
       );
       return;
     }
 
     try {
-      final category =
-          await ref.read(shopItemsNotifierProvider.notifier).createCategory(
-                name: name,
-                description: desc,
-              );
+      final category = await ref
+          .read(shopItemsNotifierProvider.notifier)
+          .createCategory(name: name, description: desc);
       setState(() {
         _categoryId = category.id;
         _isCreatingCategory = false;
@@ -1751,9 +1746,9 @@ class _AddShopItemDialogState extends ConsumerState<_AddShopItemDialog> {
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error creating category: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error creating category: $e')));
       }
     }
   }
@@ -1785,7 +1780,9 @@ class _AddShopItemDialogState extends ConsumerState<_AddShopItemDialog> {
                   Text(
                     isEditing ? 'Edit Item' : 'Add Item',
                     style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.w800),
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -1815,7 +1812,9 @@ class _AddShopItemDialogState extends ConsumerState<_AddShopItemDialog> {
                           backgroundColor: const Color(0xFFD19A1A),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 12),
+                            horizontal: 14,
+                            vertical: 12,
+                          ),
                         ),
                       ),
                     ],
@@ -1951,7 +1950,8 @@ class _AddShopItemDialogState extends ConsumerState<_AddShopItemDialog> {
                                         width: 16,
                                         height: 16,
                                         child: CircularProgressIndicator(
-                                            strokeWidth: 2),
+                                          strokeWidth: 2,
+                                        ),
                                       )
                                     : const Text('Create'),
                               ),
@@ -1973,10 +1973,12 @@ class _AddShopItemDialogState extends ConsumerState<_AddShopItemDialog> {
                               border: OutlineInputBorder(),
                             ),
                             items: categories
-                                .map((c) => DropdownMenuItem(
-                                      value: c.id,
-                                      child: Text(c.name),
-                                    ))
+                                .map(
+                                  (c) => DropdownMenuItem(
+                                    value: c.id,
+                                    child: Text(c.name),
+                                  ),
+                                )
                                 .toList(),
                             onChanged: (v) {
                               if (v == null) return;
@@ -1997,7 +1999,9 @@ class _AddShopItemDialogState extends ConsumerState<_AddShopItemDialog> {
                             backgroundColor: const Color(0xFF1E3A8A),
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 14),
+                              horizontal: 12,
+                              vertical: 14,
+                            ),
                           ),
                         ),
                       ],
@@ -2021,7 +2025,8 @@ class _AddShopItemDialogState extends ConsumerState<_AddShopItemDialog> {
                         child: TextFormField(
                           controller: _priceController,
                           keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true),
+                            decimal: true,
+                          ),
                           decoration: const InputDecoration(
                             labelText: 'Price',
                             border: OutlineInputBorder(),
@@ -2084,8 +2089,10 @@ class _AddShopItemDialogState extends ConsumerState<_AddShopItemDialog> {
                                 !categories.any((c) => c.id == _categoryId)) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                    content:
-                                        Text('Please select a valid category')),
+                                  content: Text(
+                                    'Please select a valid category',
+                                  ),
+                                ),
                               );
                               return;
                             }
