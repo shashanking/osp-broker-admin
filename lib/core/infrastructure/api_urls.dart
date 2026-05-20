@@ -1,5 +1,5 @@
 class ApiUrls {
-  static const String baseUrl = 'https://sayanchoudhuryofficial.in/api';
+  static const String baseUrl = 'https://totowalla.in/api';
   // Prod url
   // static const String baseUrl = 'https://api.myprimenetwork.com/api';
   // local development
