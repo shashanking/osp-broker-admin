@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:osp_broker_admin/features/bd_scraper/data/scraper_repository.dart';
 import 'package:osp_broker_admin/features/bd_scraper/domain/scraper_models.dart';
+export 'package:osp_broker_admin/features/bd_scraper/domain/scraper_models.dart' show ScraperSource;
 
 // ---------- Jobs ----------
 
@@ -72,14 +73,42 @@ class ScraperJobsNotifier extends StateNotifier<ScraperJobsState> {
     String? state,
     String? city,
     int targetCount = 25,
+    List<String>? sources,
   }) async {
-    final job = await _repo.createJob(category: category, state: state, city: city, targetCount: targetCount);
+    final job = await _repo.createJob(
+      category: category,
+      state: state,
+      city: city,
+      targetCount: targetCount,
+      sources: sources,
+    );
     // optimistic prepend
     this.state = this.state.copyWith(jobs: [job, ...this.state.jobs]);
     _maybeStartPolling();
     return job;
   }
 }
+
+// Available scrape sources — fetched once on dialog open. Refreshable.
+class ScraperSourcesNotifier extends StateNotifier<AsyncValue<List<ScraperSource>>> {
+  final ScraperRepository _repo;
+  ScraperSourcesNotifier(this._repo) : super(const AsyncValue.loading()) {
+    load();
+  }
+  Future<void> load() async {
+    state = const AsyncValue.loading();
+    try {
+      state = AsyncValue.data(await _repo.listSources());
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+}
+
+final scraperSourcesProvider =
+    StateNotifierProvider<ScraperSourcesNotifier, AsyncValue<List<ScraperSource>>>(
+  (ref) => ScraperSourcesNotifier(ref.watch(scraperRepositoryProvider)),
+);
 
 final scraperJobsProvider = StateNotifierProvider<ScraperJobsNotifier, ScraperJobsState>((ref) {
   return ScraperJobsNotifier(ref.watch(scraperRepositoryProvider));

@@ -23,6 +23,8 @@ class _StartScrapeDialogState extends ConsumerState<StartScrapeDialog> {
   int _target = 25;
   bool _submitting = false;
   String? _error;
+  // Source ids the admin has selected. Null = "let backend pick all".
+  final Set<String> _sources = {};
 
   @override
   void dispose() {
@@ -40,6 +42,7 @@ class _StartScrapeDialogState extends ConsumerState<StartScrapeDialog> {
             state: _state,
             city: _cityCtrl.text.trim().isEmpty ? null : _cityCtrl.text.trim(),
             targetCount: _target,
+            sources: _sources.isEmpty ? null : _sources.toList(),
           );
       if (!mounted) return;
       Navigator.of(context).pop(true);
@@ -103,6 +106,17 @@ class _StartScrapeDialogState extends ConsumerState<StartScrapeDialog> {
                 ),
                 SizedBox(width: 40, child: Text('$_target', textAlign: TextAlign.end)),
               ]),
+              const SizedBox(height: 12),
+              _SourcePicker(
+                selected: _sources,
+                onToggle: (id) => setState(() {
+                  if (_sources.contains(id)) {
+                    _sources.remove(id);
+                  } else {
+                    _sources.add(id);
+                  }
+                }),
+              ),
               if (_error != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 12),
@@ -119,6 +133,59 @@ class _StartScrapeDialogState extends ConsumerState<StartScrapeDialog> {
           child: _submitting
               ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
               : const Text('Start scrape'),
+        ),
+      ],
+    );
+  }
+}
+
+// Multi-select chip group for scrape sources. If the user picks none, the
+// dialog sends `null` and the backend defaults to "run every ready adapter".
+class _SourcePicker extends ConsumerWidget {
+  final Set<String> selected;
+  final void Function(String id) onToggle;
+  const _SourcePicker({required this.selected, required this.onToggle});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sources = ref.watch(scraperSourcesProvider);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text('Sources', style: TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(width: 8),
+            Text(
+              selected.isEmpty ? '(all ready adapters)' : '(${selected.length} selected)',
+              style: const TextStyle(fontSize: 12, color: Colors.black54),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        sources.when(
+          loading: () => const Padding(
+            padding: EdgeInsets.all(8),
+            child: SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+          ),
+          error: (err, _) => Text('Failed to load sources: $err', style: const TextStyle(color: Colors.red, fontSize: 12)),
+          data: (items) => Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: items.map((s) {
+              final isSelected = selected.contains(s.id);
+              return FilterChip(
+                label: Text(
+                  s.label,
+                  style: TextStyle(color: s.ready ? null : Colors.grey),
+                ),
+                selected: isSelected,
+                onSelected: s.ready ? (_) => onToggle(s.id) : null,
+                avatar: s.ready ? null : const Icon(Icons.lock_outline, size: 14, color: Colors.grey),
+                tooltip: s.ready ? null : 'Adapter not configured (missing API key)',
+              );
+            }).toList(),
+          ),
         ),
       ],
     );

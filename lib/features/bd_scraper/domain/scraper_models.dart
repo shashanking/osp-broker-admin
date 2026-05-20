@@ -235,3 +235,15 @@ class PagedList<T> {
     required this.pageSize,
   });
 }
+
+class ScraperSource {
+  final String id;       // "brave-directories" | "usa-spending" | "sam-gov"
+  final String label;
+  final bool ready;
+  const ScraperSource({required this.id, required this.label, required this.ready});
+  factory ScraperSource.fromJson(Map<String, dynamic> j) => ScraperSource(
+        id: j['id'] as String,
+        label: j['label'] as String? ?? j['id'] as String,
+        ready: (j['ready'] as bool?) ?? true,
+      );
+}

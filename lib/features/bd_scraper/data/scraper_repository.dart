@@ -27,6 +27,7 @@ class ScraperRepository {
     String? state,
     String? city,
     int targetCount = 25,
+    List<String>? sources,
   }) async {
     try {
       final res = await _api.post('/scraper/jobs', data: {
@@ -34,10 +35,24 @@ class ScraperRepository {
         if (state != null && state.isNotEmpty) 'locationState': state,
         if (city != null && city.isNotEmpty) 'locationCity': city,
         'targetCount': targetCount,
+        if (sources != null && sources.isNotEmpty) 'sources': sources,
       });
       return ScrapeJob.fromJson(_unwrap(res));
     } on DioException catch (e) {
       throw Exception('Failed to start scrape: ${e.response?.data?['message'] ?? e.message}');
+    }
+  }
+
+  Future<List<ScraperSource>> listSources() async {
+    try {
+      final res = await _api.get('/scraper/sources');
+      final body = res.data;
+      final data = body is Map && body['data'] is List ? body['data'] as List : <dynamic>[];
+      return data
+          .map((e) => ScraperSource.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+    } on DioException catch (e) {
+      throw Exception('Failed to load scrape sources: ${e.message}');
     }
   }
 
