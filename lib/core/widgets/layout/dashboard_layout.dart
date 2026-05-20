@@ -222,6 +222,14 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                         ),
                         _buildNavItem(
                           context,
+                          icon: Icons.travel_explore,
+                          label: 'BD Scraper',
+                          isSelected: widget.currentRoute.startsWith('/bd-scraper'),
+                          onTap: () => context.go('/bd-scraper'),
+                          isTablet: shouldCollapseSidebar,
+                        ),
+                        _buildNavItem(
+                          context,
                           icon: Icons.shopping_cart,
                           label: 'Shop',
                           isSelected: widget.currentRoute.startsWith('/shop'),

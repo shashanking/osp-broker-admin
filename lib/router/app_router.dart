@@ -9,6 +9,7 @@ import 'package:osp_broker_admin/features/auction/presentation/auction_screen.da
 import 'package:osp_broker_admin/features/auth/application/auth_notifier.dart';
 import 'package:osp_broker_admin/features/auth/domain/auth_state.dart';
 import 'package:osp_broker_admin/features/auth/presentation/login_page.dart';
+import 'package:osp_broker_admin/features/bd_scraper/presentation/bd_scraper_page.dart';
 import 'package:osp_broker_admin/features/business_directories/presentation/pages/business_directories.dart';
 import 'package:osp_broker_admin/features/chat/presentation/pages/all_chats_screen.dart';
 import 'package:osp_broker_admin/features/chat/presentation/pages/chat_list_screen.dart';
@@ -193,6 +194,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           // Business Directories section
           goRouteBusinessDirectories,
 
+          // BD Scraper (admin tool to discover + import US businesses)
+          goRouteBdScraper,
+
           // Shop section
           goRouteShop,
 
@@ -238,6 +242,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               state.matchedLocation.startsWith('/forums') ||
               state.matchedLocation.startsWith('/users') ||
               state.matchedLocation.startsWith('/business-directories') ||
+              state.matchedLocation.startsWith('/bd-scraper') ||
               state.matchedLocation.startsWith('/auctions') ||
               state.matchedLocation.startsWith('/chat') ||
               state.matchedLocation.startsWith('/all-chats') ||
