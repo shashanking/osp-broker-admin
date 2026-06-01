@@ -28,7 +28,9 @@ class BusinessModel with _$BusinessModel {
     required String companyType,
     required String foundedYear,
     required String history,
-    required HQLocation hqLocation,
+    // Optional: scraped/unclaimed businesses have no HQ location yet, and the
+    // owner fills it on claim. Null or partial values must not break parsing.
+    HQLocation? hqLocation,
     required List<String> servingAreas,
     required List<String> keyPeople,
     required List<String> ownership,
@@ -52,9 +54,9 @@ class BusinessModel with _$BusinessModel {
 @freezed
 class HQLocation with _$HQLocation {
   const factory HQLocation({
-    required String city,
-    required String country,
-    required String address,
+    @Default('') String city,
+    @Default('') String country,
+    @Default('') String address,
   }) = _HQLocation;
 
   factory HQLocation.fromJson(Map<String, dynamic> json) =>
