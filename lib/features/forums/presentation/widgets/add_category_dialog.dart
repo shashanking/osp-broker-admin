@@ -58,17 +58,10 @@ class _AddCategoryDialogState extends ConsumerState<AddCategoryDialog> {
             'membership_access': [..._selectedMembershipPlanIds],
           },
         );
-      } else {
-        // Create new category
-        await ref.read(forumAdminNotifierProvider.notifier).createCategory(
-          name: _nameController.text.trim(),
-          description: _descriptionController.text.trim(),
-          moderatorId: null, // No moderator needed
-          icon:
-              'https://ui-avatars.com/api/?name=${_nameController.text.trim().replaceAll(' ', '+')}&background=random',
-          membershipAccess: [..._selectedMembershipPlanIds],
-        );
       }
+      // Category creation is no longer supported (channels are fixed and
+      // membership-bound). This dialog is now used only to edit existing
+      // categories; the create path has been removed.
 
       if (mounted) {
         Navigator.of(context).pop(true);

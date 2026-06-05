@@ -202,28 +202,24 @@ class ForumRepository {
     }
   }
 
-  // Category CRUD
-  Future<Category> createCategory({
-    required String name,
-    required String description,
-    String? moderatorId,
-    required String icon,
-    required List<String> membershipAccess,
-  }) async {
-    final response = await _apiService.post(
-      '/forum/category',
-      requireAuth: true,
-      data: {
-        'name': name,
-        'description': description,
-        if (moderatorId != null) 'moderatorId': moderatorId,
-        'icon': icon,
-        'membership_access': membershipAccess,
-      },
-    );
-    return Category.fromJson(response.data['data']['Category']);
+  // Channels are fixed (membership-bound). Read-only listing.
+  Future<List<Channel>> fetchChannels() async {
+    final response = await _apiService.get('/forum/channels');
+    final channelsData = response.data['data']['channels'];
+
+    if (channelsData is List) {
+      return channelsData
+          .map((json) => Channel.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } else if (channelsData is Map<String, dynamic>) {
+      return [Channel.fromJson(channelsData)];
+    } else {
+      throw Exception(
+          'Unexpected channels data type: ${channelsData.runtimeType}');
+    }
   }
 
+  // Category CRUD
   Future<Category> updateCategory(
     String id, {
     required Map<String, dynamic> data,
@@ -244,27 +240,6 @@ class ForumRepository {
   }
 
   // Forum CRUD
-  Future<Forum> createForum({
-    required String title,
-    required String description,
-    required String author,
-    required String categoryId,
-    required String userId,
-  }) async {
-    final response = await _apiService.post(
-      '/forum',
-      requireAuth: true,
-      data: {
-        'title': title,
-        'description': description,
-        'author': author,
-        'categoryId': categoryId,
-        'userId': userId,
-      },
-    );
-    return Forum.fromJson(response.data['data']['forum']);
-  }
-
   Future<Forum> updateForum({
     required String forumId,
     required String title,

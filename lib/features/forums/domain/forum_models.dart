@@ -146,6 +146,53 @@ class Topic with _$Topic {
   }
 }
 
+/// Read-only model for a membership-bound forum Channel.
+/// Plain (non-freezed) class so it needs no codegen.
+class Channel {
+  final String id;
+  final String name;
+  final String slug;
+  final int level;
+  final bool isPublic;
+  final bool hasAccess;
+  final int topicCount;
+  final int commentCount;
+  final int viewCount;
+  final int likeCount;
+  final DateTime createdAt;
+
+  const Channel({
+    required this.id,
+    required this.name,
+    required this.slug,
+    required this.level,
+    required this.isPublic,
+    required this.hasAccess,
+    required this.topicCount,
+    required this.commentCount,
+    required this.viewCount,
+    required this.likeCount,
+    required this.createdAt,
+  });
+
+  factory Channel.fromJson(Map<String, dynamic> json) {
+    return Channel(
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      slug: json['slug'] as String? ?? '',
+      level: json['level'] as int? ?? 0,
+      isPublic: json['isPublic'] as bool? ?? false,
+      hasAccess: json['hasAccess'] as bool? ?? false,
+      topicCount: json['topicCount'] as int? ?? 0,
+      commentCount: json['commentCount'] as int? ?? 0,
+      viewCount: json['viewCount'] as int? ?? 0,
+      likeCount: json['likeCount'] as int? ?? 0,
+      createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
+          DateTime(2000),
+    );
+  }
+}
+
 @freezed
 class Announcement with _$Announcement {
   const factory Announcement({

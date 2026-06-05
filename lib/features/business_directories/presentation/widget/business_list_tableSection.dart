@@ -86,9 +86,9 @@ class _BusinessListTableSectionState
     if (contains(business.industry)) return true;
     if (contains(business.companyType)) return true;
     if (contains(business.slogan)) return true;
-    if (contains(business.hqLocation.city)) return true;
-    if (contains(business.hqLocation.country)) return true;
-    if (contains(business.hqLocation.address)) return true;
+    if (contains(business.hqLocation?.city)) return true;
+    if (contains(business.hqLocation?.country)) return true;
+    if (contains(business.hqLocation?.address)) return true;
     if (business.products.any((p) => contains(p))) return true;
     if (business.services.any((s) => contains(s))) return true;
     if (business.servingAreas.any((a) => contains(a))) return true;
@@ -174,10 +174,11 @@ class _BusinessListTableSectionState
                           _detailBlock('Mission', business.mission),
                           _detailBlock('History', business.history),
                           const SizedBox(height: 12),
-                          _detailRow('HQ City', business.hqLocation.city),
-                          _detailRow('HQ Country', business.hqLocation.country),
+                          _detailRow('HQ City', business.hqLocation?.city ?? ''),
+                          _detailRow('HQ Country',
+                              business.hqLocation?.country ?? ''),
                           _detailBlock(
-                              'HQ Address', business.hqLocation.address),
+                              'HQ Address', business.hqLocation?.address ?? ''),
                           const SizedBox(height: 12),
                           _detailBlock(
                             'Products',
@@ -608,8 +609,8 @@ class _BusinessListTableSectionState
         ? const Color(0xFF80C02A).withOpacity(0.2)
         : const Color(0xFFD59823).withOpacity(0.2);
 
-    final hqCity = business.hqLocation.city;
-    final hqCountry = business.hqLocation.country;
+    final hqCity = business.hqLocation?.city ?? '';
+    final hqCountry = business.hqLocation?.country ?? '';
     final ispText = business.isIsp ? 'Yes' : 'No';
     final productsText = _previewList(business.products);
     final servicesText = _previewList(business.services);

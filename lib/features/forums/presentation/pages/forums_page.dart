@@ -10,12 +10,10 @@ import 'package:osp_broker_admin/features/reports/application/reports_notifier.d
 import 'package:osp_broker_admin/features/reports/presentation/widgets/reports_table.dart';
 
 import '../../application/forum_admin_notifier.dart';
-import '../widgets/add_category_dialog.dart';
-import '../widgets/add_forum_dialog.dart';
 import '../widgets/announcements_dialog.dart';
 import '../widgets/events_dialog.dart';
 import '../widgets/forum_categories_table.dart';
-import '../widgets/forum_forums_table.dart';
+import '../widgets/forum_channels_table.dart';
 import '../widgets/forum_tabs.dart';
 import '../widgets/forum_topics_table.dart';
 import '../widgets/polls_dialog.dart';
@@ -47,6 +45,7 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
       // Load all required data in parallel
       await Future.wait([
         notifier.loadForums(),
+        notifier.loadChannels(),
         notifier.loadCategories(),
         notifier.loadModerators(),
         notifier.loadMembershipPlans(),
@@ -136,7 +135,7 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
                                 setState(() => _selectedTab = idx),
                             badges: [
                               '', // No badge for categories
-                              forums.length.toString(),
+                              forumState.channels.length.toString(),
                               forumState.topics.length.toString(),
                               canViewReports
                                   ? ref
@@ -265,9 +264,8 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
                                         child: CircularProgressIndicator())
                                     : error != null
                                         ? Center(child: Text('Error: $error'))
-                                        : ForumForumsTable(
-                                            forums: forums,
-                                            categories: categories)
+                                        : ForumChannelsTable(
+                                            channels: forumState.channels)
                                 : _selectedTab == 2
                                     ? isLoading
                                         ? const Center(
@@ -406,42 +404,6 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
       crossAxisSpacing: 16,
       childAspectRatio: childAspectRatio,
       children: [
-        HoverActionCard(
-          assetName: 'add-category.png',
-          title: 'Add Category',
-          onTap: () async {
-            final result = await showDialog<bool>(
-              context: context,
-              builder: (ctx) => const AddCategoryDialog(),
-            );
-            if (result == true) {
-              await ref
-                  .read(forumAdminNotifierProvider.notifier)
-                  .loadCategories();
-            }
-          },
-          iconColor: Colors.blue,
-          titleColor: Colors.black,
-          lightGradient: gradients[0]['light'] as Gradient,
-          darkGradient: gradients[0]['dark'] as Gradient,
-        ),
-        HoverActionCard(
-          assetName: 'add-poll.png',
-          title: 'Create Forum',
-          onTap: () async {
-            final result = await showDialog<bool>(
-              context: context,
-              builder: (ctx) => const AddForumDialog(),
-            );
-            if (result == true) {
-              await ref.read(forumAdminNotifierProvider.notifier).loadForums();
-            }
-          },
-          iconColor: const Color(0xFF25B4DC),
-          titleColor: Colors.black,
-          lightGradient: gradients[2]['light'] as Gradient,
-          darkGradient: gradients[2]['dark'] as Gradient,
-        ),
         HoverActionCard(
           assetName: 'add-poll.png',
           title: 'Announcements',

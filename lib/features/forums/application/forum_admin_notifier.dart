@@ -21,6 +21,7 @@ class ForumAdminState with _$ForumAdminState {
     String? error,
     @Default(<Category>[]) List<Category> categories,
     @Default(<Forum>[]) List<Forum> forums,
+    @Default(<Channel>[]) List<Channel> channels,
     @Default(<Topic>[]) List<Topic> topics,
     @Default(<Announcement>[]) List<Announcement> announcements,
     @Default(<Event>[]) List<Event> events,
@@ -43,6 +44,7 @@ class ForumAdminState with _$ForumAdminState {
         error: null,
         categories: [],
         forums: [],
+        channels: [],
         topics: [],
         announcements: [],
         events: [],
@@ -119,57 +121,14 @@ class ForumAdminNotifier extends StateNotifier<ForumAdminState> {
     }
   }
 
-  Future<Category> createCategory({
-    required String name,
-    required String description,
-    String? moderatorId,
-    required String icon,
-    required List<String> membershipAccess,
-  }) async {
+  // Channels (read-only, membership-bound). Channels are fixed; no create path.
+  Future<void> loadChannels() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final newCategory = await _repository.createCategory(
-        name: name,
-        description: description,
-        moderatorId: moderatorId,
-        icon: icon,
-        membershipAccess: membershipAccess,
-      );
-      state = state.copyWith(
-        categories: [...state.categories, newCategory],
-        isLoading: false,
-      );
-      return newCategory;
+      final channels = await _repository.fetchChannels();
+      state = state.copyWith(channels: channels, isLoading: false);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
-      rethrow;
-    }
-  }
-
-  Future<Forum> createForum({
-    required String title,
-    required String description,
-    required String author,
-    required String categoryId,
-    required String userId,
-  }) async {
-    state = state.copyWith(isLoading: true, error: null);
-    try {
-      final newForum = await _repository.createForum(
-        title: title,
-        description: description,
-        author: author,
-        categoryId: categoryId,
-        userId: userId,
-      );
-      state = state.copyWith(
-        forums: [...state.forums, newForum],
-        isLoading: false,
-      );
-      return newForum;
-    } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
-      rethrow;
     }
   }
 
