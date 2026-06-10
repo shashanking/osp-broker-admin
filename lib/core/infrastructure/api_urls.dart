@@ -1,8 +1,8 @@
 class ApiUrls {
   // local development
-  static const String baseUrl = 'http://localhost:3000/api';
+  // static const String baseUrl = 'http://localhost:3000/api';
   // Staging/prod
-  // static const String baseUrl = 'https://totowalla.in/api';
+  static const String baseUrl = 'https://totowalla.in/api';
   // static const String baseUrl = 'https://api.myprimenetwork.com/api';
 
   static const String login = '/auth/login';
