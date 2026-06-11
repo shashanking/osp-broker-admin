@@ -299,9 +299,14 @@ class _UserRow extends ConsumerWidget {
                                 ElevatedButton(
                                   onPressed: () async {
                                     Navigator.of(ctx).pop();
-                                    await ref
-                                        .read(userNotifierProvider.notifier)
-                                        .banUser(user.id);
+                                    final notifier = ref
+                                        .read(userNotifierProvider.notifier);
+                                    // currently banned → unban; otherwise ban
+                                    if (user.isBanned) {
+                                      await notifier.unbanUser(user.id);
+                                    } else {
+                                      await notifier.banUser(user.id);
+                                    }
                                   },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: user.isBanned

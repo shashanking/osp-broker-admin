@@ -540,9 +540,14 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
 
                     if (confirmed == true && mounted) {
                       try {
-                        await ref
-                            .read(userNotifierProvider.notifier)
-                            .banUser(widget.userId);
+                        // currently banned → unban; otherwise ban
+                        final notifier =
+                            ref.read(userNotifierProvider.notifier);
+                        if (_userProfile!.isBanned) {
+                          await notifier.unbanUser(widget.userId);
+                        } else {
+                          await notifier.banUser(widget.userId);
+                        }
                         _loadUserData(); // Reload data
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(

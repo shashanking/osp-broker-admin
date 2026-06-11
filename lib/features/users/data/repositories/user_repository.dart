@@ -18,6 +18,14 @@ class UserRepository {
     return UserModel.fromJson(response.data['data']);
   }
 
+  Future<UserModel> unbanUser(String userId) async {
+    final response = await apiService.post(
+      '/moderator/unbanUser/$userId',
+      requireAuth: true,
+    );
+    return UserModel.fromJson(response.data['data']);
+  }
+
   Future<bool> deleteUser(String userId) async {
     final response = await apiService.delete(
       '/user/$userId',

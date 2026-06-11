@@ -1,83 +1,63 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:osp_broker_admin/features/dashboard/domain/activity.dart' show Activity, ActivityType;
-import 'package:osp_broker_admin/features/dashboard/domain/dashboard_stats.dart' show DashboardStat;
+import 'package:osp_broker_admin/core/infrastructure/base_api_service.dart';
+import 'package:osp_broker_admin/features/dashboard/domain/activity.dart'
+    show Activity, ActivityType;
+import 'package:osp_broker_admin/features/dashboard/domain/dashboard_stats.dart'
+    show DashboardStat;
 import 'package:osp_broker_admin/features/dashboard/domain/dashboard_state.dart';
 
 final dashboardNotifierProvider =
     StateNotifierProvider<DashboardNotifier, DashboardState>(
-  (ref) => DashboardNotifier(),
+  (ref) => DashboardNotifier(ref.watch(baseApiServiceProvider)),
 );
 
 class DashboardNotifier extends StateNotifier<DashboardState> {
-  DashboardNotifier() : super(const DashboardState()) {
-    // Load initial data
+  final BaseApiService _api;
+
+  DashboardNotifier(this._api) : super(const DashboardState()) {
     loadDashboardData();
   }
 
   Future<void> loadDashboardData() async {
     state = state.copyWith(isLoading: true);
-    
+
     try {
-      // Simulate API calls
-      await Future.delayed(const Duration(seconds: 1));
-      
-      // Mock stats data
-      final stats = [
-        DashboardStat(
-          label: 'Total Users',
-          value: '1,234',
-          change: '+12%',
-          isPositive: true,
-        ),
-        DashboardStat(
-          label: 'Active Now',
-          value: '256',
-          change: '+5%',
-          isPositive: true,
-        ),
+      // Real metrics from GET /admin/dashboard/stats (was hardcoded mock data).
+      final response = await _api.get('/admin/dashboard/stats', requireAuth: true);
+      final data = response.data['data'] as Map<String, dynamic>;
+      final s = (data['stats'] as Map<String, dynamic>? ?? {});
+
+      String n(dynamic v) => (v ?? 0).toString();
+
+      final stats = <DashboardStat>[
+        DashboardStat(label: 'Total Users', value: n(s['totalUsers'])),
+        DashboardStat(label: 'Active Memberships', value: n(s['activeMemberships'])),
+        DashboardStat(label: 'Businesses', value: n(s['totalBusinesses'])),
+        DashboardStat(label: 'Auctions', value: n(s['totalAuctions'])),
+        DashboardStat(label: 'Pending Scrapes', value: n(s['pendingScrapedBusinesses'])),
+        DashboardStat(label: 'Banned Users', value: n(s['bannedUsers'])),
+        DashboardStat(label: 'RFPs', value: n(s['totalRFPs'])),
         DashboardStat(
           label: 'Revenue',
-          value: '\$12,345',
-          change: '+8.5%',
-          isPositive: true,
-        ),
-        DashboardStat(
-          label: 'New Orders',
-          value: '56',
-          change: '-2%',
-          isPositive: false,
+          value: '\$${n(s['totalRevenue'])}',
         ),
       ];
 
-      // Mock activities data
-      final now = DateTime.now();
-      final activities = [
-        Activity(
-          id: '1',
-          description: 'New user registered: John Doe',
-          timestamp: now.subtract(const Duration(minutes: 5)),
+      // Recent activity from real recent signups.
+      final recentUsers = (data['recentUsers'] as List?) ?? const [];
+      final activities = recentUsers.map<Activity>((u) {
+        final m = u as Map<String, dynamic>;
+        return Activity(
+          id: m['id']?.toString() ?? '',
+          description: 'New user registered: ${m['fullName'] ?? m['email'] ?? 'Unknown'}',
+          timestamp: m['createdAt'] != null
+              ? (DateTime.tryParse(m['createdAt'].toString()) ?? DateTime.now())
+              : DateTime.now(),
           type: ActivityType.user,
-          userId: 'user123',
-          userName: 'John Doe',
-        ),
-        Activity(
-          id: '2',
-          description: 'Payment received: \$120.00',
-          timestamp: now.subtract(const Duration(hours: 2)),
-          type: ActivityType.payment,
-        ),
-        Activity(
-          id: '3',
-          description: 'System maintenance completed',
-          timestamp: now.subtract(const Duration(hours: 5)),
-          type: ActivityType.system,
-        ),
-        Activity(
-          id: '4',
-          description: 'New order #1234 placed',
-          timestamp: now.subtract(const Duration(days: 1)),
-        ),
-      ];
+          userId: m['id']?.toString(),
+          userName: m['fullName']?.toString(),
+        );
+      }).toList();
 
       state = state.copyWith(
         isLoading: false,
@@ -85,8 +65,8 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
         activities: activities,
       );
     } catch (e) {
+      // Surface an empty-but-not-crashing dashboard on failure.
       state = state.copyWith(isLoading: false);
-      rethrow;
     }
   }
 }

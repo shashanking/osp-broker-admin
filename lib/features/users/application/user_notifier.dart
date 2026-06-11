@@ -126,6 +126,18 @@ class UserNotifier extends StateNotifier<UserState> {
     }
   }
 
+  Future<void> unbanUser(String userId) async {
+    try {
+      final updatedUser = await repository.unbanUser(userId);
+      final updatedUsers = state.users
+          .map((u) => u.id == updatedUser.id ? updatedUser : u)
+          .toList();
+      state = state.copyWith(users: updatedUsers);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
+  }
+
   Future<void> loadUsers() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
