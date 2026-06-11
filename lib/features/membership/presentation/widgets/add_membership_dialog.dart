@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/membership_notifier.dart';
+import 'tier_limits_form_section.dart';
 
 class AddMembershipDialog extends ConsumerStatefulWidget {
   const AddMembershipDialog({super.key});
@@ -11,6 +12,7 @@ class AddMembershipDialog extends ConsumerStatefulWidget {
 
 class _AddMembershipDialogState extends ConsumerState<AddMembershipDialog> {
   final _formKey = GlobalKey<FormState>();
+  final _tierLimitsKey = GlobalKey<TierLimitsFormSectionState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _priceController = TextEditingController();
@@ -43,6 +45,7 @@ class _AddMembershipDialogState extends ConsumerState<AddMembershipDialog> {
             billingCycle: _selectedBillingCycle,
             features: _featuresController.text.split(',').map((f) => f.trim()).toList(),
             duration: _selectedBillingCycle == 'monthly' ? 30 : _selectedBillingCycle == 'yearly' ? 365 : 90,
+            policy: _tierLimitsKey.currentState?.toPolicy(),
           );
       if (mounted) {
         Navigator.of(context).pop();
@@ -160,6 +163,7 @@ class _AddMembershipDialogState extends ConsumerState<AddMembershipDialog> {
                   return null;
                 },
               ),
+              TierLimitsFormSection(key: _tierLimitsKey),
             ],
           ),
         ),

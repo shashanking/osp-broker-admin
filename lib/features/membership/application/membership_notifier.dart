@@ -45,6 +45,7 @@ class MembershipNotifier extends StateNotifier<MembershipState> {
     required String billingCycle,
     required List<String> features,
     required int duration,
+    Map<String, dynamic>? policy,
   }) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
@@ -55,6 +56,7 @@ class MembershipNotifier extends StateNotifier<MembershipState> {
         billingCycle: billingCycle,
         features: features,
         duration: duration,
+        policy: policy,
       );
       state = state.copyWith(
         plans: [newPlan, ...state.plans],
@@ -93,6 +95,7 @@ class MembershipNotifier extends StateNotifier<MembershipState> {
     required double price,
     required String billingCycle,
     required List<String> features,
+    Map<String, dynamic>? policy,
   }) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
@@ -103,6 +106,7 @@ class MembershipNotifier extends StateNotifier<MembershipState> {
         price: price,
         billingCycle: billingCycle,
         features: features,
+        policy: policy,
       );
       state = state.copyWith(
         plans: state.plans.map((plan) =>

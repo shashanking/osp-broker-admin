@@ -32,6 +32,7 @@ class MembershipRepository {
     required String billingCycle,
     required List<String> features,
     required int duration,
+    Map<String, dynamic>? policy, // tier/level/limit fields, validated server-side
   }) async {
     try {
       final requestData = {
@@ -41,6 +42,7 @@ class MembershipRepository {
         'billingCycle': billingCycle,
         'features': features,
         'duration': duration,
+        ...?policy,
       };
       print('Creating new membership plan with data: $requestData');
       
@@ -82,6 +84,7 @@ class MembershipRepository {
     required double price,
     required String billingCycle,
     required List<String> features,
+    Map<String, dynamic>? policy, // tier/level/limit fields, validated server-side
   }) async {
     try {
       print('Updating membership plan with ID: $id');
@@ -91,6 +94,7 @@ class MembershipRepository {
         'price': price,
         'billingCycle': billingCycle,
         'features': features,
+        ...?policy,
       };
       print('Request data: $requestData');
       
