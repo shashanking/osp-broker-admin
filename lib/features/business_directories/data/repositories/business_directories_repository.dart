@@ -148,8 +148,9 @@ class BusinessDirectoriesRepository {
   /// Fetch all businesses
   Future<BusinessListResponse> fetchAllBusinesses() async {
     try {
-      log('Making request to /business endpoint...');
-      final response = await _apiService.get('/business');
+      log('Making request to /business/admin/all endpoint...');
+      // Admin list includes banned businesses so they can be managed/unbanned.
+      final response = await _apiService.get('/business/admin/all');
       
       if (response.data == null) {
         log('API response is null');
@@ -197,6 +198,33 @@ class BusinessDirectoriesRepository {
       await _apiService.post('/business/$businessId', requireAuth: true);
     } on DioException catch (e) {
       throw Exception('Failed to verify business: ${e.message}');
+    }
+  }
+
+  /// Permanently deletes a business (hard delete).
+  Future<void> deleteBusiness(String businessId) async {
+    try {
+      await _apiService.delete('/business/$businessId', requireAuth: true);
+    } on DioException catch (e) {
+      throw Exception('Failed to delete business: ${e.message}');
+    }
+  }
+
+  /// Bans a business (soft delete — hidden from all user-facing views).
+  Future<void> banBusiness(String businessId) async {
+    try {
+      await _apiService.post('/business/ban/$businessId', requireAuth: true);
+    } on DioException catch (e) {
+      throw Exception('Failed to ban business: ${e.message}');
+    }
+  }
+
+  /// Unbans a business (restores user-facing visibility).
+  Future<void> unbanBusiness(String businessId) async {
+    try {
+      await _apiService.post('/business/unban/$businessId', requireAuth: true);
+    } on DioException catch (e) {
+      throw Exception('Failed to unban business: ${e.message}');
     }
   }
 

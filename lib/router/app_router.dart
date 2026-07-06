@@ -14,6 +14,7 @@ import 'package:osp_broker_admin/features/business_directories/presentation/page
 import 'package:osp_broker_admin/features/chat/presentation/pages/all_chats_screen.dart';
 import 'package:osp_broker_admin/features/chat/presentation/pages/chat_list_screen.dart';
 import 'package:osp_broker_admin/features/chat/presentation/pages/chat_screen.dart';
+import 'package:osp_broker_admin/features/cms/presentation/pages/cms_page.dart';
 import 'package:osp_broker_admin/features/dashboard/presentation/dashboard_page.dart';
 import 'package:osp_broker_admin/features/forums/presentation/pages/forums_page.dart';
 import 'package:osp_broker_admin/features/membership/presentation/pages/membership_page.dart';
@@ -21,6 +22,7 @@ import 'package:osp_broker_admin/features/rfp/presentation/pages/rfp_detail_page
 import 'package:osp_broker_admin/features/rfp/presentation/pages/rfps_page.dart';
 import 'package:osp_broker_admin/features/settings/presentation/settings_page.dart';
 import 'package:osp_broker_admin/features/shop/presentation/pages/shop_page.dart';
+import 'package:osp_broker_admin/features/orders/presentation/pages/orders_page.dart';
 import 'package:osp_broker_admin/features/splash/presentation/splash_page.dart';
 import 'package:osp_broker_admin/features/users/presentation/pages/memberships_page.dart';
 import 'package:osp_broker_admin/features/users/presentation/pages/users_page.dart';
@@ -200,6 +202,24 @@ final routerProvider = Provider<GoRouter>((ref) {
           // Shop section
           goRouteShop,
 
+          // Orders & receipts section
+          GoRoute(
+            path: '/orders',
+            name: 'orders',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: OrdersPage(),
+            ),
+          ),
+
+          // Website content (CMS) section
+          GoRoute(
+            path: '/cms',
+            name: 'cms',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: CmsPage(),
+            ),
+          ),
+
           // RFPs section
           GoRoute(
             path: AppRoute.rfps.path,
@@ -248,6 +268,8 @@ final routerProvider = Provider<GoRouter>((ref) {
               state.matchedLocation.startsWith('/all-chats') ||
               state.matchedLocation.startsWith('/rfps') ||
               state.matchedLocation.startsWith('/shop') ||
+              state.matchedLocation.startsWith('/orders') ||
+              state.matchedLocation.startsWith('/cms') ||
               state.matchedLocation.startsWith('/settings');
 
       debugPrint(

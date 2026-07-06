@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:osp_broker_admin/features/users/data/models/user_model.dart';
 import 'package:osp_broker_admin/features/users/data/models/user_membership_model.dart';
 import 'package:osp_broker_admin/features/users/application/user_notifier.dart';
@@ -25,6 +26,7 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
   UserModel? _userProfile;
   List<UserMembershipModel> _memberships = [];
   Map<String, dynamic>? _profileDetails;
+  Map<String, dynamic>? _planSummary; // resolved plan + permissions + usage
   bool _isLoading = true;
   String? _error;
 
@@ -54,11 +56,16 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
           .read(userNotifierProvider.notifier)
           .fetchUserProfileDetails(widget.userId);
 
+      final planSummary = await ref
+          .read(userNotifierProvider.notifier)
+          .getUserPlanSummary(widget.userId);
+
       if (mounted) {
         setState(() {
           _userProfile = profile;
           _memberships = memberships;
           _profileDetails = profileDetails;
+          _planSummary = planSummary;
           _isLoading = false;
         });
       }
@@ -131,11 +138,19 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
                   _buildAccountInfoCard(),
                   const SizedBox(height: 24),
 
+                  // Captured GPS location
+                  _buildLocationCard(),
+                  const SizedBox(height: 24),
+
                   // Profile Details Section
                   if (_profileDetails != null) ...[
                     _buildProfileDetailsSection(),
                     const SizedBox(height: 24),
                   ],
+
+                  // Plan & Permissions (what this user can / cannot do)
+                  _buildPlanPermissionsSection(),
+                  const SizedBox(height: 24),
 
                   // Memberships Section
                   _buildMembershipsSection(),
@@ -310,6 +325,122 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
     );
   }
 
+  Widget _buildLocationCard() {
+    final u = _userProfile!;
+    final has = u.hasLocation;
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.my_location, color: Color(0xFF24439B), size: 22),
+              const SizedBox(width: 8),
+              const Text(
+                'GPS Location',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const Spacer(),
+              if (!has)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Text('Not captured',
+                      style: TextStyle(
+                          color: Colors.deepOrange,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12)),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Divider(),
+          const SizedBox(height: 16),
+          if (!has)
+            const Text(
+              'This user has no GPS location on record (legacy account or '
+              'signed up before location capture).',
+              style: TextStyle(color: Colors.black54),
+            )
+          else ...[
+            _buildInfoRow('Coordinates',
+                '${u.latitude!.toStringAsFixed(6)}, ${u.longitude!.toStringAsFixed(6)}'),
+            const SizedBox(height: 12),
+            _buildInfoRow('Address', u.locationAddress ?? 'Resolving…'),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () => _openMap(u.latitude!, u.longitude!),
+                  icon: const Icon(Icons.map, size: 18),
+                  label: const Text('View on map'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF24439B),
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                OutlinedButton.icon(
+                  onPressed: () => _openMap(u.latitude!, u.longitude!,
+                      google: true),
+                  icon: const Icon(Icons.location_pin, size: 18),
+                  label: const Text('Google Maps'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            // Embedded OpenStreetMap preview (free, no API key).
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                _osmStaticUrl(u.latitude!, u.longitude!),
+                height: 220,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // Free OpenStreetMap static preview (staticmap.openstreetmap.de).
+  String _osmStaticUrl(double lat, double lng) =>
+      'https://staticmap.openstreetmap.de/staticmap.php?center=$lat,$lng'
+      '&zoom=15&size=600x220&markers=$lat,$lng,red-pushpin';
+
+  Future<void> _openMap(double lat, double lng, {bool google = false}) async {
+    final uri = google
+        ? Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng')
+        : Uri.parse(
+            'https://www.openstreetmap.org/?mlat=$lat&mlon=$lng#map=16/$lat/$lng');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
   Widget _buildInfoRow(String label, String value) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -332,6 +463,192 @@ class _UserDetailPageState extends ConsumerState<UserDetailPage> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _sectionCard({required Widget child}) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+
+  Widget _buildPlanPermissionsSection() {
+    final s = _planSummary;
+    // Always render the card so it's discoverable; show a fallback when the
+    // resolved-permissions fetch didn't return (e.g. not logged in as ADMIN,
+    // backend unreachable, or still loading).
+    if (s == null) {
+      return _sectionCard(
+        child: Row(
+          children: [
+            const Icon(Icons.verified_user_outlined, color: Color(0xFF24439B)),
+            const SizedBox(width: 10),
+            const Expanded(
+              child: Text(
+                'Plan & Permissions',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+            Flexible(
+              child: Text(
+                _isLoading ? 'Loading…' : 'Unavailable (needs admin access)',
+                textAlign: TextAlign.right,
+                style: TextStyle(color: Colors.grey[500], fontSize: 12),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    final limits = (s['limits'] as Map?)?.cast<String, dynamic>() ?? {};
+    final usage = (s['usage'] as Map?)?.cast<String, dynamic>() ?? {};
+    final tier = (s['tier'] ?? limits['tier'] ?? 'FREE').toString();
+    final planName = (s['planName'] as String?);
+
+    String numOrUnlimited(dynamic v) => v == null ? 'Unlimited' : v.toString();
+
+    // value text + whether the capability is allowed (for the ✓/✗ icon)
+    final num? maxBid = (limits['maxAuctionBidAmount'] as num?);
+    final int? maxAuctions = (limits['maxConcurrentAuctions'] as num?)?.toInt();
+    final int? msgQuota = (limits['monthlyMessageQuota'] as num?)?.toInt();
+    final canPrivate = limits['canCreatePrivateAuction'] == true;
+    final canGift = limits['canGift'] == true;
+
+    final rows = <List<dynamic>>[
+      // label, valueText, allowed
+      [
+        'Messages / month',
+        msgQuota == null
+            ? '${usage['messagesSent'] ?? 0} sent · Unlimited'
+            : '${usage['messagesSent'] ?? 0} / $msgQuota',
+        msgQuota == null || msgQuota > 0,
+      ],
+      [
+        'PrimeMail credits (outreach)',
+        numOrUnlimited(limits['outreachCredits']) == 'Unlimited'
+            ? '${usage['outreachCreditsUsed'] ?? 0} used · Unlimited'
+            : '${usage['outreachCreditsUsed'] ?? 0} / ${limits['outreachCredits']}',
+        (limits['outreachCredits'] == null) ||
+            ((limits['outreachCredits'] as num) > 0),
+      ],
+      [
+        'Message length',
+        '${numOrUnlimited(limits['messageCharLimit'])} chars',
+        true,
+      ],
+      [
+        'Max bid amount',
+        maxBid == null
+            ? 'Unlimited'
+            : (maxBid == 0 ? 'Cannot bid' : '\$${maxBid.toString()}'),
+        maxBid == null || maxBid > 0,
+      ],
+      [
+        'Active auctions',
+        maxAuctions == null
+            ? 'Unlimited'
+            : (maxAuctions == 0 ? 'Cannot create' : 'Up to $maxAuctions'),
+        maxAuctions == null || maxAuctions > 0,
+      ],
+      ['Private auctions', canPrivate ? 'Allowed' : 'Not allowed', canPrivate],
+      ['Gifting', canGift ? 'Allowed' : 'Not allowed', canGift],
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.verified_user_outlined,
+                  color: Color(0xFF24439B)),
+              const SizedBox(width: 10),
+              const Text(
+                'Plan & Permissions',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const Spacer(),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF24439B).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  planName != null && planName.isNotEmpty
+                      ? '$tier · $planName'
+                      : '$tier (no active plan)',
+                  style: const TextStyle(
+                    color: Color(0xFF24439B),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ...rows.map((r) {
+            final label = r[0] as String;
+            final value = r[1] as String;
+            final allowed = r[2] as bool;
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                children: [
+                  Icon(
+                    allowed ? Icons.check_circle : Icons.cancel,
+                    size: 18,
+                    color: allowed ? Colors.green : Colors.grey,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(label,
+                        style: const TextStyle(
+                            fontSize: 14, color: Color(0xFF333333))),
+                  ),
+                  Text(
+                    value,
+                    style: const TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+            );
+          }),
+          const SizedBox(height: 4),
+          Text(
+            'Limits are enforced only when ENFORCE_MEMBERSHIP_LIMITS is on (server). '
+            'No active plan resolves to FREE-tier limits.',
+            style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+          ),
+        ],
+      ),
     );
   }
 

@@ -20,6 +20,11 @@ class TierLimitsFormSectionState extends State<TierLimitsFormSection> {
   String? _tier;
   late final TextEditingController _level;
   late final TextEditingController _messageQuota;
+  late final TextEditingController _dailyMessageQuota;
+  late final TextEditingController _dailyInMailQuota;
+  late final TextEditingController _dailyConnectionQuota;
+  late final TextEditingController _maxConnections;
+  late final TextEditingController _monthlyEventQuota;
   late final TextEditingController _outreachCredits;
   late final TextEditingController _messageCharLimit;
   late final TextEditingController _maxBidAmount;
@@ -34,6 +39,11 @@ class TierLimitsFormSectionState extends State<TierLimitsFormSection> {
     _tier = p?.tier;
     _level = TextEditingController(text: (p?.level ?? 0).toString());
     _messageQuota = TextEditingController(text: p?.monthlyMessageQuota?.toString() ?? '');
+    _dailyMessageQuota = TextEditingController(text: p?.dailyMessageQuota?.toString() ?? '');
+    _dailyInMailQuota = TextEditingController(text: p?.dailyInMailQuota?.toString() ?? '');
+    _dailyConnectionQuota = TextEditingController(text: p?.dailyConnectionQuota?.toString() ?? '');
+    _maxConnections = TextEditingController(text: p?.maxConnections?.toString() ?? '');
+    _monthlyEventQuota = TextEditingController(text: p?.monthlyEventQuota?.toString() ?? '');
     _outreachCredits = TextEditingController(text: p?.outreachCredits?.toString() ?? '');
     _messageCharLimit = TextEditingController(text: p?.messageCharLimit?.toString() ?? '');
     _maxBidAmount = TextEditingController(text: p?.maxAuctionBidAmount?.toString() ?? '');
@@ -46,6 +56,11 @@ class TierLimitsFormSectionState extends State<TierLimitsFormSection> {
   void dispose() {
     _level.dispose();
     _messageQuota.dispose();
+    _dailyMessageQuota.dispose();
+    _dailyInMailQuota.dispose();
+    _dailyConnectionQuota.dispose();
+    _maxConnections.dispose();
+    _monthlyEventQuota.dispose();
     _outreachCredits.dispose();
     _messageCharLimit.dispose();
     _maxBidAmount.dispose();
@@ -64,6 +79,11 @@ class TierLimitsFormSectionState extends State<TierLimitsFormSection> {
       'tier': _tier,
       'level': int.tryParse(_level.text.trim()) ?? 0,
       'monthlyMessageQuota': asInt(_messageQuota),
+      'dailyMessageQuota': asInt(_dailyMessageQuota),
+      'dailyInMailQuota': asInt(_dailyInMailQuota),
+      'dailyConnectionQuota': asInt(_dailyConnectionQuota),
+      'maxConnections': asInt(_maxConnections),
+      'monthlyEventQuota': asInt(_monthlyEventQuota),
       'outreachCredits': asInt(_outreachCredits),
       'messageCharLimit': asInt(_messageCharLimit),
       'maxAuctionBidAmount': asDouble(_maxBidAmount),
@@ -150,11 +170,30 @@ class TierLimitsFormSectionState extends State<TierLimitsFormSection> {
         const SizedBox(height: 16),
         Row(
           children: [
+            Expanded(child: _limitField(_dailyMessageQuota, 'Messages / day')),
+            const SizedBox(width: 16),
+            Expanded(child: _limitField(_dailyInMailQuota, 'PrimeMails / day')),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
             Expanded(child: _limitField(_messageCharLimit, 'Message char limit')),
             const SizedBox(width: 16),
             Expanded(child: _limitField(_maxBidAmount, 'Max bid amount (\$)')),
           ],
         ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+                child: _limitField(_dailyConnectionQuota, 'Connection requests / day')),
+            const SizedBox(width: 16),
+            Expanded(child: _limitField(_maxConnections, 'Max connections')),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _limitField(_monthlyEventQuota, 'Events / month'),
         const SizedBox(height: 16),
         _limitField(_maxAuctions, 'Max active auctions'),
         const SizedBox(height: 8),

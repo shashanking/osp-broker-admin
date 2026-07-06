@@ -18,6 +18,20 @@ class UserRepository {
     return UserModel.fromJson(response.data['data']);
   }
 
+  /// Admin: resolved plan + permissions + usage for a user (what they can/can't
+  /// do). GET /membership/usage/:userId. Returns null on failure.
+  Future<Map<String, dynamic>?> getUserPlanSummary(String userId) async {
+    try {
+      final response = await apiService.get(
+        '/membership/usage/$userId',
+        requireAuth: true,
+      );
+      return response.data['data'] as Map<String, dynamic>?;
+    } catch (e) {
+      return null;
+    }
+  }
+
   Future<UserModel> unbanUser(String userId) async {
     final response = await apiService.post(
       '/moderator/unbanUser/$userId',

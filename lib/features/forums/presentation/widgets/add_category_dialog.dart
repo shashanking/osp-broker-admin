@@ -1,3 +1,6 @@
+import 'dart:typed_data';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/forum_admin_notifier.dart';
@@ -16,7 +19,11 @@ class _AddCategoryDialogState extends ConsumerState<AddCategoryDialog> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final Set<String> _selectedMembershipPlanIds = {};
+  String _iconUrl = '';
+  // Bytes of the just-picked image, shown immediately as the preview so the user
+  // sees their selection without waiting on (or depending on) the S3 upload.
+  Uint8List? _pickedBytes;
+  bool _uploadingIcon = false;
 
   @override
   void initState() {
@@ -26,13 +33,7 @@ class _AddCategoryDialogState extends ConsumerState<AddCategoryDialog> {
     if (cat != null) {
       _nameController.text = cat.name;
       _descriptionController.text = cat.description;
-      _selectedMembershipPlanIds.clear();
-      _selectedMembershipPlanIds.addAll(cat.membershipAccess);
-    } else {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        // Load membership plans if not already loaded
-        ref.read(forumAdminNotifierProvider.notifier).loadMembershipPlans();
-      });
+      _iconUrl = cat.icon;
     }
   }
 
@@ -41,6 +42,50 @@ class _AddCategoryDialogState extends ConsumerState<AddCategoryDialog> {
     _nameController.dispose();
     _descriptionController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickAndUploadIcon() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty) return;
+    final file = result.files.first;
+    final bytes = file.bytes;
+    if (bytes == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not read selected file')),
+        );
+      }
+      return;
+    }
+
+    // Show the picked image right away, then upload in the background.
+    setState(() {
+      _pickedBytes = bytes;
+      _uploadingIcon = true;
+    });
+    try {
+      final url =
+          await ref.read(forumAdminNotifierProvider.notifier).uploadCategoryIcon(
+                bytes: bytes,
+                fileName: file.name,
+              );
+      if (mounted && url != null) {
+        setState(() => _iconUrl = url);
+      }
+    } catch (e) {
+      // Upload failed — drop the local preview so we don't imply it was saved.
+      if (mounted) setState(() => _pickedBytes = null);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Icon upload failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _uploadingIcon = false);
+    }
   }
 
   Future<void> _submit() async {
@@ -54,8 +99,7 @@ class _AddCategoryDialogState extends ConsumerState<AddCategoryDialog> {
           {
             'name': _nameController.text.trim(),
             'description': _descriptionController.text.trim(),
-            'icon': widget.category!.icon,
-            'membership_access': [..._selectedMembershipPlanIds],
+            'icon': _iconUrl,
           },
         );
       }
@@ -77,11 +121,22 @@ class _AddCategoryDialogState extends ConsumerState<AddCategoryDialog> {
     }
   }
 
+  Widget _iconPlaceholder() {
+    final name = _nameController.text.trim();
+    return Text(
+      name.isNotEmpty ? name[0].toUpperCase() : '#',
+      style: const TextStyle(
+        color: Color(0xFF24439B),
+        fontWeight: FontWeight.w800,
+        fontSize: 22,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final forumState = ref.watch(forumAdminNotifierProvider);
-    final membershipPlans = forumState.membershipPlans;
-    final isLoading = forumState.isLoadingMembershipPlans;
+    final isLoading = forumState.isLoading;
 
     return AlertDialog(
       title:
@@ -106,48 +161,70 @@ class _AddCategoryDialogState extends ConsumerState<AddCategoryDialog> {
                 maxLines: 3,
               ),
               const SizedBox(height: 24),
-              const Text('Membership Plans',
+              const Text('Category Icon',
                   style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      padding: const EdgeInsets.all(8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Select membership plans (leave empty to make it public):',
-                            style: TextStyle(fontSize: 14, color: Colors.grey),
-                          ),
-                          const SizedBox(height: 8),
-                          ...membershipPlans.map((plan) {
-                            return CheckboxListTile(
-                              title: Text(plan.name),
-                              value:
-                                  _selectedMembershipPlanIds.contains(plan.id),
-                              onChanged: (bool? selected) {
-                                setState(() {
-                                  if (selected == true) {
-                                    _selectedMembershipPlanIds.add(plan.id);
-                                  } else {
-                                    _selectedMembershipPlanIds.remove(plan.id);
-                                  }
-                                });
-                              },
-                              controlAffinity: ListTileControlAffinity.leading,
-                              contentPadding: EdgeInsets.zero,
-                              dense: true,
-                            );
-                          }).toList(),
-                        ],
-                      ),
+              Row(
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF24439B).withOpacity(0.12),
+                      shape: BoxShape.circle,
                     ),
-              const SizedBox(height: 16),
+                    clipBehavior: Clip.antiAlias,
+                    child: _pickedBytes != null
+                        // just-picked image, shown from memory immediately
+                        ? Image.memory(
+                            _pickedBytes!,
+                            width: 56,
+                            height: 56,
+                            fit: BoxFit.cover,
+                          )
+                        : (_iconUrl.startsWith('http://') ||
+                                _iconUrl.startsWith('https://'))
+                            ? Image.network(
+                                _iconUrl,
+                                width: 56,
+                                height: 56,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => _iconPlaceholder(),
+                              )
+                            : _iconPlaceholder(),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _uploadingIcon ? null : _pickAndUploadIcon,
+                      icon: _uploadingIcon
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.upload),
+                      label: Text(_uploadingIcon
+                          ? 'Uploading...'
+                          : ((_iconUrl.isEmpty && _pickedBytes == null)
+                              ? 'Upload Icon'
+                              : 'Change Icon')),
+                    ),
+                  ),
+                  if ((_iconUrl.isNotEmpty || _pickedBytes != null) &&
+                      !_uploadingIcon)
+                    IconButton(
+                      tooltip: 'Remove icon',
+                      icon: const Icon(Icons.clear),
+                      onPressed: () => setState(() {
+                        _iconUrl = '';
+                        _pickedBytes = null;
+                      }),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 24),
               Row(
                 children: [
                   Expanded(
@@ -173,7 +250,7 @@ class _AddCategoryDialogState extends ConsumerState<AddCategoryDialog> {
                               height: 20,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Text('Create'),
+                          : const Text('Save'),
                     ),
                   ),
                 ],

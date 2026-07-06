@@ -163,6 +163,22 @@ class ForumAdminNotifier extends StateNotifier<ForumAdminState> {
     }
   }
 
+  /// Uploads a category icon image and returns the hosted URL (or null on failure).
+  Future<String?> uploadCategoryIcon({
+    required List<int> bytes,
+    required String fileName,
+  }) async {
+    try {
+      return await _repository.uploadCategoryIcon(
+        bytes: bytes,
+        fileName: fileName,
+      );
+    } catch (e) {
+      state = state.copyWith(error: 'Failed to upload icon: $e');
+      rethrow;
+    }
+  }
+
   Future<void> updateCategory(String id, Map<String, dynamic> data) async {
     state = state.copyWith(isLoading: true, error: null);
     try {

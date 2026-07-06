@@ -221,6 +221,10 @@ class _RfpDetailPageState extends ConsumerState<RfpDetailPage> {
           const SizedBox(height: 12),
           if (rfp.phoneNumber != null)
             _buildInfoRow(Icons.phone, 'Phone', rfp.phoneNumber.toString()),
+          if ((rfp.country ?? '').isNotEmpty) ...[
+            const SizedBox(height: 12),
+            _buildInfoRow(Icons.public, 'Country', rfp.country!),
+          ],
         ],
       ),
     );

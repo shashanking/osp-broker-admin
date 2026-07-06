@@ -14,6 +14,11 @@ class MembershipPlanModel {
   final String? tier;
   final int level;
   final int? monthlyMessageQuota;
+  final int? dailyMessageQuota;
+  final int? dailyInMailQuota;
+  final int? dailyConnectionQuota;
+  final int? maxConnections;
+  final int? monthlyEventQuota;
   final int? outreachCredits;
   final int? messageCharLimit;
   final double? maxAuctionBidAmount;
@@ -35,6 +40,11 @@ class MembershipPlanModel {
     this.tier,
     this.level = 0,
     this.monthlyMessageQuota,
+    this.dailyMessageQuota,
+    this.dailyInMailQuota,
+    this.dailyConnectionQuota,
+    this.maxConnections,
+    this.monthlyEventQuota,
     this.outreachCredits,
     this.messageCharLimit,
     this.maxAuctionBidAmount,
@@ -63,6 +73,11 @@ class MembershipPlanModel {
       tier: json['tier'] as String?,
       level: (json['level'] as num?)?.toInt() ?? 0,
       monthlyMessageQuota: (json['monthlyMessageQuota'] as num?)?.toInt(),
+      dailyMessageQuota: (json['dailyMessageQuota'] as num?)?.toInt(),
+      dailyInMailQuota: (json['dailyInMailQuota'] as num?)?.toInt(),
+      dailyConnectionQuota: (json['dailyConnectionQuota'] as num?)?.toInt(),
+      maxConnections: (json['maxConnections'] as num?)?.toInt(),
+      monthlyEventQuota: (json['monthlyEventQuota'] as num?)?.toInt(),
       outreachCredits: (json['outreachCredits'] as num?)?.toInt(),
       messageCharLimit: (json['messageCharLimit'] as num?)?.toInt(),
       maxAuctionBidAmount: (json['maxAuctionBidAmount'] as num?)?.toDouble(),
@@ -83,6 +98,11 @@ class MembershipPlanModel {
       'tier': tier,
       'level': level,
       'monthlyMessageQuota': monthlyMessageQuota,
+      'dailyMessageQuota': dailyMessageQuota,
+      'dailyInMailQuota': dailyInMailQuota,
+      'dailyConnectionQuota': dailyConnectionQuota,
+      'maxConnections': maxConnections,
+      'monthlyEventQuota': monthlyEventQuota,
       'outreachCredits': outreachCredits,
       'messageCharLimit': messageCharLimit,
       'maxAuctionBidAmount': maxAuctionBidAmount,

@@ -3,7 +3,8 @@ class RfpModel {
   final String projectTitle;
   final String description;
   final String name;
-  final int? phoneNumber;
+  final String? phoneNumber;
+  final String? country;
   final String email;
   final String message;
   final num? price;
@@ -19,6 +20,7 @@ class RfpModel {
     required this.description,
     required this.name,
     required this.phoneNumber,
+    this.country,
     required this.email,
     required this.message,
     required this.price,
@@ -45,8 +47,10 @@ class RfpModel {
           .toString(),
       description: (json['description'] ?? '').toString(),
       name: (json['name'] ?? '').toString(),
-      phoneNumber: (json['phonenumber'] as num?)?.toInt() ??
-          (json['phoneNumber'] as num?)?.toInt(),
+      // phonenumber is a String on the backend, but legacy rows may still
+      // arrive as a number — accept either and keep it as a String.
+      phoneNumber: (json['phonenumber'] ?? json['phoneNumber'])?.toString(),
+      country: json['country']?.toString(),
       email: (json['email'] ?? '').toString(),
       message: (json['message'] ?? '').toString(),
       price: (json['price'] as num?),

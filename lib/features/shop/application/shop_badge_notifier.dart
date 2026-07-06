@@ -34,6 +34,7 @@ class ShopBadgeNotifier extends StateNotifier<ShopBadgeState> {
     required String name,
     required String description,
     required int price,
+    String image = '',
   }) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
@@ -44,6 +45,7 @@ class ShopBadgeNotifier extends StateNotifier<ShopBadgeState> {
           'name': name,
           'description': description,
           'price': price,
+          'image': image,
         },
       );
       await fetchBadges();
@@ -56,6 +58,7 @@ class ShopBadgeNotifier extends StateNotifier<ShopBadgeState> {
     required String id,
     required String name,
     required String description,
+    String image = '',
   }) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
@@ -65,6 +68,7 @@ class ShopBadgeNotifier extends StateNotifier<ShopBadgeState> {
         data: {
           'name': name,
           'description': description,
+          'image': image,
         },
       );
       await fetchBadges();

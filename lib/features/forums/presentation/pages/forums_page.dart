@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:osp_broker_admin/core/constants/app_colors.dart';
+import 'package:osp_broker_admin/features/forum_media/application/forum_media_notifier.dart';
+import 'package:osp_broker_admin/features/forum_media/presentation/widgets/forum_media_section.dart';
 import 'package:osp_broker_admin/core/utils/csv_export.dart';
 import 'package:osp_broker_admin/core/utils/role_utils.dart';
 import 'package:osp_broker_admin/core/widgets/layout/top_bar.dart';
@@ -37,8 +39,8 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
 
       final authState = ref.read(authNotifierProvider);
       final shouldLoadReports = authState.maybeWhen(
-        authenticated: (_, user) =>
-            userHasRole(Map<String, dynamic>.from(user), 'MODERATOR'),
+        authenticated: (_, user) => userHasAnyRole(
+            Map<String, dynamic>.from(user), {'MODERATOR', 'ADMIN'}),
         orElse: () => false,
       );
 
@@ -74,8 +76,8 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
 
     final authState = ref.watch(authNotifierProvider);
     final canViewReports = authState.maybeWhen(
-      authenticated: (_, user) =>
-          userHasRole(Map<String, dynamic>.from(user), 'MODERATOR'),
+      authenticated: (_, user) => userHasAnyRole(
+          Map<String, dynamic>.from(user), {'MODERATOR', 'ADMIN'}),
       orElse: () => false,
     );
 
@@ -151,6 +153,11 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
                                       .length
                                       .toString()
                                   : '',
+                              ref
+                                  .watch(forumMediaNotifierProvider)
+                                  .items
+                                  .length
+                                  .toString(),
                             ],
                           ),
                           const Spacer(),
@@ -281,14 +288,16 @@ class _ForumsPageState extends ConsumerState<ForumsPage> {
                                             ? const ReportsTable()
                                             : const Center(
                                                 child: Text(
-                                                    'Reports are available to MODERATOR accounts only.')))
+                                                    'Reports are available to MODERATOR or ADMIN accounts only.')))
                                         : _selectedTab == 4
                                             ? (canViewReports
                                                 ? const ReportsTable()
                                                 : const Center(
                                                     child: Text(
-                                                        'Comment reports are available to MODERATOR accounts only.')))
-                                            : Container(),
+                                                        'Comment reports are available to MODERATOR or ADMIN accounts only.')))
+                                            : _selectedTab == 5
+                                                ? const ForumMediaSection()
+                                                : Container(),
                       )
                     ],
                   ),

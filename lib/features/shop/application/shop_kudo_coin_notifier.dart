@@ -33,6 +33,7 @@ class ShopKudoCoinNotifier extends StateNotifier<ShopKudoCoinState> {
 
   Future<void> createKudoCoin({
     required int price,
+    required int amount,
     required String description,
   }) async {
     state = state.copyWith(isLoading: true, error: null);
@@ -42,18 +43,21 @@ class ShopKudoCoinNotifier extends StateNotifier<ShopKudoCoinState> {
         requireAuth: true,
         data: {
           'price': price,
+          'amount': amount,
           'description': description,
         },
       );
       await fetchKudoCoins();
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
+      rethrow;
     }
   }
 
   Future<void> updateKudoCoin({
     required String id,
     required int price,
+    required int amount,
     required String description,
   }) async {
     state = state.copyWith(isLoading: true, error: null);
@@ -63,12 +67,14 @@ class ShopKudoCoinNotifier extends StateNotifier<ShopKudoCoinState> {
         requireAuth: true,
         data: {
           'price': price,
+          'amount': amount,
           'description': description,
         },
       );
       await fetchKudoCoins();
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
+      rethrow;
     }
   }
 

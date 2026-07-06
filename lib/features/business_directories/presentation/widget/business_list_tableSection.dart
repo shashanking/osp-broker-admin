@@ -604,10 +604,14 @@ class _BusinessListTableSectionState
     final categoryName = categoryIdToName[business.businessCategoryId] ??
         business.businessCategoryId;
     // You can adjust these mappings as needed
-    final status = business.authorizedUser ? 'Approved' : 'Pending';
-    final statusColor = business.authorizedUser
-        ? const Color(0xFF80C02A).withOpacity(0.2)
-        : const Color(0xFFD59823).withOpacity(0.2);
+    final status = business.isBanned
+        ? 'Banned'
+        : (business.authorizedUser ? 'Approved' : 'Pending');
+    final statusColor = business.isBanned
+        ? const Color(0xFFC02A2A).withOpacity(0.2)
+        : business.authorizedUser
+            ? const Color(0xFF80C02A).withOpacity(0.2)
+            : const Color(0xFFD59823).withOpacity(0.2);
 
     final hqCity = business.hqLocation?.city ?? '';
     final hqCountry = business.hqLocation?.country ?? '';
@@ -782,12 +786,25 @@ class _BusinessListTableSectionState
               constraints: const BoxConstraints.tightFor(width: 36, height: 36),
             ),
           ),
+          // Ban / Unban (soft delete: hides the business from all user-facing views)
+          Tooltip(
+            message: business.isBanned ? 'Unban' : 'Ban',
+            child: IconButton(
+              onPressed: () => _toggleBan(business),
+              icon: Icon(
+                  business.isBanned ? Icons.lock_open : Icons.block_outlined),
+              color: business.isBanned
+                  ? const Color(0xFF80C02A)
+                  : const Color(0xFFD59823),
+              iconSize: 20,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints.tightFor(width: 36, height: 36),
+            ),
+          ),
           Tooltip(
             message: 'Delete',
             child: IconButton(
-              onPressed: () {
-                // TODO: wire delete flow
-              },
+              onPressed: () => _confirmAndDelete(business),
               icon: const Icon(Icons.delete_outline),
               color: const Color(0xFFC02A2A),
               iconSize: 20,
@@ -798,6 +815,79 @@ class _BusinessListTableSectionState
         ],
       ),
     );
+  }
+
+  Future<void> _toggleBan(BusinessModel business) async {
+    final notifier = ref.read(businessDirectoriesNotifierProvider.notifier);
+    try {
+      if (business.isBanned) {
+        await notifier.unbanBusiness(business.id);
+      } else {
+        await notifier.banBusiness(business.id);
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(business.isBanned
+                ? 'Business unbanned — visible to users again'
+                : 'Business banned — hidden from users'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+      await _fetchBusinesses();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  Future<void> _confirmAndDelete(BusinessModel business) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete business'),
+        content: Text(
+          'Permanently delete "${business.businessName}"? This cannot be undone. '
+          'To hide it from users without deleting, use Ban instead.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await ref
+          .read(businessDirectoriesNotifierProvider.notifier)
+          .deleteBusiness(business.id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Business deleted'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+      await _fetchBusinesses();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   Widget _buildCellFixed(String text,

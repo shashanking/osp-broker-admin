@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:osp_broker_admin/core/infrastructure/base_api_service.dart';
 
 import '../../domain/forum_models.dart';
@@ -237,6 +238,41 @@ class ForumRepository {
       '/forum/category/$id',
       requireAuth: true,
     );
+  }
+
+  /// Uploads a category icon image and returns its hosted URL.
+  /// The field name must be `icon` to match the backend multer config.
+  Future<String> uploadCategoryIcon({
+    required List<int> bytes,
+    required String fileName,
+  }) async {
+    // dio on web defaults to application/octet-stream when no contentType is
+    // given; set it explicitly from the extension so S3 stores the right MIME
+    // and the backend file filter accepts it.
+    final ext = fileName.contains('.')
+        ? fileName.split('.').last.toLowerCase()
+        : '';
+    const extToMime = {
+      'jpg': 'jpeg',
+      'jpeg': 'jpeg',
+      'png': 'png',
+      'gif': 'gif',
+      'webp': 'webp',
+    };
+    final subtype = extToMime[ext] ?? 'png';
+    final formData = FormData.fromMap({
+      'icon': MultipartFile.fromBytes(
+        bytes,
+        filename: fileName,
+        contentType: DioMediaType('image', subtype),
+      ),
+    });
+    final response = await _apiService.post(
+      '/forum/category/upload-icon',
+      data: formData,
+      requireAuth: true,
+    );
+    return response.data['data']['url'] as String;
   }
 
   // Forum CRUD

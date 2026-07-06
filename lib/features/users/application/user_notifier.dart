@@ -126,6 +126,14 @@ class UserNotifier extends StateNotifier<UserState> {
     }
   }
 
+  Future<Map<String, dynamic>?> getUserPlanSummary(String userId) async {
+    try {
+      return await repository.getUserPlanSummary(userId);
+    } catch (e) {
+      return null;
+    }
+  }
+
   Future<void> unbanUser(String userId) async {
     try {
       final updatedUser = await repository.unbanUser(userId);

@@ -235,6 +235,39 @@ class BusinessDirectoriesNotifier extends StateNotifier<BusinessDirectoriesState
       rethrow;
     }
   }
+
+  /// Permanently deletes a business.
+  Future<void> deleteBusiness(String businessId) async {
+    try {
+      state = state.copyWith(error: null);
+      await _repository.deleteBusiness(businessId);
+    } catch (e) {
+      state = state.copyWith(error: 'Failed to delete business: ${e.toString()}');
+      rethrow;
+    }
+  }
+
+  /// Bans a business (soft delete — hidden from all user-facing views).
+  Future<void> banBusiness(String businessId) async {
+    try {
+      state = state.copyWith(error: null);
+      await _repository.banBusiness(businessId);
+    } catch (e) {
+      state = state.copyWith(error: 'Failed to ban business: ${e.toString()}');
+      rethrow;
+    }
+  }
+
+  /// Unbans a business.
+  Future<void> unbanBusiness(String businessId) async {
+    try {
+      state = state.copyWith(error: null);
+      await _repository.unbanBusiness(businessId);
+    } catch (e) {
+      state = state.copyWith(error: 'Failed to unban business: ${e.toString()}');
+      rethrow;
+    }
+  }
 }
 
 // Provider for the notifier

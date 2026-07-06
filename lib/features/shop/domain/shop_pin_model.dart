@@ -4,6 +4,7 @@ class ShopPinModel {
   final int price;
   final bool bought;
   final int duration;
+  final String image;
   final bool isDeleted;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -14,6 +15,7 @@ class ShopPinModel {
     required this.price,
     required this.bought,
     required this.duration,
+    required this.image,
     required this.isDeleted,
     required this.createdAt,
     required this.updatedAt,
@@ -23,6 +25,7 @@ class ShopPinModel {
     return ShopPinModel(
       id: (json['id'] ?? '').toString(),
       color: (json['color'] ?? '').toString(),
+      image: (json['image'] ?? '').toString(),
       price: (json['price'] is num)
           ? (json['price'] as num).toInt()
           : int.tryParse((json['price'] ?? 0).toString()) ?? 0,

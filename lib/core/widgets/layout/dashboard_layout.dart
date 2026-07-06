@@ -180,6 +180,14 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                       children: [
                         _buildNavItem(
                           context,
+                          icon: Icons.dashboard,
+                          label: 'Dashboard',
+                          isSelected: widget.currentRoute == '/dashboard',
+                          onTap: () => context.go('/dashboard'),
+                          isTablet: shouldCollapseSidebar,
+                        ),
+                        _buildNavItem(
+                          context,
                           icon: Icons.forum,
                           label: 'Forums',
                           isSelected: widget.currentRoute == '/forums',
@@ -238,10 +246,26 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                         ),
                         _buildNavItem(
                           context,
+                          icon: Icons.receipt_long,
+                          label: 'Orders',
+                          isSelected: widget.currentRoute.startsWith('/orders'),
+                          onTap: () => context.go('/orders'),
+                          isTablet: shouldCollapseSidebar,
+                        ),
+                        _buildNavItem(
+                          context,
                           icon: Icons.description,
                           label: 'RFPs',
                           isSelected: widget.currentRoute.startsWith('/rfps'),
                           onTap: () => context.go('/rfps'),
+                          isTablet: shouldCollapseSidebar,
+                        ),
+                        _buildNavItem(
+                          context,
+                          icon: Icons.web,
+                          label: 'Website Content',
+                          isSelected: widget.currentRoute.startsWith('/cms'),
+                          onTap: () => context.go('/cms'),
                           isTablet: shouldCollapseSidebar,
                         ),
                         _buildNavItem(
@@ -400,6 +424,16 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                 children: [
                   _buildDrawerItem(
                     context,
+                    icon: Icons.dashboard,
+                    label: 'Dashboard',
+                    isSelected: widget.currentRoute == '/dashboard',
+                    onTap: () {
+                      context.go('/dashboard');
+                      Navigator.pop(context);
+                    },
+                  ),
+                  _buildDrawerItem(
+                    context,
                     icon: Icons.forum,
                     label: 'Forums',
                     isSelected: widget.currentRoute == '/forums',
@@ -456,6 +490,16 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                     isSelected: widget.currentRoute.startsWith('/shop'),
                     onTap: () {
                       context.go('/shop');
+                      Navigator.pop(context);
+                    },
+                  ),
+                  _buildDrawerItem(
+                    context,
+                    icon: Icons.receipt_long,
+                    label: 'Orders',
+                    isSelected: widget.currentRoute.startsWith('/orders'),
+                    onTap: () {
+                      context.go('/orders');
                       Navigator.pop(context);
                     },
                   ),
