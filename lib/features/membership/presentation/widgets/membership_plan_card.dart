@@ -1,288 +1,241 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:osp_broker_admin/core/constants/app_colors.dart';
 import 'package:osp_broker_admin/features/membership/data/models/membership_plan_model.dart';
 import 'package:osp_broker_admin/features/membership/application/membership_notifier.dart';
 import 'edit_membership_dialog.dart';
 
+/// A clean management card for a single membership plan: tier, price,
+/// subscriber count, the full limit/permission settings, and edit/delete.
 class MembershipPlanCard extends ConsumerWidget {
   final MembershipPlanModel plan;
-  final Color color;
-
-  static const _colors = [
-    Color(0xFF6C63FF), // Purple
-    Color(0xFF00B4D8), // Cyan
-    Color(0xFF2EC4B6), // Teal
-    Color(0xFFE76F51), // Coral
-    Color(0xFF7209B7), // Deep Purple
-    Color(0xFF3A86FF), // Bright Blue
-  ];
-
-  Color _getCardColor(int index) {
-    return _colors[index % _colors.length];
-  }
+  final Color color; // unused now; kept for call-site compatibility
 
   const MembershipPlanCard({
     super.key,
     required this.plan,
-    this.color = AppColors.primary,
+    this.color = const Color(0xFF24439B),
   });
+
+  static const _tierColors = <String, Color>{
+    'FREE': Color(0xFF9AA0A6),
+    'BRONZE': Color(0xFFB08D57),
+    'SILVER': Color(0xFF9EA7B3),
+    'GOLD': Color(0xFFE0A23B),
+    'PLATINUM': Color(0xFF5B7C99),
+    'DIAMOND': Color(0xFF00B4D8),
+  };
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cardColor = _getCardColor(plan.name.hashCode);
+    final tier = (plan.tier ?? '').toUpperCase();
+    final accent = _tierColors[tier] ?? const Color(0xFF24439B);
 
     return Container(
-      constraints: const BoxConstraints(maxWidth: 500),
-      padding: const EdgeInsets.all(4.0),
-      child: Card(
-        elevation: 4,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        shadowColor: cardColor.withOpacity(0.3),
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.black.withOpacity(0.06)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // colored header
+          Container(
+            decoration: BoxDecoration(
+              color: accent.withOpacity(0.10),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            ),
+            padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+            child: Row(
               children: [
-                // Header Row
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: cardColor.withOpacity(0.2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(Icons.star, color: cardColor, size: 24),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        plan.name.toUpperCase(),
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                          color: cardColor,
-                          letterSpacing: 0.5,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    ElevatedButton(
-                      onPressed: () {},
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: cardColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 10),
-                        elevation: 2,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text('View Plan'.toUpperCase()),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 16),
-
-                // Plan Details
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
                         children: [
-                          Text(
-                            'Price: \$${plan.price.toStringAsFixed(2)}',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: cardColor,
-                              shadows: [
-                                Shadow(
-                                  color: cardColor.withOpacity(0.2),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
+                          Flexible(
+                            child: Text(
+                              plan.name,
+                              style: const TextStyle(
+                                  fontSize: 17, fontWeight: FontWeight.w800),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Billing Cycle: ${plan.billingCycle}',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Subscribers: ${plan.userMembership.length}',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[600],
-                            ),
-                          ),
+                          const SizedBox(width: 8),
+                          _tierBadge(tier.isEmpty ? 'NO TIER' : tier, accent),
                         ],
                       ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 16),
-
-                // Action Buttons
-                Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.8),
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: [
-                      BoxShadow(
-                        color: cardColor.withOpacity(0.1),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
+                      const SizedBox(height: 4),
+                      Text(
+                        '\$${plan.price.toStringAsFixed(2)} · ${plan.billingCycle}'
+                        '   ·   ${plan.userMembership.length} subscribers',
+                        style: TextStyle(fontSize: 12.5, color: Colors.grey[700]),
                       ),
                     ],
                   ),
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            showDialog(
-                              context: context,
-                              builder: (context) =>
-                                  EditMembershipDialog(plan: plan),
-                            );
-                          },
-                          icon: const Icon(Icons.edit_outlined, size: 20),
-                          label: const Text('Edit'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue.withOpacity(0.1),
-                            foregroundColor: Colors.blue,
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            showDialog(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                title: const Text('Delete Membership Plan'),
-                                content: const Text(
-                                    'Are you sure you want to delete this membership plan?'),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () =>
-                                        Navigator.of(context).pop(),
-                                    child: const Text('Cancel'),
-                                  ),
-                                  ElevatedButton(
-                                    onPressed: () {
-                                      ref
-                                          .read(membershipNotifierProvider
-                                              .notifier)
-                                          .deleteMembership(plan.id);
-                                      Navigator.of(context).pop();
-                                    },
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.red,
-                                      foregroundColor: Colors.white,
-                                    ),
-                                    child: const Text('Delete'),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                          icon: const Icon(Icons.delete_outline, size: 20),
-                          label: const Text('Delete'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red.withOpacity(0.1),
-                            foregroundColor: Colors.red,
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // Benefits Section
-                const Text(
-                  'Benefits',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-
-                const SizedBox(height: 8),
-
-                // Features Wrap
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: plan.features
-                      .map((feature) => Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  cardColor.withOpacity(0.8),
-                                  cardColor.withOpacity(0.6),
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: cardColor.withOpacity(0.2),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 6),
-                              child: Text(
-                                feature,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ))
-                      .toList(),
                 ),
               ],
             ),
           ),
-        ),
+
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Limits grid
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    _limitChip('Messages/mo', _num(plan.monthlyMessageQuota)),
+                    _limitChip('Messages/day', _num(plan.dailyMessageQuota)),
+                    _limitChip('PrimeMails/day', _num(plan.dailyInMailQuota)),
+                    _limitChip('Outreach', _num(plan.outreachCredits)),
+                    _limitChip('Msg length',
+                        plan.messageCharLimit == null ? '∞' : '${plan.messageCharLimit}'),
+                    _limitChip(
+                        'Max bid',
+                        plan.maxAuctionBidAmount == null
+                            ? '∞'
+                            : (plan.maxAuctionBidAmount == 0
+                                ? '—'
+                                : '\$${plan.maxAuctionBidAmount!.toStringAsFixed(0)}')),
+                    _limitChip(
+                        'Auctions',
+                        plan.maxConcurrentAuctions == null
+                            ? '∞'
+                            : '${plan.maxConcurrentAuctions}'),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    _flag('Private auctions', plan.canCreatePrivateAuction),
+                    const SizedBox(width: 16),
+                    _flag('Gifting', plan.canGift),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => showDialog(
+                          context: context,
+                          builder: (_) => EditMembershipDialog(plan: plan),
+                        ),
+                        icon: const Icon(Icons.tune, size: 18),
+                        label: const Text('Edit settings'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: accent,
+                          side: BorderSide(color: accent.withOpacity(0.5)),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    IconButton(
+                      tooltip: 'Delete plan',
+                      onPressed: () => _confirmDelete(context, ref),
+                      icon: const Icon(Icons.delete_outline),
+                      color: Colors.red[400],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _num(int? v) => v == null ? '∞' : '$v';
+
+  Widget _tierBadge(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+            color: color, fontSize: 10.5, fontWeight: FontWeight.w800),
+      ),
+    );
+  }
+
+  Widget _limitChip(String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF4F5F7),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(label,
+              style: TextStyle(fontSize: 10.5, color: Colors.grey[600])),
+          const SizedBox(height: 2),
+          Text(value,
+              style:
+                  const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+        ],
+      ),
+    );
+  }
+
+  Widget _flag(String label, bool on) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(on ? Icons.check_circle : Icons.cancel,
+            size: 16, color: on ? Colors.green : Colors.grey[400]),
+        const SizedBox(width: 6),
+        Text(label, style: TextStyle(fontSize: 12.5, color: Colors.grey[700])),
+      ],
+    );
+  }
+
+  void _confirmDelete(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete membership plan'),
+        content: Text('Delete "${plan.name}"? This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              ref
+                  .read(membershipNotifierProvider.notifier)
+                  .deleteMembership(plan.id);
+              Navigator.of(ctx).pop();
+            },
+            style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red, foregroundColor: Colors.white),
+            child: const Text('Delete'),
+          ),
+        ],
       ),
     );
   }

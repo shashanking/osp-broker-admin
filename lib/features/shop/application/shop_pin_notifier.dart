@@ -35,6 +35,7 @@ class ShopPinNotifier extends StateNotifier<ShopPinState> {
     required String color,
     required int price,
     required int duration,
+    String image = '',
   }) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
@@ -45,6 +46,7 @@ class ShopPinNotifier extends StateNotifier<ShopPinState> {
           'color': color,
           'price': price,
           'duration': duration,
+          'image': image,
         },
       );
       await fetchPins();
@@ -58,6 +60,7 @@ class ShopPinNotifier extends StateNotifier<ShopPinState> {
     required String color,
     required int price,
     required int duration,
+    String image = '',
   }) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
@@ -68,6 +71,7 @@ class ShopPinNotifier extends StateNotifier<ShopPinState> {
           'color': color,
           'price': price,
           'duration': duration,
+          'image': image,
         },
       );
       await fetchPins();

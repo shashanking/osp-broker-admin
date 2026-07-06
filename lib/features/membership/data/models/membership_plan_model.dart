@@ -10,6 +10,22 @@ class MembershipPlanModel {
   final int? duration; // Make duration nullable
   final List<Map<String, String>> userMembership;
 
+  // tier identity + limits (null limit = unlimited)
+  final String? tier;
+  final int level;
+  final int? monthlyMessageQuota;
+  final int? dailyMessageQuota;
+  final int? dailyInMailQuota;
+  final int? dailyConnectionQuota;
+  final int? maxConnections;
+  final int? monthlyEventQuota;
+  final int? outreachCredits;
+  final int? messageCharLimit;
+  final double? maxAuctionBidAmount;
+  final int? maxConcurrentAuctions;
+  final bool canCreatePrivateAuction;
+  final bool canGift;
+
   MembershipPlanModel({
     required this.id,
     required this.name,
@@ -21,6 +37,20 @@ class MembershipPlanModel {
     required this.updatedAt,
     this.duration, // Optional parameter
     required this.userMembership,
+    this.tier,
+    this.level = 0,
+    this.monthlyMessageQuota,
+    this.dailyMessageQuota,
+    this.dailyInMailQuota,
+    this.dailyConnectionQuota,
+    this.maxConnections,
+    this.monthlyEventQuota,
+    this.outreachCredits,
+    this.messageCharLimit,
+    this.maxAuctionBidAmount,
+    this.maxConcurrentAuctions,
+    this.canCreatePrivateAuction = false,
+    this.canGift = false,
   });
 
   factory MembershipPlanModel.fromJson(Map<String, dynamic> json) {
@@ -40,6 +70,20 @@ class MembershipPlanModel {
                 ?.map((e) => Map<String, String>.from(e)) ??
             [],
       ),
+      tier: json['tier'] as String?,
+      level: (json['level'] as num?)?.toInt() ?? 0,
+      monthlyMessageQuota: (json['monthlyMessageQuota'] as num?)?.toInt(),
+      dailyMessageQuota: (json['dailyMessageQuota'] as num?)?.toInt(),
+      dailyInMailQuota: (json['dailyInMailQuota'] as num?)?.toInt(),
+      dailyConnectionQuota: (json['dailyConnectionQuota'] as num?)?.toInt(),
+      maxConnections: (json['maxConnections'] as num?)?.toInt(),
+      monthlyEventQuota: (json['monthlyEventQuota'] as num?)?.toInt(),
+      outreachCredits: (json['outreachCredits'] as num?)?.toInt(),
+      messageCharLimit: (json['messageCharLimit'] as num?)?.toInt(),
+      maxAuctionBidAmount: (json['maxAuctionBidAmount'] as num?)?.toDouble(),
+      maxConcurrentAuctions: (json['maxConcurrentAuctions'] as num?)?.toInt(),
+      canCreatePrivateAuction: json['canCreatePrivateAuction'] as bool? ?? false,
+      canGift: json['canGift'] as bool? ?? false,
     );
   }
 
@@ -51,6 +95,20 @@ class MembershipPlanModel {
       'features': features,
       'price': price,
       'duration': duration,
+      'tier': tier,
+      'level': level,
+      'monthlyMessageQuota': monthlyMessageQuota,
+      'dailyMessageQuota': dailyMessageQuota,
+      'dailyInMailQuota': dailyInMailQuota,
+      'dailyConnectionQuota': dailyConnectionQuota,
+      'maxConnections': maxConnections,
+      'monthlyEventQuota': monthlyEventQuota,
+      'outreachCredits': outreachCredits,
+      'messageCharLimit': messageCharLimit,
+      'maxAuctionBidAmount': maxAuctionBidAmount,
+      'maxConcurrentAuctions': maxConcurrentAuctions,
+      'canCreatePrivateAuction': canCreatePrivateAuction,
+      'canGift': canGift,
     };
   }
 

@@ -1,4 +1,6 @@
+import 'package:dio/dio.dart';
 import 'package:osp_broker_admin/core/infrastructure/base_api_service.dart';
+
 import '../../domain/forum_models.dart';
 import '../../domain/poll_analytics_model.dart';
 
@@ -41,7 +43,8 @@ class ForumRepository {
       final categories = [Category.fromJson(categoriesData)];
       return categories;
     } else {
-      throw Exception('Unexpected categories data type: ${categoriesData.runtimeType}');
+      throw Exception(
+          'Unexpected categories data type: ${categoriesData.runtimeType}');
     }
   }
 
@@ -53,7 +56,8 @@ class ForumRepository {
     // Handle the nested structure: { pinnedTopics: [...], remainingTopics: [...] }
     if (topicsData is Map<String, dynamic>) {
       final pinnedTopics = topicsData['pinnedTopics'] as List<dynamic>? ?? [];
-      final remainingTopics = topicsData['remainingTopics'] as List<dynamic>? ?? [];
+      final remainingTopics =
+          topicsData['remainingTopics'] as List<dynamic>? ?? [];
 
       // Combine both lists
       final allTopics = [...pinnedTopics, ...remainingTopics];
@@ -87,6 +91,17 @@ class ForumRepository {
     }
   }
 
+  Future<Topic?> fetchTopicById(String topicId) async {
+    final response = await _apiService.get('/forum/topic/$topicId');
+    final raw = response.data;
+    final data = (raw is Map) ? raw['data'] : null;
+    final topicPayload = (data is Map) ? data['topic'] : null;
+    if (topicPayload is Map) {
+      return Topic.fromJson(Map<String, dynamic>.from(topicPayload));
+    }
+    return null;
+  }
+
   // Announcements
   Future<List<Announcement>> fetchAllAnnouncements() async {
     final response = await _apiService.get('/announcement');
@@ -101,7 +116,8 @@ class ForumRepository {
       // If it's a single announcement object, wrap it in a list
       return [Announcement.fromJson(announcementsData)];
     } else {
-      throw Exception('Unexpected announcements data type: ${announcementsData.runtimeType}');
+      throw Exception(
+          'Unexpected announcements data type: ${announcementsData.runtimeType}');
     }
   }
 
@@ -187,28 +203,24 @@ class ForumRepository {
     }
   }
 
-  // Category CRUD
-  Future<Category> createCategory({
-    required String name,
-    required String description,
-    String? moderatorId,
-    required String icon,
-    required List<String> membershipAccess,
-  }) async {
-    final response = await _apiService.post(
-      '/forum/category',
-      requireAuth: true,
-      data: {
-        'name': name,
-        'description': description,
-        if (moderatorId != null) 'moderatorId': moderatorId,
-        'icon': icon,
-        'membership_access': membershipAccess,
-      },
-    );
-    return Category.fromJson(response.data['data']['Category']);
+  // Channels are fixed (membership-bound). Read-only listing.
+  Future<List<Channel>> fetchChannels() async {
+    final response = await _apiService.get('/forum/channels');
+    final channelsData = response.data['data']['channels'];
+
+    if (channelsData is List) {
+      return channelsData
+          .map((json) => Channel.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } else if (channelsData is Map<String, dynamic>) {
+      return [Channel.fromJson(channelsData)];
+    } else {
+      throw Exception(
+          'Unexpected channels data type: ${channelsData.runtimeType}');
+    }
   }
 
+  // Category CRUD
   Future<Category> updateCategory(
     String id, {
     required Map<String, dynamic> data,
@@ -228,28 +240,42 @@ class ForumRepository {
     );
   }
 
-  // Forum CRUD
-  Future<Forum> createForum({
-    required String title,
-    required String description,
-    required String author,
-    required String categoryId,
-    required String userId,
+  /// Uploads a category icon image and returns its hosted URL.
+  /// The field name must be `icon` to match the backend multer config.
+  Future<String> uploadCategoryIcon({
+    required List<int> bytes,
+    required String fileName,
   }) async {
+    // dio on web defaults to application/octet-stream when no contentType is
+    // given; set it explicitly from the extension so S3 stores the right MIME
+    // and the backend file filter accepts it.
+    final ext = fileName.contains('.')
+        ? fileName.split('.').last.toLowerCase()
+        : '';
+    const extToMime = {
+      'jpg': 'jpeg',
+      'jpeg': 'jpeg',
+      'png': 'png',
+      'gif': 'gif',
+      'webp': 'webp',
+    };
+    final subtype = extToMime[ext] ?? 'png';
+    final formData = FormData.fromMap({
+      'icon': MultipartFile.fromBytes(
+        bytes,
+        filename: fileName,
+        contentType: DioMediaType('image', subtype),
+      ),
+    });
     final response = await _apiService.post(
-      '/forum',
+      '/forum/category/upload-icon',
+      data: formData,
       requireAuth: true,
-      data: {
-        'title': title,
-        'description': description,
-        'author': author,
-        'categoryId': categoryId,
-        'userId': userId,
-      },
     );
-    return Forum.fromJson(response.data['data']['forum']);
+    return response.data['data']['url'] as String;
   }
 
+  // Forum CRUD
   Future<Forum> updateForum({
     required String forumId,
     required String title,

@@ -70,16 +70,10 @@ class _AddForumDialogState extends ConsumerState<AddForumDialog> {
           title: _titleController.text.trim(),
           description: _descriptionController.text.trim(),
         );
-      } else {
-        // Create mode
-        await ref.read(forumAdminNotifierProvider.notifier).createForum(
-          title: _titleController.text.trim(),
-          description: _descriptionController.text.trim(),
-          author: _author!,
-          categoryId: _selectedCategoryId!,
-          userId: _userId!,
-        );
       }
+      // Forum/channel creation is no longer supported (channels are fixed and
+      // membership-bound). This dialog is now used only to edit an existing
+      // forum; the create path has been removed.
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       if (mounted) {

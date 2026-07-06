@@ -2,9 +2,9 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
+import 'api_urls.dart';
 import 'dio_provider.dart';
 import 'hive_provider.dart';
-import 'api_urls.dart';
 
 final baseApiServiceProvider = Provider<BaseApiService>((ref) {
   final dio = ref.watch(dioProvider);
@@ -34,6 +34,14 @@ class BaseApiService {
 
   String? get userId => _authBox.get('userId') as String?;
 
+  Map<String, dynamic>? get authUser {
+    final user = _authBox.get('user');
+    if (user is Map) {
+      return user.map((key, value) => MapEntry(key.toString(), value));
+    }
+    return null;
+  }
+
   // Token management
   Future<void> setAuthTokens({
     required String token,
@@ -54,14 +62,27 @@ class BaseApiService {
     }
   }
 
+  Future<void> setAuthUser(Map<String, dynamic> user) async {
+    try {
+      await _authBox.put('user', user);
+    } catch (e) {
+      print('BaseApiService: Error saving user: $e');
+      rethrow;
+    }
+  }
+
   bool _isJwtExpiredError(DioException e) {
-    final statusCode = e.response?.statusCode;
-    if (statusCode == 401) return true;
+    // Do NOT treat every 401 as an expired JWT.
+    // Many endpoints return 401 for authorization failures (e.g. wrong role).
 
     final data = e.response?.data;
     if (data is Map) {
       final message = data['message']?.toString().toLowerCase();
       if (message != null && message.contains('jwt expired')) return true;
+
+      // Some backends use a generic error field.
+      final error = data['error']?.toString().toLowerCase();
+      if (error != null && error.contains('jwt expired')) return true;
 
       final errorSource = data['errorSourse'] ?? data['errorSource'];
       if (errorSource is List) {
@@ -74,6 +95,9 @@ class BaseApiService {
       }
     }
 
+    // Some servers incorrectly return 500 for expired JWT, but message indicates it.
+    // If it's a 401/500 without the explicit message above, do not refresh.
+
     return false;
   }
 
@@ -81,6 +105,8 @@ class BaseApiService {
     _authToken = null;
     await _authBox.delete('token');
     await _authBox.delete('refreshToken');
+    await _authBox.delete('user');
+    await _authBox.delete('userId');
   }
 
   // Check if we have a refresh token
@@ -126,9 +152,13 @@ class BaseApiService {
   // Request options with auth header
   Options _getOptions({Options? options, bool requireAuth = true}) {
     options ??= Options();
-    if (requireAuth && _authToken != null) {
+    // Always read the latest token from storage to avoid stale in-memory cache.
+    final token = _authBox.get('token') as String?;
+    _authToken = token;
+
+    if (requireAuth && token != null) {
       options.headers ??= {};
-      options.headers!['Authorization'] = 'Bearer $_authToken';
+      options.headers!['Authorization'] = 'Bearer $token';
     }
     return options;
   }
@@ -252,8 +282,15 @@ class BaseApiService {
     final statusCode = response?.statusCode;
 
     if (statusCode == 401) {
-      // Handle token expiration (already handled above, but keeping for consistency)
-      clearAuthTokens();
+      // Only clear tokens if the request actually attempted authenticated access.
+      // When there is no Authorization header, this 401 is typically due to being
+      // logged out (or token not yet loaded) and clearing again is unnecessary.
+      final headers = e.requestOptions.headers;
+      final authHeader = headers['Authorization']?.toString();
+      if (authHeader != null && authHeader.isNotEmpty) {
+        // Handle token expiration (already handled above, but keeping for consistency)
+        clearAuthTokens();
+      }
     }
 
     // Log detailed error information

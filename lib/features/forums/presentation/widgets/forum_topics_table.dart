@@ -1,12 +1,76 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+
 import '../../domain/forum_models.dart';
 import '../pages/topic_detail_page.dart';
 
+String _stripHtml(String input) {
+  // Remove tags
+  var text = input.replaceAll(RegExp(r'<[^>]*>'), ' ');
+  // Decode a few common entities without adding dependencies
+  text = text
+      .replaceAll('&nbsp;', ' ')
+      .replaceAll('&amp;', '&')
+      .replaceAll('&lt;', '<')
+      .replaceAll('&gt;', '>')
+      .replaceAll('&quot;', '"')
+      .replaceAll('&#39;', "'");
+  // Collapse whitespace
+  text = text.replaceAll(RegExp(r'\s+'), ' ').trim();
+  return text;
+}
+
+String _quillDeltaToText(dynamic decoded) {
+  // Quill delta is typically a List of ops: [{'insert': 'text'}, ...]
+  if (decoded is! List) return '';
+  final buffer = StringBuffer();
+  for (final op in decoded) {
+    if (op is Map) {
+      final insert = op['insert'];
+      if (insert is String) {
+        buffer.write(insert);
+      }
+    }
+  }
+  return buffer.toString();
+}
+
+String _contentPreview(String raw) {
+  final content = raw.trim();
+  if (content.isEmpty) return '';
+
+  // Try Quill delta JSON first
+  if ((content.startsWith('[') && content.endsWith(']')) ||
+      (content.startsWith('{') && content.endsWith('}'))) {
+    try {
+      final decoded = jsonDecode(content);
+      // Some APIs wrap delta under {"ops": [...]}
+      final delta =
+          (decoded is Map && decoded['ops'] != null) ? decoded['ops'] : decoded;
+      final text = _quillDeltaToText(delta);
+      if (text.trim().isNotEmpty) {
+        return text.replaceAll(RegExp(r'\s+'), ' ').trim();
+      }
+    } catch (_) {
+      // Not valid JSON; fall through
+    }
+  }
+
+  // If it looks like HTML, strip tags
+  if (content.contains('<') && content.contains('>')) {
+    return _stripHtml(content);
+  }
+
+  // Plain text
+  return content;
+}
 
 class ForumTopicsTable extends StatelessWidget {
   final List<Topic> topics;
   final List<Forum> forums;
-  const ForumTopicsTable({super.key, required this.topics, required this.forums});
+  const ForumTopicsTable(
+      {super.key, required this.topics, required this.forums});
 
   @override
   Widget build(BuildContext context) {
@@ -49,27 +113,41 @@ class ForumTopicsTable extends StatelessWidget {
                 ),
                 Expanded(
                   flex: 2,
-                  child: Text('Title', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
+                  child: Text('Title',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold, color: Colors.black87)),
                 ),
                 Expanded(
                   flex: 2,
-                  child: Text('Content', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
+                  child: Text('Content',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold, color: Colors.black87)),
                 ),
                 Expanded(
                   flex: 2,
-                  child: Text('Forum', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
+                  child: Text('Forum',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold, color: Colors.black87)),
                 ),
                 Expanded(
-                  child: Text('Views', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
+                  child: Text('Views',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold, color: Colors.black87)),
                 ),
                 Expanded(
-                  child: Text('Comments', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
+                  child: Text('Comments',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold, color: Colors.black87)),
                 ),
                 Expanded(
-                  child: Text('Created', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
+                  child: Text('Created',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold, color: Colors.black87)),
                 ),
                 Expanded(
-                  child: Text('Updated', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
+                  child: Text('Updated',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold, color: Colors.black87)),
                 ),
               ],
             ),
@@ -146,7 +224,8 @@ class _TopicRow extends StatelessWidget {
                   child: const CircleAvatar(
                     backgroundColor: Color(0xFFEDF1FA),
                     radius: 18,
-                    child: Icon(Icons.forum, color: Color(0xFFB0B8C1), size: 18),
+                    child:
+                        Icon(Icons.forum, color: Color(0xFFB0B8C1), size: 18),
                   ),
                 ),
                 // Title
@@ -163,7 +242,7 @@ class _TopicRow extends StatelessWidget {
                 Expanded(
                   flex: 2,
                   child: Text(
-                    topic.content,
+                    _contentPreview(topic.content),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(color: Colors.black87),

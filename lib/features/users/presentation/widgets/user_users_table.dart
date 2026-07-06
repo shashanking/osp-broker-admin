@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:osp_broker_admin/features/forums/domain/forum_models.dart';
 import 'package:osp_broker_admin/features/users/application/user_notifier.dart';
 
 import '../../data/models/user_model.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'category_selection_dialog.dart';
 import '../pages/user_detail_page.dart';
+import 'category_selection_dialog.dart';
 
 class UserUsersTable extends StatefulWidget {
   final List<UserModel> users;
@@ -151,7 +152,7 @@ class _UserUsersTableState extends State<UserUsersTable> {
                   child: Text('No users found.'),
                 )
               else
-                ...sortedUsers.map((user) => _UserRow(user: user)).toList(),
+                ...sortedUsers.map((user) => _UserRow(user: user)),
             ],
           ),
         ),
@@ -182,193 +183,210 @@ class _UserRow extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 0),
         child: Row(
           children: [
-          SizedBox(width: 32, child: Checkbox(value: false, onChanged: null)),
-          Expanded(flex: 2, child: Text(user.fullName)),
-          Expanded(flex: 2, child: Text(user.email)),
-          Expanded(flex: 2, child: Text(user.phone)),
-          Expanded(flex: 1, child: Text(user.role)),
-          Expanded(flex: 1, child: _StatusChip(isBanned: user.isBanned)),
-          Expanded(
-            flex: 2,
-            child: Row(
-              mainAxisSize: MainAxisSize.max,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Consumer(
-                  builder: (context, ref, _) {
-                    final updating = ref.watch(userNotifierProvider
-                        .select((s) => s.updatingUserIds.contains(user.id)));
-                    if (updating) {
-                      return SizedBox(
-                        width: 28,
-                        height: 28,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      );
-                    }
-                    return user.role.trim().toLowerCase() == 'moderator'
-                        ? Tooltip(
-                            message: 'Remove Moderator',
-                            child: OutlinedButton(
-                              style: OutlinedButton.styleFrom(
-                                minimumSize: const Size(36, 36),
-                                padding: EdgeInsets.zero,
-                                side: const BorderSide(color: Colors.orange),
-                              ),
-                              onPressed: updating
-                                  ? null
-                                  : () {
-                                      ref
-                                          .read(userNotifierProvider.notifier)
-                                          .removeModerator(user.id);
-                                    },
-                              child: const Icon(Icons.remove_circle_outline,
-                                  size: 18, color: Colors.orange),
-                            ),
-                          )
-                        : Tooltip(
-                            message: 'Make Moderator',
-                            child: OutlinedButton(
-                              style: OutlinedButton.styleFrom(
-                                minimumSize: const Size(36, 36),
-                                padding: EdgeInsets.zero,
-                                side: const BorderSide(color: Colors.blue),
-                              ),
-                              onPressed: updating
-                                  ? null
-                                  : () async {
-                                      // Show category selection dialog
-                                      final selectedCategory = await showDialog(
-                                        context: context,
-                                        builder: (context) =>
-                                            CategorySelectionDialog(
-                                          userId: user.id,
-                                          userName: user.fullName,
-                                        ),
-                                      );
-
-                                      if (selectedCategory != null) {
-                                        ref
-                                            .read(userNotifierProvider.notifier)
-                                            .assignModerator(user.id,
-                                                categoryId:
-                                                    selectedCategory.id);
-                                      }
-                                    },
-                              child: const Icon(Icons.add_circle_outline,
-                                  size: 18, color: Colors.blue),
-                            ),
-                          );
-                  },
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-              flex: 2,
-              child: Text('${user.createdAt.toLocal()}'.split(' ')[0])),
-          Expanded(
+            SizedBox(width: 32, child: Checkbox(value: false, onChanged: null)),
+            Expanded(flex: 2, child: Text(user.fullName)),
+            Expanded(flex: 2, child: Text(user.email)),
+            Expanded(flex: 2, child: Text(user.phone)),
+            Expanded(flex: 1, child: Text(user.role)),
+            Expanded(flex: 1, child: _StatusChip(isBanned: user.isBanned)),
+            Expanded(
               flex: 2,
               child: Row(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Consumer(
-                    builder: (context, ref, _) => ElevatedButton(
-                      onPressed: () {
-                        // Show confirmation dialog
-                        showDialog(
-                          context: context,
-                          builder: (ctx) => AlertDialog(
-                            title: const Text('Confirm Ban'),
-                            content: Text(
-                                'Are you sure you want to ${user.isBanned ? 'unban' : 'ban'} ${user.fullName}?'),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.of(ctx).pop(),
-                                child: const Text('Cancel'),
-                              ),
-                              ElevatedButton(
-                                onPressed: () async {
-                                  Navigator.of(ctx).pop();
-                                  await ref
-                                      .read(userNotifierProvider.notifier)
-                                      .banUser(user.id);
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor:
-                                      user.isBanned ? Colors.green : Colors.red,
-                                ),
-                                child: Text(
-                                    user.isBanned ? 'Unban User' : 'Ban User',
-                                    style: const TextStyle(
-                                        fontSize: 12, color: Colors.white)),
-                              ),
-                            ],
-                          ),
+                    builder: (context, ref, _) {
+                      final updating = ref.watch(userNotifierProvider
+                          .select((s) => s.updatingUserIds.contains(user.id)));
+                      if (updating) {
+                        return SizedBox(
+                          width: 28,
+                          height: 28,
+                          child: CircularProgressIndicator(strokeWidth: 2),
                         );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            user.isBanned ? Colors.green : Colors.red,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8)),
-                        minimumSize: const Size(40, 32),
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                      }
+                      final isModerator =
+                          user.role.toUpperCase().contains('MODERATOR');
+                      return isModerator
+                          ? Tooltip(
+                              message: 'Remove Moderator',
+                              child: OutlinedButton(
+                                style: OutlinedButton.styleFrom(
+                                  minimumSize: const Size(36, 36),
+                                  padding: EdgeInsets.zero,
+                                  side: const BorderSide(color: Colors.orange),
+                                ),
+                                onPressed: updating
+                                    ? null
+                                    : () {
+                                        ref
+                                            .read(userNotifierProvider.notifier)
+                                            .removeModerator(user.id);
+                                      },
+                                child: const Icon(Icons.remove_circle_outline,
+                                    size: 18, color: Colors.orange),
+                              ),
+                            )
+                          : Tooltip(
+                              message: 'Make Moderator',
+                              child: OutlinedButton(
+                                style: OutlinedButton.styleFrom(
+                                  minimumSize: const Size(36, 36),
+                                  padding: EdgeInsets.zero,
+                                  side: const BorderSide(color: Colors.blue),
+                                ),
+                                onPressed: updating
+                                    ? null
+                                    : () async {
+                                        // Show category selection dialog
+                                        final selectedCategories =
+                                            await showDialog<List<Category>>(
+                                          context: context,
+                                          builder: (context) =>
+                                              CategorySelectionDialog(
+                                            userId: user.id,
+                                            userName: user.fullName,
+                                          ),
+                                        );
+
+                                        if (selectedCategories != null &&
+                                            selectedCategories.isNotEmpty) {
+                                          final ids = selectedCategories
+                                              .map<String>((c) => c.id)
+                                              .toList();
+
+                                          ref
+                                              .read(
+                                                  userNotifierProvider.notifier)
+                                              .assignModeratorToCategories(
+                                                user.id,
+                                                categoryIds: ids,
+                                              );
+                                        }
+                                      },
+                                child: const Icon(Icons.add_circle_outline,
+                                    size: 18, color: Colors.blue),
+                              ),
+                            );
+                    },
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+                flex: 2,
+                child: Text('${user.createdAt.toLocal()}'.split(' ')[0])),
+            Expanded(
+                flex: 2,
+                child: Row(
+                  children: [
+                    Consumer(
+                      builder: (context, ref, _) => ElevatedButton(
+                        onPressed: () {
+                          // Show confirmation dialog
+                          showDialog(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text('Confirm Ban'),
+                              content: Text(
+                                  'Are you sure you want to ${user.isBanned ? 'unban' : 'ban'} ${user.fullName}?'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.of(ctx).pop(),
+                                  child: const Text('Cancel'),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () async {
+                                    Navigator.of(ctx).pop();
+                                    final notifier = ref
+                                        .read(userNotifierProvider.notifier);
+                                    // currently banned → unban; otherwise ban
+                                    if (user.isBanned) {
+                                      await notifier.unbanUser(user.id);
+                                    } else {
+                                      await notifier.banUser(user.id);
+                                    }
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: user.isBanned
+                                        ? Colors.green
+                                        : Colors.red,
+                                  ),
+                                  child: Text(
+                                      user.isBanned ? 'Unban User' : 'Ban User',
+                                      style: const TextStyle(
+                                          fontSize: 12, color: Colors.white)),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              user.isBanned ? Colors.green : Colors.red,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8)),
+                          minimumSize: const Size(40, 32),
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                        ),
+                        child: Text(user.isBanned ? 'Unban' : 'Ban',
+                            style: const TextStyle(
+                                fontSize: 12, color: Colors.white)),
                       ),
                       child: Text(user.isBanned ? 'Unban' : 'Ban',
                           style: const TextStyle(
                               fontSize: 12, color: Colors.white)),
                     ),
-                    child: Text(user.isBanned ? 'Unban' : 'Ban',
-                        style:
-                            const TextStyle(fontSize: 12, color: Colors.white)),
-                  ),
-                  const SizedBox(width: 8),
-                  Consumer(
-                    builder: (context, ref, _) => ElevatedButton(
-                      onPressed: () {
-                        // Show confirmation dialog for delete
-                        showDialog(
-                          context: context,
-                          builder: (ctx) => AlertDialog(
-                            title: const Text('Delete User'),
-                            content: Text(
-                                'Are you sure you want to delete ${user.fullName}? This action cannot be undone.'),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.of(ctx).pop(),
-                                child: const Text('Cancel'),
-                              ),
-                              ElevatedButton(
-                                onPressed: () async {
-                                  Navigator.of(ctx).pop();
-                                  await ref
-                                      .read(userNotifierProvider.notifier)
-                                      .deleteUser(user.id);
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.red,
+                    const SizedBox(width: 8),
+                    Consumer(
+                      builder: (context, ref, _) => ElevatedButton(
+                        onPressed: () {
+                          // Show confirmation dialog for delete
+                          showDialog(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text('Delete User'),
+                              content: Text(
+                                  'Are you sure you want to delete ${user.fullName}? This action cannot be undone.'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.of(ctx).pop(),
+                                  child: const Text('Cancel'),
                                 ),
-                                child: const Text('Delete',
-                                    style: TextStyle(color: Colors.white)),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey[700],
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8)),
-                        minimumSize: const Size(40, 32),
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                                ElevatedButton(
+                                  onPressed: () async {
+                                    Navigator.of(ctx).pop();
+                                    await ref
+                                        .read(userNotifierProvider.notifier)
+                                        .deleteUser(user.id);
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.red,
+                                  ),
+                                  child: const Text('Delete',
+                                      style: TextStyle(color: Colors.white)),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.grey[700],
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8)),
+                          minimumSize: const Size(40, 32),
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                        ),
+                        child: const Text('Delete',
+                            style:
+                                TextStyle(fontSize: 12, color: Colors.white)),
                       ),
                       child: const Text('Delete',
                           style: TextStyle(fontSize: 12, color: Colors.white)),
                     ),
-                    child: const Text('Delete',
-                        style: TextStyle(fontSize: 12, color: Colors.white)),
-                  ),
-                ],
-              )),
+                  ],
+                )),
           ],
         ),
       ),
@@ -378,7 +396,7 @@ class _UserRow extends ConsumerWidget {
 
 class _StatusChip extends StatelessWidget {
   final bool isBanned;
-  const _StatusChip({Key? key, required this.isBanned}) : super(key: key);
+  const _StatusChip({required this.isBanned});
 
   @override
   Widget build(BuildContext context) {

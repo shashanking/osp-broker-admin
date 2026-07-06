@@ -3,12 +3,11 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:osp_broker_admin/core/infrastructure/base_api_service.dart';
 import 'package:osp_broker_admin/features/forums/data/repositories/forum_repository.dart';
 import 'package:osp_broker_admin/features/forums/domain/forum_models.dart';
+import 'package:osp_broker_admin/features/forums/domain/poll_analytics_model.dart';
 import 'package:osp_broker_admin/features/membership/application/membership_notifier.dart';
 import 'package:osp_broker_admin/features/membership/data/models/membership_plan_model.dart';
 import 'package:osp_broker_admin/features/users/application/user_notifier.dart';
-
 import 'package:osp_broker_admin/features/users/data/models/moderator_model.dart';
-import 'package:osp_broker_admin/features/forums/domain/poll_analytics_model.dart';
 
 part 'forum_admin_notifier.freezed.dart';
 
@@ -22,6 +21,7 @@ class ForumAdminState with _$ForumAdminState {
     String? error,
     @Default(<Category>[]) List<Category> categories,
     @Default(<Forum>[]) List<Forum> forums,
+    @Default(<Channel>[]) List<Channel> channels,
     @Default(<Topic>[]) List<Topic> topics,
     @Default(<Announcement>[]) List<Announcement> announcements,
     @Default(<Event>[]) List<Event> events,
@@ -44,6 +44,7 @@ class ForumAdminState with _$ForumAdminState {
         error: null,
         categories: [],
         forums: [],
+        channels: [],
         topics: [],
         announcements: [],
         events: [],
@@ -120,57 +121,14 @@ class ForumAdminNotifier extends StateNotifier<ForumAdminState> {
     }
   }
 
-  Future<Category> createCategory({
-    required String name,
-    required String description,
-    String? moderatorId,
-    required String icon,
-    required List<String> membershipAccess,
-  }) async {
+  // Channels (read-only, membership-bound). Channels are fixed; no create path.
+  Future<void> loadChannels() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final newCategory = await _repository.createCategory(
-        name: name,
-        description: description,
-        moderatorId: moderatorId,
-        icon: icon,
-        membershipAccess: membershipAccess,
-      );
-      state = state.copyWith(
-        categories: [...state.categories, newCategory],
-        isLoading: false,
-      );
-      return newCategory;
+      final channels = await _repository.fetchChannels();
+      state = state.copyWith(channels: channels, isLoading: false);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
-      rethrow;
-    }
-  }
-
-  Future<Forum> createForum({
-    required String title,
-    required String description,
-    required String author,
-    required String categoryId,
-    required String userId,
-  }) async {
-    state = state.copyWith(isLoading: true, error: null);
-    try {
-      final newForum = await _repository.createForum(
-        title: title,
-        description: description,
-        author: author,
-        categoryId: categoryId,
-        userId: userId,
-      );
-      state = state.copyWith(
-        forums: [...state.forums, newForum],
-        isLoading: false,
-      );
-      return newForum;
-    } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
-      rethrow;
     }
   }
 
@@ -193,6 +151,31 @@ class ForumAdminNotifier extends StateNotifier<ForumAdminState> {
       state = state.copyWith(topics: topics, isLoading: false);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<Topic?> fetchTopicById(String topicId) async {
+    try {
+      return await _repository.fetchTopicById(topicId);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+      return null;
+    }
+  }
+
+  /// Uploads a category icon image and returns the hosted URL (or null on failure).
+  Future<String?> uploadCategoryIcon({
+    required List<int> bytes,
+    required String fileName,
+  }) async {
+    try {
+      return await _repository.uploadCategoryIcon(
+        bytes: bytes,
+        fileName: fileName,
+      );
+    } catch (e) {
+      state = state.copyWith(error: 'Failed to upload icon: $e');
+      rethrow;
     }
   }
 
@@ -468,8 +451,8 @@ class ForumAdminNotifier extends StateNotifier<ForumAdminState> {
 
   // Comments
   Future<void> fetchCommentsForTopic(String topicId) async {
+    state = state.copyWith(isLoadingComments: true, error: null);
     try {
-      state = state.copyWith(isLoadingComments: true, error: null);
       final comments = await _repository.fetchCommentsForTopic(topicId);
       state = state.copyWith(
         comments: comments,
@@ -480,7 +463,6 @@ class ForumAdminNotifier extends StateNotifier<ForumAdminState> {
         error: e.toString(),
         isLoadingComments: false,
       );
-      rethrow;
     }
   }
 
@@ -489,7 +471,8 @@ class ForumAdminNotifier extends StateNotifier<ForumAdminState> {
       state = state.copyWith(isLoading: true);
       await _repository.deleteComment(commentId);
       // Remove comment from state
-      final updatedComments = state.comments.where((c) => c.id != commentId).toList();
+      final updatedComments =
+          state.comments.where((c) => c.id != commentId).toList();
       state = state.copyWith(
         comments: updatedComments,
         isLoading: false,

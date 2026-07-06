@@ -1,15 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:osp_broker_admin/core/infrastructure/base_api_service.dart';
-import '../data/repositories/user_repository.dart';
-import '../data/models/user_model.dart';
-import '../data/models/user_membership_model.dart';
+
 import '../data/models/moderator_model.dart';
+import '../data/models/pin_model.dart';
+import '../data/models/user_membership_model.dart';
+import '../data/models/user_model.dart';
+import '../data/models/user_pin_model.dart';
+import '../data/repositories/user_repository.dart';
 
 class UserState {
   final List<UserModel> users;
   final List<ModeratorModel> moderators;
   final Map<String, List<UserMembershipModel>>
-      userMemberships; // userId -> memberships
+  userMemberships; // userId -> memberships
   final bool isLoading;
   final bool isLoadingModerators;
   final bool isLoadingMemberships;
@@ -71,9 +74,69 @@ class UserNotifier extends StateNotifier<UserState> {
     }
   }
 
+  Future<void> assignModeratorToCategories(
+    String userId, {
+    required List<String> categoryIds,
+  }) async {
+    state = state.copyWith(updatingUserIds: {...state.updatingUserIds, userId});
+    try {
+      // Optimistically update the user role in the list
+      final updatedUsers = state.users
+          .map(
+            (u) => u.id == userId
+                ? UserModel(
+                    id: u.id,
+                    fullName: u.fullName,
+                    email: u.email,
+                    role: 'moderator'.toUpperCase(),
+                    phone: u.phone,
+                    isBanned: u.isBanned,
+                    createdAt: u.createdAt,
+                    updatedAt: u.updatedAt,
+                  )
+                : u,
+          )
+          .toList();
+      state = state.copyWith(users: updatedUsers);
+
+      await repository.assignModeratorToCategories(
+        userId,
+        categoryIds: categoryIds,
+      );
+
+      // Refresh both users and moderators lists
+      await Future.wait([fetchUsers(), fetchModerators()]);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    } finally {
+      final newSet = {...state.updatingUserIds}..remove(userId);
+      state = state.copyWith(updatingUserIds: newSet);
+    }
+  }
+
   Future<void> banUser(String userId) async {
     try {
       final updatedUser = await repository.banUser(userId);
+      final updatedUsers = state.users
+          .map((u) => u.id == updatedUser.id ? updatedUser : u)
+          .toList();
+      state = state.copyWith(users: updatedUsers);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
+  }
+
+  Future<Map<String, dynamic>?> getUserPlanSummary(String userId) async {
+    try {
+      return await repository.getUserPlanSummary(userId);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<void> unbanUser(String userId) async {
+    try {
+      final updatedUser = await repository.unbanUser(userId);
       final updatedUsers = state.users
           .map((u) => u.id == updatedUser.id ? updatedUser : u)
           .toList();
@@ -173,27 +236,26 @@ class UserNotifier extends StateNotifier<UserState> {
     try {
       // Optimistically update the user role in the list
       final updatedUsers = state.users
-          .map((u) => u.id == userId
-              ? UserModel(
-                  id: u.id,
-                  fullName: u.fullName,
-                  email: u.email,
-                  role: 'moderator'.toUpperCase(),
-                  phone: u.phone,
-                  isBanned: u.isBanned,
-                  createdAt: u.createdAt,
-                  updatedAt: u.updatedAt,
-                )
-              : u)
+          .map(
+            (u) => u.id == userId
+                ? UserModel(
+                    id: u.id,
+                    fullName: u.fullName,
+                    email: u.email,
+                    role: 'moderator'.toUpperCase(),
+                    phone: u.phone,
+                    isBanned: u.isBanned,
+                    createdAt: u.createdAt,
+                    updatedAt: u.updatedAt,
+                  )
+                : u,
+          )
           .toList();
       state = state.copyWith(users: updatedUsers);
       await repository.assignModerator(userId, categoryId: categoryId);
 
       // Refresh both users and moderators lists
-      await Future.wait([
-        fetchUsers(),
-        fetchModerators(),
-      ]);
+      await Future.wait([fetchUsers(), fetchModerators()]);
     } catch (e) {
       state = state.copyWith(error: e.toString());
     } finally {
@@ -223,8 +285,9 @@ class UserNotifier extends StateNotifier<UserState> {
       }).toList();
 
       // Optimistically remove from moderators list
-      final updatedModerators =
-          state.moderators.where((m) => m.userId != userId).toList();
+      final updatedModerators = state.moderators
+          .where((m) => m.userId != userId)
+          .toList();
 
       state = state.copyWith(
         users: updatedUsers,
@@ -234,10 +297,7 @@ class UserNotifier extends StateNotifier<UserState> {
       await repository.removeModerator(userId);
 
       // Refresh both users and moderators lists
-      await Future.wait([
-        fetchUsers(),
-        fetchModerators(),
-      ]);
+      await Future.wait([fetchUsers(), fetchModerators()]);
     } catch (e) {
       state = state.copyWith(error: e.toString());
       rethrow;
@@ -323,10 +383,7 @@ class UserNotifier extends StateNotifier<UserState> {
     try {
       final memberships = await repository.getUserMemberships(userId);
       state = state.copyWith(
-        userMemberships: {
-          ...state.userMemberships,
-          userId: memberships,
-        },
+        userMemberships: {...state.userMemberships, userId: memberships},
       );
     } catch (e) {
       // Handle error
@@ -343,15 +400,13 @@ class UserNotifier extends StateNotifier<UserState> {
     try {
       // Only show loading state if we don't have any data yet
       if (state.userMemberships.isEmpty) {
-        state = state.copyWith(
-          isLoadingMemberships: true,
-          error: null,
-        );
+        state = state.copyWith(isLoadingMemberships: true, error: null);
       }
 
       // Force fetch from server by not using cache
-      final memberships =
-          await repository.getAllUserMemberships(forceRefresh: true);
+      final memberships = await repository.getAllUserMemberships(
+        forceRefresh: true,
+      );
 
       if (!mounted) return;
 
@@ -387,8 +442,9 @@ class UserNotifier extends StateNotifier<UserState> {
     required DateTime endDate,
   }) async {
     try {
-      state =
-          state.copyWith(updatingUserIds: {...state.updatingUserIds, userId});
+      state = state.copyWith(
+        updatingUserIds: {...state.updatingUserIds, userId},
+      );
 
       final success = await repository.assignMembership(
         userId: userId,
@@ -404,8 +460,9 @@ class UserNotifier extends StateNotifier<UserState> {
         throw Exception('Failed to assign membership');
       }
     } catch (e) {
-      state =
-          state.copyWith(error: 'Failed to assign membership: ${e.toString()}');
+      state = state.copyWith(
+        error: 'Failed to assign membership: ${e.toString()}',
+      );
       rethrow;
     } finally {
       final newSet = {...state.updatingUserIds}..remove(userId);
@@ -418,8 +475,9 @@ class UserNotifier extends StateNotifier<UserState> {
     required String membershipId,
   }) async {
     try {
-      state =
-          state.copyWith(updatingUserIds: {...state.updatingUserIds, userId});
+      state = state.copyWith(
+        updatingUserIds: {...state.updatingUserIds, userId},
+      );
 
       final success = await repository.cancelMembership(membershipId);
 
@@ -428,7 +486,8 @@ class UserNotifier extends StateNotifier<UserState> {
         state = state.copyWith(
           userMemberships: {
             ...state.userMemberships,
-            userId: state.userMemberships[userId]
+            userId:
+                state.userMemberships[userId]
                     ?.where((m) => m.id != membershipId)
                     .toList() ??
                 [],
@@ -438,18 +497,94 @@ class UserNotifier extends StateNotifier<UserState> {
         throw Exception('Failed to cancel membership');
       }
     } catch (e) {
-      state =
-          state.copyWith(error: 'Failed to cancel membership: ${e.toString()}');
+      state = state.copyWith(
+        error: 'Failed to cancel membership: ${e.toString()}',
+      );
       rethrow;
     } finally {
       final newSet = {...state.updatingUserIds}..remove(userId);
       state = state.copyWith(updatingUserIds: newSet);
     }
   }
+
+  // Pin related methods
+  Future<List<PinModel>> fetchAllPins() async {
+    try {
+      return await repository.fetchAllPins();
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+      return [];
+    }
+  }
+
+  Future<List<UserPinModel>> fetchUserPins(String userId) async {
+    try {
+      return await repository.fetchUserPins(userId);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+      return [];
+    }
+  }
+
+  Future<UserPinModel?> assignPinToUser({
+    required String userId,
+    required String pinId,
+    required int count,
+    required double totalCost,
+  }) async {
+    try {
+      state = state.copyWith(
+        updatingUserIds: {...state.updatingUserIds, userId},
+      );
+
+      final userPin = await repository.assignPinToUser(
+        userId: userId,
+        pinId: pinId,
+        count: count,
+        totalCost: totalCost,
+      );
+
+      return userPin;
+    } catch (e) {
+      state = state.copyWith(error: 'Failed to assign pin: ${e.toString()}');
+      rethrow;
+    } finally {
+      final newSet = {...state.updatingUserIds}..remove(userId);
+      state = state.copyWith(updatingUserIds: newSet);
+    }
+  }
+
+  Future<void> createPin({
+    required String color,
+    required double price,
+    required int duration,
+    required String image,
+  }) async {
+    try {
+      state = state.copyWith(isLoading: true);
+      await repository.apiService.post(
+        '/shop/pin',
+        requireAuth: true,
+        data: {
+          'color': color,
+          'price': price,
+          'duration': duration,
+          'image': image,
+        },
+      );
+      // Refresh pins list if needed, or caller handles it
+    } catch (e) {
+      state = state.copyWith(error: 'Failed to create pin: ${e.toString()}');
+      rethrow;
+    } finally {
+      state = state.copyWith(isLoading: false);
+    }
+  }
 }
 
-final userNotifierProvider =
-    StateNotifierProvider<UserNotifier, UserState>((ref) {
+final userNotifierProvider = StateNotifierProvider<UserNotifier, UserState>((
+  ref,
+) {
   final apiService = ref.watch(baseApiServiceProvider);
   final repo = UserRepository(apiService);
   return UserNotifier(repo);

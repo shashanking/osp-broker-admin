@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:osp_broker_admin/features/membership/application/membership_notifier.dart';
 import 'package:osp_broker_admin/features/membership/data/models/membership_plan_model.dart';
+import 'tier_limits_form_section.dart';
 
 class EditMembershipDialog extends ConsumerStatefulWidget {
   final MembershipPlanModel plan;
@@ -13,6 +14,7 @@ class EditMembershipDialog extends ConsumerStatefulWidget {
 
 class _EditMembershipDialogState extends ConsumerState<EditMembershipDialog> {
   final _formKey = GlobalKey<FormState>();
+  final _tierLimitsKey = GlobalKey<TierLimitsFormSectionState>();
   late TextEditingController _nameController;
   late TextEditingController _descriptionController;
   late TextEditingController _priceController;
@@ -52,6 +54,7 @@ class _EditMembershipDialogState extends ConsumerState<EditMembershipDialog> {
         price: double.parse(_priceController.text),
         billingCycle: _selectedBillingCycle,
         features: _featuresController.text.split(',').map((f) => f.trim()).toList(),
+        policy: _tierLimitsKey.currentState?.toPolicy(),
       );
       if (mounted) {
         Navigator.of(context).pop();
@@ -169,6 +172,7 @@ class _EditMembershipDialogState extends ConsumerState<EditMembershipDialog> {
                   return null;
                 },
               ),
+              TierLimitsFormSection(key: _tierLimitsKey, initial: widget.plan),
             ],
           ),
         ),

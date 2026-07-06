@@ -1,92 +1,87 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:osp_broker_admin/features/dashboard/domain/activity.dart' show Activity, ActivityType;
-import 'package:osp_broker_admin/features/dashboard/domain/dashboard_stats.dart' show DashboardStat;
+import 'package:osp_broker_admin/core/infrastructure/base_api_service.dart';
+import 'package:osp_broker_admin/features/dashboard/domain/activity.dart'
+    show Activity, ActivityType;
+import 'package:osp_broker_admin/features/dashboard/domain/dashboard_overview.dart';
+import 'package:osp_broker_admin/features/dashboard/domain/dashboard_stats.dart'
+    show DashboardStat;
 import 'package:osp_broker_admin/features/dashboard/domain/dashboard_state.dart';
 
 final dashboardNotifierProvider =
     StateNotifierProvider<DashboardNotifier, DashboardState>(
-  (ref) => DashboardNotifier(),
+  (ref) => DashboardNotifier(ref.watch(baseApiServiceProvider)),
 );
 
 class DashboardNotifier extends StateNotifier<DashboardState> {
-  DashboardNotifier() : super(const DashboardState()) {
-    // Load initial data
+  final BaseApiService _api;
+
+  DashboardNotifier(this._api) : super(const DashboardState()) {
     loadDashboardData();
   }
 
   Future<void> loadDashboardData() async {
-    state = state.copyWith(isLoading: true);
-    
+    state = state.copyWith(isLoading: true, errorMessage: null);
+
     try {
-      // Simulate API calls
-      await Future.delayed(const Duration(seconds: 1));
-      
-      // Mock stats data
-      final stats = [
+      // Full overview from GET /admin/dashboard/stats (standard envelope:
+      // response.data['data']). Parsing is defensive: missing keys -> 0/empty.
+      final response =
+          await _api.get('/admin/dashboard/stats', requireAuth: true);
+      final raw = response.data;
+      final data = (raw is Map && raw['data'] is Map)
+          ? Map<String, dynamic>.from(raw['data'] as Map)
+          : <String, dynamic>{};
+
+      final overview = DashboardOverview.fromJson(data);
+
+      // Legacy flat stat list, kept for any consumer of state.stats.
+      final stats = <DashboardStat>[
+        DashboardStat(label: 'Total Users', value: '${overview.totalUsers}'),
         DashboardStat(
-          label: 'Total Users',
-          value: '1,234',
-          change: '+12%',
-          isPositive: true,
-        ),
+            label: 'Active Memberships',
+            value: '${overview.activeMemberships}'),
         DashboardStat(
-          label: 'Active Now',
-          value: '256',
-          change: '+5%',
-          isPositive: true,
-        ),
+            label: 'Businesses', value: '${overview.totalBusinesses}'),
+        DashboardStat(label: 'Auctions', value: '${overview.totalAuctions}'),
         DashboardStat(
-          label: 'Revenue',
-          value: '\$12,345',
-          change: '+8.5%',
-          isPositive: true,
-        ),
+            label: 'Pending Scrapes',
+            value: '${overview.pendingScrapedBusinesses}'),
         DashboardStat(
-          label: 'New Orders',
-          value: '56',
-          change: '-2%',
-          isPositive: false,
-        ),
+            label: 'Banned Users', value: '${overview.bannedUsers}'),
+        DashboardStat(label: 'RFPs', value: '${overview.totalRFPs}'),
+        DashboardStat(
+            label: 'Revenue', value: '\$${overview.totalRevenue}'),
       ];
 
-      // Mock activities data
-      final now = DateTime.now();
-      final activities = [
-        Activity(
-          id: '1',
-          description: 'New user registered: John Doe',
-          timestamp: now.subtract(const Duration(minutes: 5)),
+      // Legacy activity feed (recent signups), kept for any consumer of
+      // state.activities. The overview page builds its richer merged feed
+      // directly from state.overview.
+      final activities = overview.recentUsers.map<Activity>((u) {
+        final name = u.fullName.isNotEmpty
+            ? u.fullName
+            : (u.email.isNotEmpty ? u.email : 'Unknown');
+        return Activity(
+          id: u.id,
+          description: 'New user registered: $name',
+          timestamp: u.createdAt ?? DateTime.now(),
           type: ActivityType.user,
-          userId: 'user123',
-          userName: 'John Doe',
-        ),
-        Activity(
-          id: '2',
-          description: 'Payment received: \$120.00',
-          timestamp: now.subtract(const Duration(hours: 2)),
-          type: ActivityType.payment,
-        ),
-        Activity(
-          id: '3',
-          description: 'System maintenance completed',
-          timestamp: now.subtract(const Duration(hours: 5)),
-          type: ActivityType.system,
-        ),
-        Activity(
-          id: '4',
-          description: 'New order #1234 placed',
-          timestamp: now.subtract(const Duration(days: 1)),
-        ),
-      ];
+          userId: u.id,
+          userName: u.fullName.isNotEmpty ? u.fullName : null,
+        );
+      }).toList();
 
       state = state.copyWith(
         isLoading: false,
+        overview: overview,
         stats: stats,
         activities: activities,
       );
     } catch (e) {
-      state = state.copyWith(isLoading: false);
-      rethrow;
+      // Keep any previously loaded overview on refresh failure.
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Failed to load dashboard data',
+      );
     }
   }
 }

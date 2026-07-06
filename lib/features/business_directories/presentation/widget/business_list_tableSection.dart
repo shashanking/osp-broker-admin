@@ -1,12 +1,18 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:osp_broker_admin/features/business_directories/domain/business_directories_model.dart';
-import 'dart:math' as math;
-import '../../domain/business_list_model.dart';
+
 import '../../application/business_directories_notifier.dart';
+import '../../domain/business_list_model.dart';
 
 class BusinessListTableSection extends ConsumerStatefulWidget {
-  const BusinessListTableSection({super.key});
+  final String searchQuery;
+  const BusinessListTableSection({
+    super.key,
+    this.searchQuery = '',
+  });
 
   @override
   ConsumerState<BusinessListTableSection> createState() =>
@@ -67,6 +73,27 @@ class _BusinessListTableSectionState
         _colServingAreas +
         _colWebsite +
         _colStatus;
+  }
+
+  bool _matchesQuery(BusinessModel business, String query) {
+    if (query.isEmpty) return true;
+    final q = query.toLowerCase();
+
+    bool contains(String? v) => (v ?? '').toLowerCase().contains(q);
+
+    if (contains(business.businessName)) return true;
+    if (contains(business.accountOwnerUsername)) return true;
+    if (contains(business.industry)) return true;
+    if (contains(business.companyType)) return true;
+    if (contains(business.slogan)) return true;
+    if (contains(business.hqLocation?.city)) return true;
+    if (contains(business.hqLocation?.country)) return true;
+    if (contains(business.hqLocation?.address)) return true;
+    if (business.products.any((p) => contains(p))) return true;
+    if (business.services.any((s) => contains(s))) return true;
+    if (business.servingAreas.any((a) => contains(a))) return true;
+
+    return false;
   }
 
   String _previewList(List<String> items) {
@@ -147,10 +174,11 @@ class _BusinessListTableSectionState
                           _detailBlock('Mission', business.mission),
                           _detailBlock('History', business.history),
                           const SizedBox(height: 12),
-                          _detailRow('HQ City', business.hqLocation.city),
-                          _detailRow('HQ Country', business.hqLocation.country),
+                          _detailRow('HQ City', business.hqLocation?.city ?? ''),
+                          _detailRow('HQ Country',
+                              business.hqLocation?.country ?? ''),
                           _detailBlock(
-                              'HQ Address', business.hqLocation.address),
+                              'HQ Address', business.hqLocation?.address ?? ''),
                           const SizedBox(height: 12),
                           _detailBlock(
                             'Products',
@@ -372,6 +400,11 @@ class _BusinessListTableSectionState
     final Map<String, String> categoryIdToName = {
       for (final c in _categories) c.id: c.name
     };
+
+    final filteredBusinesses = _businesses
+        .where((b) => _matchesQuery(b, widget.searchQuery.trim()))
+        .toList();
+
     return Container(
       margin: const EdgeInsets.only(top: 20),
       decoration: BoxDecoration(
@@ -397,8 +430,14 @@ class _BusinessListTableSectionState
               ? const Center(child: CircularProgressIndicator())
               : _error != null
                   ? Center(child: Text('Error: $_error'))
-                  : _businesses.isEmpty
-                      ? const Center(child: Text('No businesses found'))
+                  : filteredBusinesses.isEmpty
+                      ? Center(
+                          child: Text(
+                            widget.searchQuery.trim().isEmpty
+                                ? 'No businesses found'
+                                : 'No businesses match "${widget.searchQuery.trim()}"',
+                          ),
+                        )
                       : Row(
                           children: [
                             Expanded(
@@ -414,10 +453,10 @@ class _BusinessListTableSectionState
                                     ),
                                     child: ListView.builder(
                                       controller: _verticalLeftController,
-                                      itemCount: _businesses.length,
+                                      itemCount: filteredBusinesses.length,
                                       itemBuilder: (context, index) {
                                         return _buildLeftRow(
-                                          _businesses[index],
+                                          filteredBusinesses[index],
                                           categoryIdToName,
                                           index: index,
                                         );
@@ -431,10 +470,10 @@ class _BusinessListTableSectionState
                               width: actionsWidth,
                               child: ListView.builder(
                                 controller: _verticalRightController,
-                                itemCount: _businesses.length,
+                                itemCount: filteredBusinesses.length,
                                 itemBuilder: (context, index) {
                                   return _buildActionsRow(
-                                    _businesses[index],
+                                    filteredBusinesses[index],
                                     categoryIdToName,
                                   );
                                 },
@@ -565,13 +604,17 @@ class _BusinessListTableSectionState
     final categoryName = categoryIdToName[business.businessCategoryId] ??
         business.businessCategoryId;
     // You can adjust these mappings as needed
-    final status = business.authorizedUser ? 'Approved' : 'Pending';
-    final statusColor = business.authorizedUser
-        ? const Color(0xFF80C02A).withOpacity(0.2)
-        : const Color(0xFFD59823).withOpacity(0.2);
+    final status = business.isBanned
+        ? 'Banned'
+        : (business.authorizedUser ? 'Approved' : 'Pending');
+    final statusColor = business.isBanned
+        ? const Color(0xFFC02A2A).withOpacity(0.2)
+        : business.authorizedUser
+            ? const Color(0xFF80C02A).withOpacity(0.2)
+            : const Color(0xFFD59823).withOpacity(0.2);
 
-    final hqCity = business.hqLocation.city;
-    final hqCountry = business.hqLocation.country;
+    final hqCity = business.hqLocation?.city ?? '';
+    final hqCountry = business.hqLocation?.country ?? '';
     final ispText = business.isIsp ? 'Yes' : 'No';
     final productsText = _previewList(business.products);
     final servicesText = _previewList(business.services);
@@ -743,12 +786,25 @@ class _BusinessListTableSectionState
               constraints: const BoxConstraints.tightFor(width: 36, height: 36),
             ),
           ),
+          // Ban / Unban (soft delete: hides the business from all user-facing views)
+          Tooltip(
+            message: business.isBanned ? 'Unban' : 'Ban',
+            child: IconButton(
+              onPressed: () => _toggleBan(business),
+              icon: Icon(
+                  business.isBanned ? Icons.lock_open : Icons.block_outlined),
+              color: business.isBanned
+                  ? const Color(0xFF80C02A)
+                  : const Color(0xFFD59823),
+              iconSize: 20,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints.tightFor(width: 36, height: 36),
+            ),
+          ),
           Tooltip(
             message: 'Delete',
             child: IconButton(
-              onPressed: () {
-                // TODO: wire delete flow
-              },
+              onPressed: () => _confirmAndDelete(business),
               icon: const Icon(Icons.delete_outline),
               color: const Color(0xFFC02A2A),
               iconSize: 20,
@@ -759,6 +815,79 @@ class _BusinessListTableSectionState
         ],
       ),
     );
+  }
+
+  Future<void> _toggleBan(BusinessModel business) async {
+    final notifier = ref.read(businessDirectoriesNotifierProvider.notifier);
+    try {
+      if (business.isBanned) {
+        await notifier.unbanBusiness(business.id);
+      } else {
+        await notifier.banBusiness(business.id);
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(business.isBanned
+                ? 'Business unbanned — visible to users again'
+                : 'Business banned — hidden from users'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+      await _fetchBusinesses();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  Future<void> _confirmAndDelete(BusinessModel business) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete business'),
+        content: Text(
+          'Permanently delete "${business.businessName}"? This cannot be undone. '
+          'To hide it from users without deleting, use Ban instead.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await ref
+          .read(businessDirectoriesNotifierProvider.notifier)
+          .deleteBusiness(business.id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Business deleted'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+      await _fetchBusinesses();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   Widget _buildCellFixed(String text,

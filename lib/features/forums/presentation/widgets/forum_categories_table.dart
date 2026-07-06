@@ -148,6 +148,27 @@ class _CategoryRow extends ConsumerWidget {
   const _CategoryRow(
       {required this.category, required this.membershipPlans, this.rowColor});
 
+  // Category icons are uploaded images (URLs) only. A URL renders as the image;
+  // anything else (empty or stray text) shows the neutral category fallback.
+  Widget _buildCategoryIcon(String icon) {
+    final trimmed = icon.trim();
+    final isUrl =
+        trimmed.startsWith('http://') || trimmed.startsWith('https://');
+
+    if (isUrl) {
+      return CircleAvatar(
+        radius: 22,
+        backgroundColor: const Color(0xFFEDF1FA),
+        backgroundImage: NetworkImage(trimmed),
+      );
+    }
+    return const CircleAvatar(
+      backgroundColor: Color(0xFFEDF1FA),
+      radius: 22,
+      child: Icon(Icons.category, color: Color(0xFFB0B8C1), size: 22),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Get moderators and users from Riverpod providers
@@ -198,32 +219,7 @@ class _CategoryRow extends ConsumerWidget {
             flex: 1,
             child: Container(
               alignment: Alignment.center,
-              child: category.icon.isNotEmpty
-                  ? CircleAvatar(
-                      backgroundImage: NetworkImage(category.icon),
-                      radius: 22,
-                      backgroundColor: Colors.white,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                              color: const Color(0xFFD7E1F3), width: 2),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.06),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                      ),
-                    )
-                  : const CircleAvatar(
-                      backgroundColor: Color(0xFFEDF1FA),
-                      radius: 22,
-                      child: Icon(Icons.category,
-                          color: Color(0xFFB0B8C1), size: 22),
-                    ),
+              child: _buildCategoryIcon(category.icon),
             ),
           ),
           // Name

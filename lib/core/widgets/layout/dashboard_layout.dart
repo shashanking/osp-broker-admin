@@ -106,179 +106,216 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                 children: [
                   const SizedBox(height: 24),
                   // Logo
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (!shouldCollapseSidebar)
+                  if (shouldCollapseSidebar)
+                    Column(
+                      children: [
+                        InkWell(
+                          onTap: () => context.go('/dashboard'),
+                          child: Image.asset(
+                            'assets/images/logo.png',
+                            height: 40,
+                            errorBuilder: (context, error, stackTrace) =>
+                                const FlutterLogo(size: 40),
+                          ),
+                        ),
+                        if (!isTablet)
+                          IconButton(
+                            tooltip: 'Expand sidebar',
+                            onPressed: () {
+                              setState(() {
+                                _isSidebarCollapsed = !_isSidebarCollapsed;
+                              });
+                              _persistSidebarCollapsedState(
+                                  _isSidebarCollapsed);
+                            },
+                            icon: const Icon(
+                              Icons.keyboard_double_arrow_right,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                      ],
+                    )
+                  else
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
                         Expanded(
                           child: Padding(
                             padding: const EdgeInsets.only(left: 16),
-                            child: Image.asset(
-                              'assets/images/logo.png',
-                              height: 40,
-                              fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  const FlutterLogo(size: 40),
+                            child: InkWell(
+                              onTap: () => context.go('/dashboard'),
+                              child: Image.asset(
+                                'assets/images/logo.png',
+                                height: 40,
+                                fit: BoxFit.contain,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    const FlutterLogo(size: 40),
+                              ),
                             ),
                           ),
-                        )
-                      else
-                        Image.asset(
-                          'assets/images/logo.png',
-                          height: 40,
-                          errorBuilder: (context, error, stackTrace) =>
-                              const FlutterLogo(size: 40),
                         ),
-                      if (!isTablet)
-                        IconButton(
-                          tooltip: shouldCollapseSidebar
-                              ? 'Expand sidebar'
-                              : 'Collapse sidebar',
-                          onPressed: () {
-                            setState(() {
-                              _isSidebarCollapsed = !_isSidebarCollapsed;
-                            });
-                            _persistSidebarCollapsedState(_isSidebarCollapsed);
-                          },
-                          icon: Icon(
-                            shouldCollapseSidebar
-                                ? Icons.keyboard_double_arrow_right
-                                : Icons.keyboard_double_arrow_left,
-                            color: Colors.white,
-                            size: 20,
+                        if (!isTablet)
+                          IconButton(
+                            tooltip: 'Collapse sidebar',
+                            onPressed: () {
+                              setState(() {
+                                _isSidebarCollapsed = !_isSidebarCollapsed;
+                              });
+                              _persistSidebarCollapsedState(
+                                  _isSidebarCollapsed);
+                            },
+                            icon: const Icon(
+                              Icons.keyboard_double_arrow_left,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                      ],
+                    ),
+                  const SizedBox(height: 32),
+                  Expanded(
+                    child: ListView(
+                      padding: EdgeInsets.zero,
+                      children: [
+                        _buildNavItem(
+                          context,
+                          icon: Icons.dashboard,
+                          label: 'Dashboard',
+                          isSelected: widget.currentRoute == '/dashboard',
+                          onTap: () => context.go('/dashboard'),
+                          isTablet: shouldCollapseSidebar,
+                        ),
+                        _buildNavItem(
+                          context,
+                          icon: Icons.forum,
+                          label: 'Forums',
+                          isSelected: widget.currentRoute == '/forums',
+                          onTap: () => context.go('/forums'),
+                          isTablet: shouldCollapseSidebar,
+                        ),
+                        _buildNavItem(
+                          context,
+                          icon: Icons.gavel,
+                          label: 'Auctions',
+                          isSelected: widget.currentRoute == '/auctions',
+                          onTap: () => context.go('/auctions'),
+                          isTablet: shouldCollapseSidebar,
+                        ),
+                        _buildNavItem(
+                          context,
+                          icon: Icons.chat,
+                          label: 'Messages',
+                          isSelected: widget.currentRoute.startsWith('/chat') &&
+                              widget.currentRoute != '/all-chats',
+                          onTap: () => context.go('/chat'),
+                          isTablet: shouldCollapseSidebar,
+                        ),
+                        _buildNavItem(
+                          context,
+                          icon: Icons.chat_bubble_outline,
+                          label: 'All Chats',
+                          isSelected: widget.currentRoute == '/all-chats',
+                          onTap: () => context.go('/all-chats'),
+                          isTablet: shouldCollapseSidebar,
+                        ),
+                        _buildNavItem(
+                          context,
+                          icon: Icons.business,
+                          label: 'Business Directories',
+                          isSelected: widget.currentRoute
+                              .startsWith('/business-directories'),
+                          onTap: () => context.go('/business-directories'),
+                          isTablet: shouldCollapseSidebar,
+                        ),
+                        _buildNavItem(
+                          context,
+                          icon: Icons.travel_explore,
+                          label: 'BD Scraper',
+                          isSelected: widget.currentRoute.startsWith('/bd-scraper'),
+                          onTap: () => context.go('/bd-scraper'),
+                          isTablet: shouldCollapseSidebar,
+                        ),
+                        _buildNavItem(
+                          context,
+                          icon: Icons.shopping_cart,
+                          label: 'Shop',
+                          isSelected: widget.currentRoute.startsWith('/shop'),
+                          onTap: () => context.go('/shop'),
+                          isTablet: shouldCollapseSidebar,
+                        ),
+                        _buildNavItem(
+                          context,
+                          icon: Icons.receipt_long,
+                          label: 'Orders',
+                          isSelected: widget.currentRoute.startsWith('/orders'),
+                          onTap: () => context.go('/orders'),
+                          isTablet: shouldCollapseSidebar,
+                        ),
+                        _buildNavItem(
+                          context,
+                          icon: Icons.description,
+                          label: 'RFPs',
+                          isSelected: widget.currentRoute.startsWith('/rfps'),
+                          onTap: () => context.go('/rfps'),
+                          isTablet: shouldCollapseSidebar,
+                        ),
+                        _buildNavItem(
+                          context,
+                          icon: Icons.web,
+                          label: 'Website Content',
+                          isSelected: widget.currentRoute.startsWith('/cms'),
+                          onTap: () => context.go('/cms'),
+                          isTablet: shouldCollapseSidebar,
+                        ),
+                        _buildNavItem(
+                          context,
+                          icon: Icons.people,
+                          label: 'Users',
+                          isSelected: widget.currentRoute == '/users',
+                          onTap: () => context.go('/users'),
+                          isTablet: shouldCollapseSidebar,
+                        ),
+                        _buildNavItem(
+                          context,
+                          icon: Icons.credit_card,
+                          label: 'Membership Plans',
+                          isSelected: widget.currentRoute == '/plans',
+                          onTap: () => context.go('/plans'),
+                          isTablet: shouldCollapseSidebar,
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          margin: const EdgeInsets.only(
+                            top: 4,
+                            bottom: 4,
+                            left: 16,
+                          ),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFCC1919),
+                            borderRadius: BorderRadius.only(
+                              topLeft: Radius.circular(50),
+                              bottomLeft: Radius.circular(50),
+                            ),
+                          ),
+                          child: _buildNavItem(
+                            context,
+                            icon: Icons.logout,
+                            label: 'Logout',
+                            isSelected: false,
+                            onTap: () async {
+                              await widget.onLogout();
+                              if (context.mounted) {
+                                context.go('/login');
+                              }
+                            },
+                            isTablet: shouldCollapseSidebar,
                           ),
                         ),
-                    ],
-                  ),
-                  const SizedBox(height: 32),
-                  // Navigation Items
-                  // _buildNavItem(
-                  //   context,
-                  //   icon: Icons.dashboard,
-                  //   label: 'Overview',
-                  //   isSelected: widget.currentRoute == '/dashboard',
-                  //   onTap: () {
-                  //     if (widget.currentRoute != '/dashboard') {
-                  //       context.go('/dashboard');
-                  //     }
-                  //   },
-                  // ),
-                  _buildNavItem(
-                    context,
-                    icon: Icons.forum,
-                    label: 'Forums',
-                    isSelected: widget.currentRoute == '/forums',
-                    onTap: () => context.go('/forums'),
-                    isTablet: shouldCollapseSidebar,
-                  ),
-                  _buildNavItem(
-                    context,
-                    icon: Icons.gavel,
-                    label: 'Auctions',
-                    isSelected: widget.currentRoute == '/auctions',
-                    onTap: () => context.go('/auctions'),
-                    isTablet: shouldCollapseSidebar,
-                  ),
-                  _buildNavItem(
-                    context,
-                    icon: Icons.chat,
-                    label: 'Messages',
-                    isSelected: widget.currentRoute.startsWith('/chat') &&
-                        widget.currentRoute != '/all-chats',
-                    onTap: () => context.go('/chat'),
-                    isTablet: shouldCollapseSidebar,
-                  ),
-                  _buildNavItem(
-                    context,
-                    icon: Icons.chat_bubble_outline,
-                    label: 'All Chats',
-                    isSelected: widget.currentRoute == '/all-chats',
-                    onTap: () => context.go('/all-chats'),
-                    isTablet: shouldCollapseSidebar,
-                  ),
-                  _buildNavItem(
-                    context,
-                    icon: Icons.business,
-                    label: 'Business Directories',
-                    isSelected:
-                        widget.currentRoute.startsWith('/business-directories'),
-                    onTap: () => context.go('/business-directories'),
-                    isTablet: shouldCollapseSidebar,
-                  ),
-                  _buildNavItem(
-                    context,
-                    icon: Icons.shopping_cart,
-                    label: 'Shop',
-                    isSelected: widget.currentRoute.startsWith('/shop'),
-                    onTap: () => context.go('/shop'),
-                    isTablet: shouldCollapseSidebar,
-                  ),
-                  _buildNavItem(
-                    context,
-                    icon: Icons.people,
-                    label: 'Users',
-                    isSelected: widget.currentRoute == '/users',
-                    onTap: () => context.go('/users'),
-                    isTablet: shouldCollapseSidebar,
-                  ),
-                  _buildNavItem(
-                    context,
-                    icon: Icons.credit_card,
-                    label: 'Membership Plans',
-                    isSelected: widget.currentRoute == '/plans',
-                    onTap: () => context.go('/plans'),
-                    isTablet: shouldCollapseSidebar,
-                  ),
-                  // _buildNavItem(
-                  //   context,
-                  //   icon: Icons.games,
-                  //   label: 'Games',
-                  //   isSelected: currentRoute == '/games',
-                  //   onTap: () => context.go('/games'),
-                  // ),
-                  // _buildNavItem(
-                  //   context,
-                  //   icon: Icons.analytics,
-                  //   label: 'Reports & Analytics',
-                  //   isSelected: currentRoute == '/reports',
-                  //   onTap: () => context.go('/reports'),
-                  // ),
-                  // _buildNavItem(
-                  //   context,
-                  //   icon: Icons.settings,
-                  //   label: 'Settings',
-                  //   isSelected: currentRoute == '/settings',
-                  //   onTap: () => context.go('/settings'),
-                  // ),
-                  const Spacer(),
-                  Container(
-                    margin: const EdgeInsets.only(
-                      top: 4,
-                      bottom: 4,
-                      left: 16,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Color(0xFFCC1919),
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(50),
-                        bottomLeft: Radius.circular(50),
-                      ),
-                    ),
-                    child: _buildNavItem(
-                      context,
-                      icon: Icons.logout,
-                      label: 'Logout',
-                      isSelected: false,
-                      onTap: () async {
-                        await widget.onLogout();
-                        if (context.mounted) {
-                          context.go('/login');
-                        }
-                      },
-                      isTablet: shouldCollapseSidebar,
+                        const SizedBox(height: 24),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 24),
                 ],
               ),
             ),
@@ -304,21 +341,28 @@ class _DashboardLayoutState extends State<DashboardLayout> {
       child: InkWell(
         onTap: onTap,
         child: Container(
-          margin: const EdgeInsets.only(
-            top: 4,
-            bottom: 4,
-            left: 16,
-          ),
+          margin: isTablet
+              ? const EdgeInsets.symmetric(
+                  vertical: 6,
+                  horizontal: 12,
+                )
+              : const EdgeInsets.only(
+                  top: 4,
+                  bottom: 4,
+                  left: 16,
+                ),
           padding: EdgeInsets.symmetric(
             vertical: 12,
-            horizontal: isTablet ? 8 : 16,
+            horizontal: isTablet ? 0 : 16,
           ),
           decoration: BoxDecoration(
             color: isSelected ? AppColors.sidebarSelected : Colors.transparent,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(50),
-              bottomLeft: Radius.circular(50),
-            ),
+            borderRadius: isTablet
+                ? BorderRadius.circular(20)
+                : const BorderRadius.only(
+                    topLeft: Radius.circular(50),
+                    bottomLeft: Radius.circular(50),
+                  ),
           ),
           child: Row(
             mainAxisAlignment:
@@ -360,11 +404,17 @@ class _DashboardLayoutState extends State<DashboardLayout> {
           children: [
             const SizedBox(height: 24),
             // Logo
-            Image.asset(
-              'assets/images/logo.png',
-              height: 40,
-              errorBuilder: (context, error, stackTrace) =>
-                  const FlutterLogo(size: 40),
+            InkWell(
+              onTap: () {
+                context.go('/dashboard');
+                Navigator.pop(context);
+              },
+              child: Image.asset(
+                'assets/images/logo.png',
+                height: 40,
+                errorBuilder: (context, error, stackTrace) =>
+                    const FlutterLogo(size: 40),
+              ),
             ),
             const SizedBox(height: 32),
             // Navigation Items
@@ -372,6 +422,16 @@ class _DashboardLayoutState extends State<DashboardLayout> {
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
+                  _buildDrawerItem(
+                    context,
+                    icon: Icons.dashboard,
+                    label: 'Dashboard',
+                    isSelected: widget.currentRoute == '/dashboard',
+                    onTap: () {
+                      context.go('/dashboard');
+                      Navigator.pop(context);
+                    },
+                  ),
                   _buildDrawerItem(
                     context,
                     icon: Icons.forum,
@@ -430,6 +490,26 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                     isSelected: widget.currentRoute.startsWith('/shop'),
                     onTap: () {
                       context.go('/shop');
+                      Navigator.pop(context);
+                    },
+                  ),
+                  _buildDrawerItem(
+                    context,
+                    icon: Icons.receipt_long,
+                    label: 'Orders',
+                    isSelected: widget.currentRoute.startsWith('/orders'),
+                    onTap: () {
+                      context.go('/orders');
+                      Navigator.pop(context);
+                    },
+                  ),
+                  _buildDrawerItem(
+                    context,
+                    icon: Icons.description,
+                    label: 'RFPs',
+                    isSelected: widget.currentRoute.startsWith('/rfps'),
+                    onTap: () {
+                      context.go('/rfps');
                       Navigator.pop(context);
                     },
                   ),

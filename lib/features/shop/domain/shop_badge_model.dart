@@ -3,6 +3,7 @@ class ShopBadgeModel {
   final String name;
   final String description;
   final int price;
+  final String image;
   final bool isDeleted;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -12,6 +13,7 @@ class ShopBadgeModel {
     required this.name,
     required this.description,
     required this.price,
+    required this.image,
     required this.isDeleted,
     required this.createdAt,
     required this.updatedAt,
@@ -25,6 +27,7 @@ class ShopBadgeModel {
       price: (json['price'] is num)
           ? (json['price'] as num).toInt()
           : int.tryParse((json['price'] ?? 0).toString()) ?? 0,
+      image: (json['image'] ?? '').toString(),
       isDeleted: json['isDeleted'] == true,
       createdAt: DateTime.tryParse((json['createdAt'] ?? '').toString()) ??
           DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),

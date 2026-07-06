@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:osp_broker_admin/core/infrastructure/api_urls.dart';
 import 'package:osp_broker_admin/core/infrastructure/base_api_service.dart';
+import 'package:osp_broker_admin/core/utils/role_utils.dart';
 import 'package:osp_broker_admin/features/auth/domain/auth_state.dart';
 
 class AuthNotifier extends StateNotifier<AuthState> {
   final BaseApiService _apiService;
-  
+  static const Set<String> _allowedRoles = {'ADMIN', 'MODERATOR'};
+
   AuthNotifier(this._apiService) : super(const AuthState.initial()) {
     print('AuthNotifier: Constructor called');
     // Check if user is already authenticated
@@ -22,7 +24,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = currentState.when(
       initial: () => const AuthState.unauthenticated(),
       loading: () => const AuthState.unauthenticated(),
-      authenticated: (token, user) => AuthState.authenticated(token: token, user: user),
+      authenticated: (token, user) =>
+          AuthState.authenticated(token: token, user: user),
       unauthenticated: () => const AuthState.unauthenticated(),
       error: (message) => AuthState.error(message),
     );
@@ -33,7 +36,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     print('AuthNotifier: _checkAuthStatus() called');
     final token = _apiService.authToken;
     print('AuthNotifier: Token from storage: $token');
-    
+
     if (token == null) {
       print('AuthNotifier: No token found, setting state to unauthenticated');
       state = const AuthState.unauthenticated()..emit();
@@ -42,20 +45,30 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
     try {
       print('AuthNotifier: Verifying token with server...');
-      
+
       // Since the /me endpoint returns 404, we'll assume the token is valid if it exists
       // and only clear it when we get an explicit 401
+      final storedUser = _apiService.authUser;
+      if (storedUser != null && !userHasAnyRole(storedUser, _allowedRoles)) {
+        await _apiService.clearAuthTokens();
+        state = const AuthState.unauthenticated()..emit();
+        return;
+      }
+
       state = AuthState.authenticated(
         token: token,
-        user: {'email': 'admin@example.com', 'role': 'ADMIN'}, // Default user since we can't fetch it
+        user: storedUser ??
+            {
+              'email': 'admin@example.com',
+              'role': ['ADMIN']
+            },
       );
       state.emit();
       print('AuthNotifier: Assuming token is valid');
-      
     } on DioException catch (e, stackTrace) {
       print('AuthNotifier: Error during token validation: $e');
       print('Stack trace: $stackTrace');
-      
+
       // Only clear tokens if it's an authentication error
       if (e.response?.statusCode == 401) {
         print('AuthNotifier: Token is invalid (401), clearing tokens');
@@ -65,9 +78,19 @@ class AuthNotifier extends StateNotifier<AuthState> {
         // For other errors (like 404), still consider the user authenticated
         // since we can't verify the token but we have one
         print('AuthNotifier: Non-auth error, assuming token is still valid');
+        final storedUser = _apiService.authUser;
+        if (storedUser != null && !userHasAnyRole(storedUser, _allowedRoles)) {
+          await _apiService.clearAuthTokens();
+          state = const AuthState.unauthenticated();
+          return;
+        }
         state = AuthState.authenticated(
           token: token,
-          user: {'email': 'admin@example.com', 'role': 'ADMIN'},
+          user: storedUser ??
+              {
+                'email': 'admin@example.com',
+                'role': ['ADMIN']
+              },
         );
         state.emit();
       }
@@ -75,9 +98,20 @@ class AuthNotifier extends StateNotifier<AuthState> {
       print('AuthNotifier: Unexpected error during token validation: $e');
       print('Stack trace: $stackTrace');
       // On any other error, assume the token is still valid
+      final storedUser = _apiService.authUser;
+      if (storedUser != null && !userHasAnyRole(storedUser, _allowedRoles)) {
+        await _apiService.clearAuthTokens();
+        state = const AuthState.unauthenticated();
+        state.emit();
+        return;
+      }
       state = AuthState.authenticated(
         token: token,
-        user: {'email': 'admin@example.com', 'role': 'ADMIN'},
+        user: storedUser ??
+            {
+              'email': 'admin@example.com',
+              'role': ['ADMIN']
+            },
       );
       state.emit();
     }
@@ -88,7 +122,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String password,
   }) async {
     state = const AuthState.loading();
-    
+
     try {
       final response = await _apiService.post(
         ApiUrls.login,
@@ -101,11 +135,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       final responseData = response.data['data'];
       final user = responseData['user'];
-      
-      // Check if user has admin role
-      if (user['role'] != 'ADMIN') {
+
+      // Allow only ADMIN and MODERATOR roles to access the admin panel
+      if (!userHasAnyRole(Map<String, dynamic>.from(user), _allowedRoles)) {
         await _apiService.clearAuthTokens();
-        throw Exception('Access denied. Admin privileges required.');
+        throw Exception(
+            'Access denied. Admin or Moderator privileges required.');
       }
 
       await _apiService.setAuthTokens(
@@ -113,6 +148,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
         refreshToken: responseData['refreshToken'],
         userId: user['id'],
       );
+
+      await _apiService.setAuthUser(Map<String, dynamic>.from(user));
 
       state = AuthState.authenticated(
         token: responseData['accessToken'],
@@ -138,7 +175,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
           rethrow;
         }
         // For 404, we'll just log it and continue with local logout
-        debugPrint('Logout endpoint not found (404), proceeding with local logout');
+        debugPrint(
+            'Logout endpoint not found (404), proceeding with local logout');
       } catch (e) {
         // For any other error, log it but still proceed with local logout
         debugPrint('Error during logout: $e');
@@ -161,7 +199,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         ApiUrls.refreshToken,
         requireAuth: false,
       );
-      
+
       final token = response.data['data']['accessToken'];
       await _apiService.setAuthTokens(token: token);
       return token;
@@ -172,7 +210,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 }
 
-final authNotifierProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
+final authNotifierProvider =
+    StateNotifierProvider<AuthNotifier, AuthState>((ref) {
   final apiService = ref.watch(baseApiServiceProvider);
   return AuthNotifier(apiService);
 });

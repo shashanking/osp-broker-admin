@@ -7,6 +7,10 @@ class UserModel {
   final bool isBanned;
   final DateTime createdAt;
   final DateTime updatedAt;
+  // Pinpoint GPS location captured at signup (null for legacy users).
+  final double? latitude;
+  final double? longitude;
+  final String? locationAddress;
 
   UserModel({
     required this.id,
@@ -17,7 +21,12 @@ class UserModel {
     required this.isBanned,
     required this.createdAt,
     required this.updatedAt,
+    this.latitude,
+    this.longitude,
+    this.locationAddress,
   });
+
+  bool get hasLocation => latitude != null && longitude != null;
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
@@ -29,6 +38,9 @@ class UserModel {
       isBanned: json['isBanned'] ?? false,
       createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? '') ?? DateTime.now(),
       updatedAt: DateTime.tryParse(json['updatedAt']?.toString() ?? '') ?? DateTime.now(),
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
+      locationAddress: json['locationAddress']?.toString(),
     );
   }
 }
